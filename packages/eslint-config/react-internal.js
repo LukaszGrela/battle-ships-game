@@ -1,26 +1,30 @@
-import js from "@eslint/js";
 import eslintConfigPrettier from "eslint-config-prettier";
-import tseslint from "typescript-eslint";
 import pluginReactHooks from "eslint-plugin-react-hooks";
 import globals from "globals";
 import { config as baseConfig } from "./base.js";
 
 /**
- * A custom ESLint configuration for libraries that use React.
- *
- * @type {import("eslint").Linter.Config[]} */
+ * ESLint configuration for React frontend applications and UI packages.
+ * @type {import("eslint").Linter.Config[]}
+ */
 export const config = [
   ...baseConfig,
-  js.configs.recommended,
   eslintConfigPrettier,
-  ...tseslint.configs.recommended,
   {
     languageOptions: {
       globals: {
-        ...globals.serviceworker,
         ...globals.browser,
       },
     },
   },
-  pluginReactHooks.configs.flat.recommended,
+  {
+    plugins: {
+      "react-hooks": pluginReactHooks,
+    },
+    rules: {
+      ...pluginReactHooks.configs.recommended.rules,
+      "react-hooks/rules-of-hooks": "error",
+      "react-hooks/exhaustive-deps": "warn",
+    },
+  },
 ];

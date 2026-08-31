@@ -5,10 +5,9 @@ import tseslint from "typescript-eslint";
 import onlyWarn from "eslint-plugin-only-warn";
 
 /**
- * A shared ESLint configuration for the repository.
- *
+ * Shared base ESLint configuration for the Battleship Game monorepo.
  * @type {import("eslint").Linter.Config[]}
- * */
+ */
 export const config = [
   js.configs.recommended,
   eslintConfigPrettier,
@@ -16,17 +15,18 @@ export const config = [
   {
     plugins: {
       turbo: turboPlugin,
+      onlyWarn,
     },
     rules: {
       "turbo/no-undeclared-env-vars": "warn",
+      "@typescript-eslint/no-unused-vars": [
+        "warn",
+        { argsIgnorePattern: "^_", varsIgnorePattern: "^_" }
+      ],
+      "@typescript-eslint/no-explicit-any": "warn",
     },
   },
   {
-    plugins: {
-      onlyWarn,
-    },
-  },
-  {
-    ignores: ["dist/**"],
+    ignores: ["dist/**", "build/**", ".turbo/**", "node_modules/**"],
   },
 ];
