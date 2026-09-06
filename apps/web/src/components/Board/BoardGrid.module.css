@@ -1,0 +1,52 @@
+/* .BoardGrid {
+} */
+
+.BoardGrid_layout {
+  display: grid;
+  grid-template-columns: repeat(11, 2rem);
+  grid-template-rows: repeat(11, 2rem);
+  gap: 8px;
+}
+
+.BoardGrid_columns {
+  grid-column: span 10 / span 10;
+  grid-column-start: 2;
+
+  display: grid;
+  grid-template-columns: repeat(10, 2rem);
+  grid-template-rows: 2rem;
+  align-items: end;
+  gap: 8px;
+}
+
+.BoardGrid_rows {
+  grid-row: span 10 / span 10;
+  grid-row-start: 2;
+
+  display: grid;
+  grid-template-columns: 2rem;
+  grid-template-rows: repeat(10, 2rem);
+  align-items: center;
+  justify-items: end;
+  gap: 8px;
+}
+
+.BoardGrid_grid {
+  grid-column: span 10 / span 10;
+  grid-row: span 10 / span 10;
+  grid-row-start: 2;
+}
+
+.Grid {
+  display: grid;
+  align-items: center;
+  grid-template-columns: repeat(10, 2rem);
+  grid-template-rows: repeat(10, 2rem);
+  gap: 8px;
+}
+
+.Cell {
+  border: 1px solid #d0d0d0;
+  width: 2rem;
+  height: 2rem;
+}

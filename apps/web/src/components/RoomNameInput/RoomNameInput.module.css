@@ -1,0 +1,55 @@
+.RoomNameInput {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  flex-direction: column;
+  align-items: start;
+
+  &:focus-within {
+    .RoomNameInput_field {
+      box-shadow: 0 0 2px 0.25rem #f008;
+    }
+  }
+}
+
+.RoomNameInput_field {
+  border-radius: 6px;
+
+  border-color: #ccc;
+  border-radius: 4px;
+  border-width: 1px;
+  border-style: solid;
+
+  &[data-status="valid"] {
+    border-color: green;
+  }
+  &[data-status="taken"],
+  &[data-status="invalid"] {
+    border-color: red;
+  }
+}
+.RoomNameInput_input {
+  padding: 8px 32px 8px 8px;
+}
+.RoomNameInput_badge {
+}
+
+.RoomNameInput_error {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  font-size: 0.75rem;
+  border: 1px solid green;
+}
+
+.pending {
+  color: #808080;
+}
+.valid {
+  color: green;
+}
+.taken {
+  color: red;
+}
+.invalid {
+  color: orange;
+}
