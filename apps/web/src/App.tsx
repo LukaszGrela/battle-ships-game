@@ -1,4 +1,3 @@
-import styles from "./App.module.css";
 import { useMemo } from "react";
 import {
   useConnectionStatus,
@@ -42,7 +41,6 @@ function App() {
       {page === "lobby" && <Lobby />}
       {page === "game" && <Game />}
       {page === "game-over" && <GameOver />}
-      <span>{page}</span>
     </>
   );
 }
