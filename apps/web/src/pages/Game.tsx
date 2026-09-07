@@ -5,6 +5,8 @@ import { useGameStore } from "../store/useGameStore";
 import { BoardGrid } from "../components/Board/BoardGrid";
 import { TInteractivityProps } from "../components/Board/types";
 import { PlayerDetails } from "../components/PlayerDetails/PlayerDetails";
+import { TCoordinate } from "@repo/types";
+import { socket } from "../socket";
 
 export const Game: FC = () => {
   const { gameState, selfId } = useGameStore();
@@ -18,7 +20,9 @@ export const Game: FC = () => {
       if (gameState?.phase === "playing") {
         return {
           isInteractive: true,
-          onClick: console.log,
+          onClick: (coords: TCoordinate) => {
+            socket.emit("attack_coordinate", coords);
+          },
           disabled: !myTurn,
         };
       }

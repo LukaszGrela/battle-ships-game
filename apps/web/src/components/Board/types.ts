@@ -17,6 +17,7 @@ export type TProps = {
   className?: string;
   board: ECellStatus[][];
   heading?: ReactNode;
+  disabled?: boolean;
 } & TInteractivityProps;
 
 export type TCell = {

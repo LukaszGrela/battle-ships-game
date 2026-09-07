@@ -7,7 +7,11 @@ export const AvailableShips: FC<{
 
   selected: TShip | null;
   onSelection: (ship: TShip | null) => void;
-}> = ({ ships, onSelection, selected }) => {
+  onApply: () => void;
+  onReset: () => void;
+
+  disabled?: boolean;
+}> = ({ ships, onSelection, selected, onApply, onReset, disabled }) => {
   const handleClick = useCallback(
     (ship: TShip) => () => {
       console.log("handleClick", ship);
@@ -19,6 +23,9 @@ export const AvailableShips: FC<{
     },
     [onSelection, selected],
   );
+
+  const disableApply = ships.some((needle) => !needle.placed) || disabled;
+  const disableReset = !ships.some((needle) => needle.placed) || disabled;
 
   return (
     <div>
@@ -36,7 +43,7 @@ export const AvailableShips: FC<{
 
               onClick={handleClick(ship)}
 
-              disabled={placed}
+              disabled={placed || disabled}
             >
               <Ship size={size} />
             </button>
@@ -48,8 +55,12 @@ export const AvailableShips: FC<{
         pionowo.
       </div>
       <div>
-        <button>Zresetuj</button>
-        <button>Gotowe</button>
+        <button onClick={onReset} disabled={disableReset}>
+          Zresetuj
+        </button>
+        <button onClick={onApply} disabled={disableApply}>
+          Gotowe
+        </button>
       </div>
     </div>
   );
@@ -61,8 +72,8 @@ const Ship: FC<{
 }> = ({ vertical, size }) => {
   return (
     <div className={styles.Ship} data-vertical={vertical ? "" : undefined}>
-      {Array.from(Array(size)).map(() => (
-        <span />
+      {Array.from(Array(size)).map((_, index) => (
+        <span key={`${size}-${index}`} />
       ))}
     </div>
   );

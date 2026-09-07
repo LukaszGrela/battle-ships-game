@@ -22,6 +22,7 @@ export interface IPlayer {
   id: string;
   name: string;
   active: boolean;
+  ready: boolean;
 }
 
 export type TBoard<S = ECellStatus> = S[][];
@@ -38,9 +39,21 @@ type TPlacedShip = {
 export type TShip = {
   id: number;
   size: number;
-} & (TPlacedShip | { type: "pending"; placed: boolean });
+} & (
+  | TPlacedShip
+  | {
+      type: "pending";
+      placed: boolean;
+      coords?: TCoordinate;
+      orientation?: TShipPlacementOrientation;
+    }
+);
 
 export interface IHistoryEntry {
+  init?: boolean;
+  finish?: boolean;
+  whoWon?: string;
+
   turn: TUserId;
   coords: TCoordinate;
   result: ECellStatus.Hit | ECellStatus.Miss;
@@ -99,13 +112,8 @@ export interface IClientToServerEvents {
    */
   join_game: (roomId: string | Pick<TRoomIdentity, "id" | "name">) => void;
   leave_game: () => void;
-  place_ships: (ships: TCoordinate[]) => void;
-  place_ship: (
-    ship: Pick<TShip, "id" | "size" | "type"> | null,
-    orientation: TShipPlacementOrientation,
-    coords: TCoordinate,
-    callback: (result: "VALID" | "INVALID") => void,
-  ) => void;
+  place_ships: (ships: (TShip & { type: "pending" })[]) => void;
+
   attack_coordinate: (coord: TCoordinate) => void;
   /**
    * Get new random war room game (name=null), or propose custom war room game name (name!=null).
@@ -134,6 +142,8 @@ export interface IServerToClientEvents {
    * Lists open games that awaits opponents.
    */
   open_games: (roomNames: TRoomIdentity[]) => void;
+
+  player_ready: (playerName: string) => void;
 }
 
 // -----

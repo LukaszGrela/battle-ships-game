@@ -44,6 +44,7 @@ export const BoardGrid: FC<TProps> = ({
   ...interactiveProps
 }) => {
   console.log("BoardGrid", board);
+  console.log("BoardGrid.interactiveProps", interactiveProps);
   return (
     <BoardGridContainer
       rows={board.length ?? 0}
@@ -85,12 +86,13 @@ const RowLabels: FC<{ size: number }> = ({ size }) => {
   );
 };
 
-const Grid: FC<Pick<TProps, "board"> & TInteractivityProps> = ({
+const Grid: FC<Pick<TProps, "board" | "disabled"> & TInteractivityProps> = ({
   board,
   ...interactiveProps
 }) => {
+  const inert = interactiveProps.disabled;
   return (
-    <div className={styles.Grid}>
+    <div className={styles.Grid} inert={inert}>
       {board.flatMap((rowData, row) => {
         return rowData.map((cellData, column) => (
           <Cell
@@ -126,7 +128,7 @@ const Cell: FC<TCell> = ({ status, coords, disabled, ...interactiveProps }) => {
 
       data-type={status === ECellStatus.Empty ? undefined : status}
     >
-      {status.charAt(0)}
+      {`${status}`.charAt(0)}
     </Tag>
   );
 };

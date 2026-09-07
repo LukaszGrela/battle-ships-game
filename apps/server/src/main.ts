@@ -11,11 +11,13 @@ import {
   IPlayer,
   TShip,
   TBoard,
+  IHistoryEntry,
 } from "@repo/types";
 import { findRoom } from "./utils/findRoom";
 import {
   createEmptyBoard,
   getCell,
+  placeShip,
   resolveAttack,
   setCell,
 } from "@repo/game-logic";
@@ -85,6 +87,7 @@ io.on("connection", (socket) => {
           id: socket.id,
           active: true,
           name: getShortPirateName(),
+          ready: false,
         },
       );
 
@@ -102,6 +105,7 @@ io.on("connection", (socket) => {
         id: socket.id,
         active: true,
         name: getShortPirateName(),
+        ready: false,
       };
 
       room.players[socket.id] = anotherPlayer;
@@ -175,41 +179,98 @@ io.on("connection", (socket) => {
     io.emit("open_games", getOpenGames(rooms));
   });
 
-  socket.on(
-    "place_ship",
-    (
-      ship: Pick<TShip, "id" | "size" | "type"> | null,
-      orientation: "horizontal" | "vertical",
-      coords: TCoordinate,
-      callback,
-    ) => {
-      console.log("Place ship size", ship, orientation, coords);
-      // room data
-      const room = findRoom(rooms, socket.id);
-
-      if (room) {
-        if (room.phase !== "placement") {
-          socket.emit("error", "Can't place ships now");
-          callback("INVALID");
+  socket.on("place_ships", (ships) => {
+    console.log("Place ships");
+    // room data
+    const room = findRoom(rooms, socket.id);
+    if (room) {
+      console.log("Room", room.name, room.phase);
+      if (room.phase !== "placement") {
+        socket.emit("error", "Can't place ships now");
+        return;
+      }
+      // Update board and ships list
+      const board = room.boards[socket.id];
+      const expectedShips = room.ships[socket.id];
+      if (!board || !expectedShips) {
+        console.error("No board or ships");
+        socket.emit("error", "Internal server error");
+        // room state corrupted
+        socket.emit("game_updated", null);
+      } else {
+        if (expectedShips.length !== ships.length) {
+          console.error(
+            "Data tampered, expected ships length != incoming ships length",
+          );
+          socket.emit("error", "Internal server error");
+          // incoming data tampered
+          socket.emit("game_updated", null);
           return;
         }
 
-        // Updater board and ships list
-        const board = room.boards[socket.id];
-        const ships = room.ships[socket.id];
+        const placedShips = ships
+          .map((ship) => {
+            if (ship.coords && ship.orientation) {
+              placeShip(board, ship.coords, ship, ship.orientation);
+              const { type, ...parts } = ship;
+              return {
+                type: "placed",
+                coords: ship.coords,
+                hits: 0,
+                id: ship.id,
+                orientation: ship.orientation,
+                size: ship.size,
+              } as TShip;
+            }
+          })
+          .filter(Boolean) as TShip[];
 
-        if (!board || !ships) {
-          socket.emit("error", "Invalid data");
-          callback("INVALID");
+        if (placedShips.length !== expectedShips.length) {
+          console.error("Some ships are not placed.");
+
+          socket.emit("error", "Some ships are not placed.");
+          socket.emit("game_updated", toGameState(socket.id, room));
+          return;
         } else {
-          callback("VALID");
+          const self = room.players[socket.id]!;
+          room.ships[socket.id] = placedShips;
+          self.ready = true;
+          // is other player ready?
+          const opponentId = getOtherPlayer(socket.id, room.players)?.id;
+
+          console.log("Opponent id", opponentId);
+
+          console.log("Players", room.players);
+
+          if (opponentId) {
+            if (room.players[opponentId]!.ready) {
+              console.log("Opponnent ready, switch to playing.");
+              // we can start the game
+              room.phase = "playing";
+            } else {
+              console.log("Opponnent not ready, notify him.");
+              // notify other user
+              io.to(opponentId).emit("player_ready", self.name);
+            }
+          }
         }
-      } else {
-        socket.emit("error", "Invalid room");
-        callback("INVALID");
+        console.log("room.phase", room.phase);
+        if (room.phase === "placement") {
+          socket.emit("game_updated", toGameState(socket.id, room));
+        } else {
+          // switched to playing, notify all parties
+          Object.keys(room.players).forEach((playerId) => {
+            io.to(playerId).emit("game_updated", toGameState(playerId, room));
+          });
+        }
       }
-    },
-  );
+    } else {
+      console.error("no room, invalid state");
+      socket.emit("error", "Internal server error");
+      // no room, invalid state
+      socket.emit("game_updated", null);
+    }
+  });
 
   socket.on("attack_coordinate", (coord) => {
     const room = findRoom(rooms, socket.id);
@@ -235,7 +296,7 @@ io.on("connection", (socket) => {
       return;
     }
     const cell = getCell(targetBoard, coord.x, coord.y);
-    if (typeof cell === "number") {
+    if (typeof cell === "number" && cell < 0) {
       console.error(
         "Failed to retrieve board cell",
         `Error code: ${cell}`,
@@ -249,19 +310,68 @@ io.on("connection", (socket) => {
     // here coords are correct
 
     // Logic: Update board status
-    const result = setCell(
-      targetBoard,
-      coord.x,
-      coord.y,
-      resolveAttack(targetBoard, coord),
-    );
+    const attackResult = resolveAttack(targetBoard, coord);
+    const result = setCell(targetBoard, coord.x, coord.y, attackResult);
 
     if (result < 0) {
       console.error("Failed to update board cell", coord, targetBoard);
       return;
     }
-    // 3. switch turn
-    room.turn = opponentId; // Pass turn
+    const historyEntry: IHistoryEntry = {
+      coords: coord,
+      isSunk: false,
+      result: attackResult,
+      turn: socket.id,
+    };
+
+    if (room.history.length === 0) {
+      historyEntry.init = true;
+    }
+
+    // opponent ships
+    const enemyFleet = room.ships[opponentId];
+    console.log("enemyFleet", cell, enemyFleet);
+    if (enemyFleet && typeof cell === "number" && cell >= 0) {
+      // find ship
+      const index = enemyFleet.findIndex(({ id }) => id === cell);
+      console.log("index", index);
+
+      if (index >= 0) {
+        const enemyShip = enemyFleet[index];
+        console.log("enemyShip", enemyShip);
+
+        if (enemyShip && enemyShip?.type === "placed") {
+          enemyShip.hits++;
+          if (enemyShip.hits === enemyShip.size) {
+            // vessel sunk
+            historyEntry.isSunk = true;
+          }
+        }
+      }
+    }
+    // check end game condition
+    const shipIsSunk = (ship: TShip) => {
+      return ship.type === "placed" && ship.hits === ship.size;
+    };
+    const enemyHasShips = enemyFleet?.some((ship) => !shipIsSunk(ship));
+    console.log("enemyHasShips", enemyHasShips);
+    if (!enemyHasShips) {
+      // enemy fleet defeated
+      historyEntry.finish = true;
+      historyEntry.whoWon = socket.id;
+      room.phase = "finished";
+      room.result = {
+        [socket.id]: "win",
+        [opponentId]: "lost",
+      };
+      room.game_finished = new Date().toISOString();
+    } else {
+      // 3. switch turn
+      room.turn = opponentId; // Pass turn
+    }
+
+    // record move
+    room.history.push(historyEntry);
 
     // 4. broadcast update
     // per player emit
@@ -358,13 +468,15 @@ function toGameState(playerId: string, state: TRoomState): TGameState {
       enemy,
       ships: state.ships[player.id] ?? [],
       myBoard: state.boards[player.id] ?? [],
-      enemyBoard: (state.boards[enemy.id] ?? ([] as TBoard)).map((row) => {
-        return row.map((column) => {
+      enemyBoard: (
+        state.boards[enemy.id] ?? ([] as TBoard<ECellStatus | number>)
+      ).map((row) => {
+        return row.map((cell) => {
           // allow all but ECellStatus.Ship
-          if (column === ECellStatus.Ship) {
+          if (typeof cell === "number" || cell === ECellStatus.Ship) {
             return ECellStatus.Empty;
           }
-          return column;
+          return cell;
         });
       }),
     };

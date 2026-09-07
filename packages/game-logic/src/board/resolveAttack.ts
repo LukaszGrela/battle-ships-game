@@ -1,14 +1,18 @@
-import { ECellStatus, TCoordinate } from "@repo/types";
+import { ECellStatus, TBoard, TCoordinate } from "@repo/types";
 import { getCell } from "./cell";
 
 /**
  * Determines if a move results in a hit or miss.
  */
 export const resolveAttack = (
-  board: ECellStatus[][],
+  board: TBoard<ECellStatus | number>,
   coord: TCoordinate,
-): ECellStatus => {
+): ECellStatus.Hit | ECellStatus.Miss => {
   const current = getCell(board, coord.x, coord.y);
-  if (current === ECellStatus.Ship) return ECellStatus.Hit;
+  if (
+    current === ECellStatus.Ship ||
+    (typeof current === "number" && current >= 0)
+  )
+    return ECellStatus.Hit;
   return ECellStatus.Miss;
 };

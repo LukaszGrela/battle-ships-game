@@ -30,9 +30,18 @@ const Disconnect = () => {
 const EmitLeaveGameButton: FC<PropsWithChildren<{}>> = ({
   children = "Leave Game",
 }) => {
-  const { selfId } = useGameStore();
+  const { selfId, gameState, setGameState, setSelfId, setError } =
+    useGameStore();
+  const gameFinished = gameState?.phase === "finished";
+  console.log("Game finished", gameFinished);
   const leaveGame = () => {
-    socket.emit("leave_game");
+    if (gameFinished) {
+      setGameState(null);
+      setSelfId(null);
+      setError(null);
+    } else {
+      socket.emit("leave_game");
+    }
   };
   return (
     <button onClick={leaveGame} disabled={!!selfId === false}>

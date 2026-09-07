@@ -1,6 +1,6 @@
 import styles from "./Game.module.css";
 
-import { FC, useCallback, useMemo, useState } from "react";
+import { FC, useCallback, useEffect, useMemo, useState } from "react";
 import { AppLayout } from "../components/AppLayout/AppLayout";
 import { useGameStore } from "../store/useGameStore";
 import { PlayerDetails } from "../components/PlayerDetails/PlayerDetails";
@@ -16,9 +16,25 @@ import { AvailableShips } from "../components/AvailableShips/AvailableShips";
 import { BoardGrid } from "../components/Board/BoardGrid";
 import { useImmer } from "use-immer";
 import { getCell, isValidPlacement, placeShip } from "@repo/game-logic";
+import { socket } from "../socket";
+
+const useSocketPlayerReady = () => {
+  useEffect(() => {
+    const playerReadyCallback = (playerName: string) => {
+      console.log(`Player ${playerName} is ready!`);
+    };
+    socket.on("player_ready", playerReadyCallback);
+
+    return () => {
+      socket.off("player_ready", playerReadyCallback);
+    };
+  }, []);
+};
 
 export const GamePlacement: FC = () => {
   const { gameState } = useGameStore();
+
+  useSocketPlayerReady();
 
   const [placementBoard, updatePlacementBoard] = useImmer<
     TBoard<ECellStatus | number>
@@ -37,10 +53,7 @@ export const GamePlacement: FC = () => {
   }, [placementBoard]);
 
   const [availableShips, setAvailableShips] = useImmer(
-    (gameState &&
-      gameState.phase === "placement" &&
-      (gameState.ships as (TShip & { type: "pending" })[])) ||
-      [],
+    (gameState && gameState.phase === "placement" && gameState.ships) || [],
   );
 
   const [shipSelected, onShipSelected] = useState<TShip | null>(null);
@@ -70,8 +83,10 @@ export const GamePlacement: FC = () => {
           setAvailableShips((draft) => {
             // mark as selected
             const ship = draft.find((needle) => needle.id === shipSelected.id);
-            if (ship) {
+            if (ship && ship.type === "pending") {
               ship.placed = true;
+              ship.coords = coords;
+              ship.orientation = orientation;
             }
           });
           // deselect
@@ -104,6 +119,27 @@ export const GamePlacement: FC = () => {
     };
   }, [gameState?.phase, placeShipHandler]);
 
+  const handleResetPlacement = useCallback(() => {
+    // reset ships
+    setAvailableShips(
+      (gameState &&
+        gameState.phase === "placement" &&
+        (gameState.ships as (TShip & { type: "pending" })[])) ||
+        [],
+    );
+    // reset board
+    updatePlacementBoard(gameState?.myBoard ?? []);
+  }, [gameState, setAvailableShips, updatePlacementBoard]);
+
+  const handleApplyPlacement = useCallback(() => {
+    // reset board
+
+    socket.emit(
+      "place_ships",
+      availableShips as (TShip & { type: "pending" })[],
+    );
+  }, [availableShips]);
+
   return (
     <AppLayout>
       <PlayerDetails
@@ -122,7 +158,12 @@ export const GamePlacement: FC = () => {
             selected={shipSelected}
             onSelection={onShipSelected}
 
-            ships={availableShips}
+            ships={availableShips as (TShip & { type: "pending" })[]}
+
+            onApply={handleApplyPlacement}
+            onReset={handleResetPlacement}
+
+            disabled={gameState.self.ready}
           />
         )}
       </section>
