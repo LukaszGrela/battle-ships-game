@@ -8,6 +8,7 @@ import { Lobby } from "./pages/Lobby";
 import { useOpenGamesStatus } from "./store/useOpenGamesStore";
 import { GameOver } from "./pages/GameOver";
 import { Game } from "./pages/Game";
+import { GamePlacement } from "./pages/GamePlacement";
 
 function App() {
   useSocketConnection();
@@ -25,7 +26,7 @@ function App() {
         return "game";
       }
       if (phase === "placement") {
-        return "game";
+        return "game-placement";
       }
       if (phase === "finished") {
         return "game-over";
@@ -39,6 +40,7 @@ function App() {
   return (
     <>
       {page === "lobby" && <Lobby />}
+      {page === "game-placement" && <GamePlacement />}
       {page === "game" && <Game />}
       {page === "game-over" && <GameOver />}
     </>

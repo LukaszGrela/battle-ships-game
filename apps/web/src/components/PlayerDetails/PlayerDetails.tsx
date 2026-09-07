@@ -1,11 +1,13 @@
 import { FC } from "react";
 
 export const PlayerDetails: FC<{
-  selfId: string;
-}> = ({ selfId }) => {
+  id: string;
+  name: string;
+}> = ({ id, name }) => {
   return (
     <div>
-      <span>User id: {selfId}</span>
+      <span>{name}</span>
+      <span>User id: {id}</span>
     </div>
   );
 };

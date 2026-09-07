@@ -14,6 +14,7 @@ import { useConnectionStatus } from "../store/useConnectionStatus";
 import { socket, useSocket } from "../socket";
 import { useOpenGamesStore } from "../store/useOpenGamesStore";
 import { RoomNameInput } from "../components/RoomNameInput/RoomNameInput";
+import { TRoomIdentity } from "@repo/types";
 
 export const Lobby: FC = () => {
   const { connected } = useConnectionStatus();
@@ -138,9 +139,9 @@ const OpenGames = () => {
       <h3>Open games</h3>
       {openGames.length > 0 && (
         <ul>
-          {openGames.map((warRoomName: string) => (
-            <li key={warRoomName}>
-              <span>{warRoomName}</span>
+          {openGames.map((warRoomName: TRoomIdentity) => (
+            <li key={warRoomName.id}>
+              <span>{warRoomName.name}</span>
               <EmitJoinGameButton room={warRoomName}>
                 Join game
               </EmitJoinGameButton>
@@ -156,7 +157,7 @@ const OpenGames = () => {
 const EmitJoinGameButton: FC<
   PropsWithChildren<{
     disabled?: boolean;
-    room?: string;
+    room?: string | TRoomIdentity;
   }>
 > = ({ disabled, children = "Create Game", room }) => {
   const joinGame = useCallback(() => {

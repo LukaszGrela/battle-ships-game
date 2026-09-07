@@ -1,6 +1,7 @@
 import { FC, PropsWithChildren } from "react";
 import { ConnectionStatus } from "../ConnectionStatus/ConnectionStatus";
-import { useSocket } from "../../socket";
+import { socket, useSocket } from "../../socket";
+import { useGameStore } from "../../store/useGameStore";
 
 export const AppLayout: FC<PropsWithChildren<{}>> = ({ children }) => {
   return (
@@ -9,6 +10,7 @@ export const AppLayout: FC<PropsWithChildren<{}>> = ({ children }) => {
         <h1>Battleships</h1>
         <ConnectionStatus />
         <Disconnect />
+        <EmitLeaveGameButton />
       </header>
       <nav></nav>
       <section>{children}</section>
@@ -22,5 +24,19 @@ const Disconnect = () => {
     <section>
       <button onClick={disconnect}>Disconnect</button>
     </section>
+  );
+};
+
+const EmitLeaveGameButton: FC<PropsWithChildren<{}>> = ({
+  children = "Leave Game",
+}) => {
+  const { selfId } = useGameStore();
+  const leaveGame = () => {
+    socket.emit("leave_game");
+  };
+  return (
+    <button onClick={leaveGame} disabled={!!selfId === false}>
+      {children}
+    </button>
   );
 };

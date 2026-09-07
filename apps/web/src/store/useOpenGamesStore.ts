@@ -1,18 +1,19 @@
 import { useEffect } from "react";
 import { create } from "zustand";
 import { socket } from "../socket";
+import { TRoomIdentity } from "@repo/types";
 
 interface IOpenGamesData {
-  openGames: string[];
+  openGames: TRoomIdentity[];
 }
 interface IOpenGamesAction {
-  setOpenGames: (warRoomNames: string[]) => void;
+  setOpenGames: (warRoomNames: TRoomIdentity[]) => void;
 }
 
 export const useOpenGamesStore = create<IOpenGamesData & IOpenGamesAction>(
   (set) => ({
     openGames: [],
-    setOpenGames: (warRoomNames: string[]) =>
+    setOpenGames: (warRoomNames: TRoomIdentity[]) =>
       set({
         openGames: warRoomNames,
       }),
@@ -23,7 +24,7 @@ export const useOpenGamesStatus = () => {
   const { setOpenGames } = useOpenGamesStore();
 
   useEffect(() => {
-    function lobby(rooms: string[]) {
+    function lobby(rooms: TRoomIdentity[]) {
       console.log("useOpenGamesStatus", rooms);
       setOpenGames(rooms);
     }

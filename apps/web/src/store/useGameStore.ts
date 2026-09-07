@@ -4,35 +4,36 @@ import { useEffect } from "react";
 import { create } from "zustand";
 import { socket } from "../socket";
 
-interface IGameStore {
-  selfId: string | null;
+type TGameStoreActions = {
   setSelfId: (id: string | null) => void;
-  gameState: TGameState | null;
-  myBoard: ECellStatus[][];
-  attackBoard: ECellStatus[][];
-
-  setGameState: (state: TGameState) => void;
-
-  errorMessage: string | null;
+  setGameState: (state: TGameState | null) => void;
   setError: (message: string | null) => void;
-}
+};
 
-export const useGameStore = create<IGameStore>((set) => ({
-  gameState: null,
-  selfId: null,
+type TGameStore = {
+  gameState: TGameState | null;
+  selfId: string | null;
+  errorMessage: string | null;
+} & TGameStoreActions;
+
+export const useGameStore = create<TGameStore>((set) => ({
   setSelfId: (id) => set({ selfId: id }),
-  myBoard: createEmptyBoard(),
-  attackBoard: createEmptyBoard(),
   setGameState: (gameState) => set({ gameState }),
-  errorMessage: null,
   setError: (message) => set({ errorMessage: message }),
+  selfId: null,
+  errorMessage: null,
+  gameState: null,
 }));
 
 export const useSocketGameState = () => {
   const { setGameState, setError, setSelfId } = useGameStore();
   useEffect(() => {
-    function onUpdate(state: TGameState) {
+    function onUpdate(state: TGameState | null) {
       setGameState(state);
+      if (state === null) {
+        setSelfId(null);
+        setError(null);
+      }
     }
 
     function onWelcome(userId: string) {

@@ -3,7 +3,7 @@ import { ReactNode } from "react";
 
 export type TInteractiveCell = {
   isInteractive: true;
-  onClick: (coords: TCoordinate) => void;
+  onClick: (coords: TCoordinate, modifier?: boolean) => void;
 };
 
 export type TStaticCell = {

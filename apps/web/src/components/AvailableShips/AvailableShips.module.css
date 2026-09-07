@@ -1,0 +1,42 @@
+.AvailableShips {
+}
+
+.Option {
+  border: 1px solid #d0d0d0;
+  border-radius: 6px;
+  padding: 4px;
+  padding-left: 2rem;
+
+  &[data-selected] {
+    border-color: #999;
+  }
+
+  &:hover:not(:disabled) {
+    .Ship {
+      & span {
+        background-color: #aaa;
+      }
+    }
+  }
+}
+
+.GridSlot {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  padding-top: calc(2rem + 8px);
+}
+
+.Ship {
+  display: flex;
+  &[data-vertical] {
+    flex-direction: column;
+  }
+  & span {
+    width: calc(2rem - 8px - 2px - 2px);
+    height: calc(2rem - 8px - 2px - 2px);
+    background-color: #ccc;
+    border: 1px solid #c0c0c0;
+  }
+}
