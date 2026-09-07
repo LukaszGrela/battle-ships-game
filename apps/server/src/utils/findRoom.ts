@@ -1,4 +1,4 @@
-import { GameState } from "@repo/types";
+import { TRoomState } from "@repo/types";
 
 /**
  * Znajduje pokój, w którym znajduje się dany socketId.
@@ -6,11 +6,11 @@ import { GameState } from "@repo/types";
  * znajduje się w kluczach obiektu boards.
  */
 export function findRoom(
-  rooms: Map<string, GameState>,
+  rooms: Map<string, TRoomState>,
   socketId: string,
-): GameState | undefined {
+): TRoomState | undefined {
   for (const room of rooms.values()) {
-    if (Object.prototype.hasOwnProperty.call(room.boards, socketId)) {
+    if (Object.prototype.hasOwnProperty.call(room.players, socketId)) {
       return room;
     }
   }

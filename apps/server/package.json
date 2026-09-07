@@ -1,12 +1,14 @@
 {
-  "name": "server",
+  "name": "@repo/server",
   "private": true,
+  "version": "0.0.0",
   "scripts": {
     "dev": "tsx watch src/main.ts",
     "build": "tsc",
     "start": "node dist/main.js"
   },
   "dependencies": {
+    "@repo/game-logic": "workspace:*",
     "@repo/types": "workspace:*",
     "nanoid": "^6.0.1",
     "socket.io": "^4.8.3"
