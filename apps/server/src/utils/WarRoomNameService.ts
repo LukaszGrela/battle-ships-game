@@ -29,3 +29,6 @@ export class WarRoomNameService {
     this.activeRooms.delete(name);
   }
 }
+
+
+export const warRoomNames = new WarRoomNameService();
