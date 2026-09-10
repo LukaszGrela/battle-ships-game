@@ -1,0 +1,70 @@
+.SplashScreen {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  /* #root margin top and bottom 2rem + 
+           padding top and bottom 2rem +
+           border top and bottom 12px
+  */
+  height: calc(100vh - 2rem - 2rem - 12px);
+  width: calc(100vw - 2rem - 2rem - 12px);
+
+  position: relative;
+}
+
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2rem;
+}
+
+.logo {
+  min-height: 200px;
+  max-height: 40vh;
+}
+
+.connect {
+  color: var(--pirates-palette-20);
+  user-select: none;
+  text-shadow: 2px 2px 3px var(--pirates-palette-10);
+
+  paint-order: stroke fill;
+  font-size: 1.25rem;
+  word-wrap: normal;
+  word-break: normal;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+
+  display: block;
+
+  &:hover {
+    .goldButton {
+      --ribbon-base-y-offset: 10px;
+
+      /* Konfiguracja lewej strony */
+      --ribbon-left-y-offset: calc(1rem - var(--ribbon-base-y-offset));
+
+      /* Konfiguracja prawej strony */
+      --ribbon-right-y-offset: calc(1rem - var(--ribbon-base-y-offset));
+
+      --margin-bottom: calc(
+        var(--ribbon-right-y-offset) + var(--ribbon-base-y-offset)
+      );
+    }
+  }
+}
+
+.goldButton {
+  --ribbon-min-width: 0;
+  --ribbon-max-width: calc(
+    calc(100vw - 2rem - 2rem - 12px) -
+      (
+        calc(var(--ribbon-fold-right-width) - var(--ribbon-right-x-offset)) +
+          calc(var(--ribbon-fold-left-width) - var(--ribbon-left-x-offset))
+      )
+  );
+  font-weight: 600;
+}
