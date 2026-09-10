@@ -1,0 +1,132 @@
+@layer Ribbon {
+  .Ribbon {
+    /* Konfiguracja lewej strony */
+    --ribbon-left-x-offset: 1rem;
+    --ribbon-left-y-offset: 1rem;
+    --ribbon-fold-left-height: 3rem;
+    --ribbon-fold-left-width: 4.5rem;
+    --ribbon-left-notch-size: 1.5rem;
+
+    /* Konfiguracja prawej strony */
+    --ribbon-right-x-offset: 1rem;
+    --ribbon-right-y-offset: 1rem;
+    --ribbon-fold-right-height: 3rem;
+    --ribbon-fold-right-width: 4.5rem;
+    --ribbon-right-notch-size: 1.5rem;
+
+    /* Ogólne */
+    --ribbon-min-height: 3rem;
+    --ribbon-min-width: 20rem;
+    --ribbon-max-width: unset;
+    --ribbon-base-y-offset: 0;
+
+    /* Theme */
+    --background: var(--pirates-palette-4);
+    --shadow: var(--pirates-palette-5);
+    --transition: all 0.1s ease-out;
+    --ribbon-box-shadow: 0px 6px 10px 2px rgba(0, 0, 0, 0.25);
+  }
+}
+
+.Ribbon {
+  position: relative;
+  isolation: isolate;
+  width: max-content;
+
+  --margin-top: 0;
+  --margin-right: calc(
+    var(--ribbon-fold-right-width) - var(--ribbon-right-x-offset)
+  );
+  --margin-bottom: var(--ribbon-right-y-offset);
+  --margin-left: calc(
+    var(--ribbon-fold-left-width) - var(--ribbon-left-x-offset)
+  );
+
+  /* Marginesy zapewniające miejsce na "wypustki" */
+  margin: var(--margin-top) var(--margin-right) var(--margin-bottom)
+    var(--margin-left);
+}
+
+.ribbon {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  top: var(--ribbon-base-y-offset);
+
+  position: relative;
+  background-color: var(--background);
+  min-width: var(--ribbon-min-width);
+  max-width: var(--ribbon-max-width);
+  min-height: var(--ribbon-min-height);
+  padding: 0.5rem 1rem;
+
+  transition: var(--transition);
+  box-shadow: var(--ribbon-box-shadow);
+}
+
+/* Główne trójkątne zakończenia pod głównym panelem */
+.ribbon::before,
+.ribbon::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  background-color: var(--shadow);
+  transition: var(--transition);
+}
+
+.ribbon::before {
+  left: 0;
+  bottom: calc(-1 * var(--ribbon-left-y-offset));
+  width: var(--ribbon-left-x-offset);
+  height: var(--ribbon-left-y-offset);
+  clip-path: polygon(0 0, 100% 0, 100% 100%);
+}
+
+.ribbon::after {
+  right: 0;
+  bottom: calc(-1 * var(--ribbon-right-y-offset));
+  width: var(--ribbon-right-x-offset);
+  height: var(--ribbon-right-y-offset);
+  clip-path: polygon(0 0, 100% 0, 0 100%);
+}
+
+/* Wspólna baza dla "wstążek" bocznych */
+.ribbon-fold {
+  position: absolute;
+  background-color: var(--background);
+  z-index: -2;
+  transition: var(--transition);
+}
+
+.ribbon-fold-left {
+  height: var(--ribbon-fold-left-height);
+  width: var(--ribbon-fold-left-width);
+  bottom: calc(-1 * var(--ribbon-left-y-offset));
+  left: calc(-1 * var(--ribbon-fold-left-width) + var(--ribbon-left-x-offset));
+
+  clip-path: polygon(
+    0 0,
+    var(--ribbon-fold-left-width) 0,
+    var(--ribbon-fold-left-width) var(--ribbon-fold-left-height),
+    0 var(--ribbon-fold-left-height),
+    var(--ribbon-left-notch-size) 50%
+  );
+}
+
+.ribbon-fold-right {
+  height: var(--ribbon-fold-right-height);
+  width: var(--ribbon-fold-right-width);
+  bottom: calc(-1 * var(--ribbon-right-y-offset));
+  right: calc(
+    -1 * var(--ribbon-fold-right-width) + var(--ribbon-right-x-offset)
+  );
+
+  clip-path: polygon(
+    0 0,
+    var(--ribbon-fold-right-width) 0,
+    calc(var(--ribbon-fold-right-width) - var(--ribbon-right-notch-size)) 50%,
+    var(--ribbon-fold-right-width) var(--ribbon-fold-right-height),
+    0 var(--ribbon-fold-right-height)
+  );
+}
