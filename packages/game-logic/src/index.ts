@@ -4,3 +4,4 @@ export * from "./board/isValidPlacement";
 export * from "./board/placeShip";
 export * from "./board/resolveAttack";
 export * from "./board/cell";
+export * from "./utils/seedRandom";
