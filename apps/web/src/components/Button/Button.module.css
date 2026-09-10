@@ -1,0 +1,148 @@
+.Button {
+  --outline-width: 2px;
+  cursor: pointer;
+
+  &[data-style]:not([data-style="custom"]) {
+    padding: 0.5rem;
+    border-radius: 6px;
+    /* outline: 2px solid red; */
+    border-style: solid;
+    border-width: 2px;
+
+    text-transform: uppercase;
+    -webkit-text-stroke: 3px var(--pirates-palette-16);
+    paint-order: stroke fill;
+    font-weight: bold;
+    box-shadow:
+      /* outline */
+      0 0 0 var(--outline-width) var(--pirates-palette-14),
+      /* shadow */ 0 0 0 0 rgba(0, 0, 0, 0.1);
+    margin: var(--outline-width);
+  }
+
+  &[data-style="primary"] {
+    color: var(--pirates-palette-20);
+
+    border-color: var(--pirates-palette-26);
+    border-bottom-color: var(--pirates-palette-28);
+
+    background-color: var(--pirates-primary);
+    background: linear-gradient(
+      to bottom,
+      var(--pirates-primary),
+      var(--pirates-primary) 49%,
+      var(--pirates-palette-28) 50%,
+      var(--pirates-palette-28)
+    );
+    &:hover,
+    &:active {
+      background: linear-gradient(
+        to top,
+        var(--pirates-primary),
+        var(--pirates-primary) 49%,
+        var(--pirates-palette-28) 50%,
+        var(--pirates-palette-28)
+      );
+    }
+  }
+  &[data-style="secondary"] {
+    color: var(--pirates-palette-20);
+
+    border-color: var(--pirates-palette-2);
+    border-bottom-color: var(--pirates-palette-4);
+
+    background-color: var(--pirates-secondary);
+    background: linear-gradient(
+      to bottom,
+      var(--pirates-secondary),
+      var(--pirates-secondary) 49%,
+      var(--pirates-palette-4) 50%,
+      var(--pirates-palette-4)
+    );
+    &:hover,
+    &:active {
+      background: linear-gradient(
+        to top,
+        var(--pirates-secondary),
+        var(--pirates-secondary) 49%,
+        var(--pirates-palette-4) 50%,
+        var(--pirates-palette-4)
+      );
+    }
+  }
+  &[data-style="info"] {
+    color: var(--pirates-palette-20);
+
+    border-color: var(--pirates-palette-23);
+    border-bottom-color: var(--pirates-palette-25);
+
+    background-color: var(--pirates-info);
+    background: linear-gradient(
+      to bottom,
+      var(--pirates-info),
+      var(--pirates-info) 49%,
+      var(--pirates-palette-25) 50%,
+      var(--pirates-palette-25)
+    );
+    &:hover,
+    &:active {
+      background: linear-gradient(
+        to top,
+        var(--pirates-info),
+        var(--pirates-info) 49%,
+        var(--pirates-palette-25) 50%,
+        var(--pirates-palette-25)
+      );
+    }
+  }
+  &[data-style="danger"] {
+    color: var(--pirates-palette-20);
+
+    border-color: var(--pirates-palette-29);
+    border-bottom-color: var(--pirates-palette-31);
+
+    background-color: var(--pirates-danger);
+    background: linear-gradient(
+      to bottom,
+      var(--pirates-danger),
+      var(--pirates-danger) 49%,
+      var(--pirates-palette-31) 50%,
+      var(--pirates-palette-31)
+    );
+    &:hover,
+    &:active {
+      background: linear-gradient(
+        to top,
+        var(--pirates-danger),
+        var(--pirates-danger) 49%,
+        var(--pirates-palette-31) 50%,
+        var(--pirates-palette-31)
+      );
+    }
+  }
+
+  &:disabled {
+    cursor: default;
+    border-color: var(--pirates-palette-17);
+    border-top-color: var(--pirates-palette-19);
+
+    background-color: var(--pirates-info);
+    background: linear-gradient(
+      to bottom,
+      var(--pirates-palette-18),
+      var(--pirates-palette-18) 49%,
+      var(--pirates-palette-17) 50%,
+      var(--pirates-palette-17)
+    );
+    &:hover,
+    &:active {
+      background: linear-gradient(
+        to top,
+        var(--pirates-palette-18),
+        var(--pirates-palette-18) 49%,
+        var(--pirates-palette-17) 50%,
+        var(--pirates-palette-17)
+      );
+    }
+  }
+}
