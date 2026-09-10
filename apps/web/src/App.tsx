@@ -9,6 +9,7 @@ import { useOpenGamesStatus } from "./store/useOpenGamesStore";
 import { GameOver } from "./pages/GameOver";
 import { Game } from "./pages/Game";
 import { GamePlacement } from "./pages/GamePlacement";
+import { SplashScreen } from "./pages/SplashScreen";
 
 function App() {
   useSocketConnection();
@@ -20,25 +21,30 @@ function App() {
   console.log(gameState);
 
   const page = useMemo(() => {
-    if (connected && selfId && gameState) {
-      const phase = gameState.phase;
-      if (phase === "waiting") {
-        return "game";
+    if (connected) {
+      if (selfId && gameState) {
+        const phase = gameState.phase;
+        if (phase === "waiting") {
+          return "game";
+        }
+        if (phase === "placement") {
+          return "game-placement";
+        }
+        if (phase === "finished") {
+          return "game-over";
+        }
+        // playing
+        return "game" as const;
       }
-      if (phase === "placement") {
-        return "game-placement";
-      }
-      if (phase === "finished") {
-        return "game-over";
-      }
-      // playing
-      return "game" as const;
+      return "lobby" as const;
+    } else {
+      return "init" as const;
     }
-    return "lobby" as const;
   }, [connected, gameState, selfId]);
 
   return (
     <>
+      {page === "init" && <SplashScreen />}
       {page === "lobby" && <Lobby />}
       {page === "game-placement" && <GamePlacement />}
       {page === "game" && <Game />}

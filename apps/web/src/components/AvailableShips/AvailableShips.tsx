@@ -1,6 +1,7 @@
 import styles from "./AvailableShips.module.css";
 import { TShip } from "@repo/types";
 import { FC, useCallback } from "react";
+import { Button } from "../Button/Button";
 
 export const AvailableShips: FC<{
   ships: (TShip & { type: "pending" })[];
@@ -35,7 +36,8 @@ export const AvailableShips: FC<{
           const { id, size, placed } = ship;
 
           return (
-            <button
+            <Button
+              style="custom"
               key={id}
               className={styles.Option}
               data-placed={placed ? "" : undefined}
@@ -46,21 +48,21 @@ export const AvailableShips: FC<{
               disabled={placed || disabled}
             >
               <Ship size={size} />
-            </button>
+            </Button>
           );
         })}
       </div>
       <div>
-        Użyj modyfikatora <kbd>CTRL</kbd>/<kbd>CMD</kbd> żeby ustawić statek
+        Użyj modyfikatora <kbd>CTRL</kbd>/<kbd>⌘</kbd> żeby ustawić statek
         pionowo.
       </div>
       <div>
-        <button onClick={onReset} disabled={disableReset}>
+        <Button style="secondary" onClick={onReset} disabled={disableReset}>
           Zresetuj
-        </button>
-        <button onClick={onApply} disabled={disableApply}>
+        </Button>
+        <Button onClick={onApply} disabled={disableApply}>
           Gotowe
-        </button>
+        </Button>
       </div>
     </div>
   );

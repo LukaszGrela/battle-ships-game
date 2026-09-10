@@ -1,5 +1,14 @@
-/* .BoardGrid {
-} */
+.BoardGrid {
+  /* Define border width and source image */
+  border: 20px solid transparent;
+  border-image-source: url("./game-board-9-slice.png");
+
+  /* Slice the image: 20px from each edge creates the 3x3 grid */
+  border-image-slice: 20;
+
+  /* Repeat or stretch the middle/edges */
+  border-image-repeat: round;
+}
 
 .BoardGrid_layout {
   display: grid;

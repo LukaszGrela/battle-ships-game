@@ -1,9 +1,11 @@
 .Button {
   --outline-width: 2px;
+  --padding: 0.5rem;
+
   cursor: pointer;
 
   &[data-style]:not([data-style="custom"]) {
-    padding: 0.5rem;
+    padding: var(--padding);
     border-radius: 6px;
     /* outline: 2px solid red; */
     border-style: solid;
@@ -18,6 +20,15 @@
       0 0 0 var(--outline-width) var(--pirates-palette-14),
       /* shadow */ 0 0 0 0 rgba(0, 0, 0, 0.1);
     margin: var(--outline-width);
+
+    & svg {
+      stroke: var(--pirates-palette-20);
+      filter: drop-shadow(1px 1px 1px rgba(0, 0, 0, 0.5));
+    }
+
+    display: inline-flex;
+    gap: 0.25rem;
+    align-items: center;
   }
 
   &[data-style="primary"] {

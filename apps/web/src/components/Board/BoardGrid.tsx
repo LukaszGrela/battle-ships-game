@@ -20,17 +20,19 @@ export const BoardGridContainer: FC<
   gridSlotClassName,
 }) => {
   return (
-    <div className={classNames(styles.BoardGrid, className)}>
+    <div className={classNames(className)}>
       {heading && <h2>{heading}</h2>}
-      <div className={styles.BoardGrid_layout}>
-        <div className={styles.BoardGrid_columns}>
-          <ColumnLabels size={columns} />
-        </div>
-        <div className={styles.BoardGrid_rows}>
-          <RowLabels size={rows} />
-        </div>
-        <div className={classNames(styles.BoardGrid_grid, gridSlotClassName)}>
-          {grid}
+      <div className={styles.BoardGrid}>
+        <div className={styles.BoardGrid_layout}>
+          <div className={styles.BoardGrid_columns}>
+            <ColumnLabels size={columns} />
+          </div>
+          <div className={styles.BoardGrid_rows}>
+            <RowLabels size={rows} />
+          </div>
+          <div className={classNames(styles.BoardGrid_grid, gridSlotClassName)}>
+            {grid}
+          </div>
         </div>
       </div>
     </div>

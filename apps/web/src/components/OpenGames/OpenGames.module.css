@@ -2,7 +2,7 @@
   isolation: isolate;
   position: relative;
 
-  margin-top: 2rem;
+  margin-top: 3rem;
 }
 .OpenGames_container {
   padding: 2rem;
@@ -20,7 +20,7 @@
   align-items: stretch;
   border-radius: 6px;
 
-  outline: 2px solid rgb( from var(--pirates-palette-5) r g b / 0.5);
+  outline: 2px solid rgb(from var(--pirates-palette-5) r g b / 0.5);
   outline-offset: -0.5rem;
 
   overflow-x: hidden;
@@ -119,4 +119,9 @@
 } */
 .listItem_action {
   justify-self: flex-end;
+}
+
+.empty {
+  padding: 2rem 0 1rem;
+  color: var(--pirates-palette-10);
 }

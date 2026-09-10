@@ -11,7 +11,7 @@ export const Button: FC<{
 }> = ({ className, children, style = "primary", disabled, onClick }) => {
   return (
     <button
-      className={classNames(styles.Button, className)}
+      className={classNames(className, styles.Button)}
       disabled={disabled}
       onClick={onClick}
       data-style={style}

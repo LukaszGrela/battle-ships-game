@@ -6,11 +6,12 @@ import { Ribbon } from "../Ribbon/Ribbon";
 import { FC, PropsWithChildren, useCallback } from "react";
 import { socket } from "../../socket";
 import { Button } from "../Button/Button";
+import { classNames } from "../../utils/classNames";
 
-export const OpenGames = () => {
+export const OpenGames: FC<{ className?: string }> = ({ className }) => {
   const { openGames } = useOpenGamesStore();
   return (
-    <div className={styles.OpenGames}>
+    <div className={classNames(styles.OpenGames, className)}>
       <h3>
         <Ribbon className={styles.headerRibbon}>Open games</Ribbon>
       </h3>
@@ -32,7 +33,11 @@ export const OpenGames = () => {
             ))}
           </ul>
         )}
-        {!openGames.length && <div>No open games available. Create Game.</div>}
+        {!openGames.length && (
+          <div className={styles.empty}>
+            No open games available. Create a Game.
+          </div>
+        )}
       </div>
     </div>
   );

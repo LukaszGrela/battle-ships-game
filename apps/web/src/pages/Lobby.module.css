@@ -1,0 +1,38 @@
+.Lobby_header {
+  height: 120px;
+  /* 
+  display: flex;
+  justify-content: space-between;
+  */
+}
+
+.Header_title {
+  height: 120px;
+
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+}
+.Header_disconnect {
+  @media screen and (max-width: 500px) {
+    &[data-style]:not([data-style="custom"]) {
+      span {
+        display: none;
+      }
+    }
+  }
+}
+
+.Lobby_content {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.column1 {
+  flex: 1 1 auto;
+}
+.column2 {
+  flex: 2 2 auto;
+}

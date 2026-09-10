@@ -1,6 +1,7 @@
 import { FC } from "react";
 import { AppLayout } from "../components/AppLayout/AppLayout";
 import { useGameStore } from "../store/useGameStore";
+import { Button } from "../components/Button/Button";
 
 export const GameOver: FC = () => {
   const { gameState, selfId } = useGameStore();
@@ -15,8 +16,8 @@ export const GameOver: FC = () => {
       <section>{myResults === "win" && "Wygrałeś!"}</section>
       <section>{myResults === "lost" && "Przegrałeś!"}</section>
       <section>
-        <button>Zaproponuj rewanż</button>
-        <button>Zakoncz gre</button>
+        <Button>Zaproponuj rewanż</Button>
+        <Button style="secondary">Zakoncz gre</Button>
       </section>
     </AppLayout>
   );
