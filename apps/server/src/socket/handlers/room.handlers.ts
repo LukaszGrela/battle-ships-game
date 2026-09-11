@@ -86,7 +86,7 @@ export const registerRoomHandlers = (
 
   socket.on("leave_game", () => {
     const room = RoomService.findRoomBySocketId(socket.id);
-    console.log("leave_game", room);
+    // console.log("leave_game", room);
     if (room) {
       if (room.phase === "waiting") {
         // 1 player, game is abandoned

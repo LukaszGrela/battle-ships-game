@@ -17,11 +17,11 @@ export const registerGameHandlers = (
   socket: Socket<IClientToServerEvents, IServerToClientEvents>,
 ) => {
   socket.on("place_ships", (ships) => {
-    console.log("Place ships");
+    // console.log("Place ships");
     // room data
     const room = RoomService.findRoomBySocketId(socket.id);
     if (room) {
-      console.log("Room", room.name, room.phase);
+      // console.log("Room", room.name, room.phase);
       if (room.phase !== "placement") {
         socket.emit("error", "Can't place ships now");
         return;
@@ -30,7 +30,7 @@ export const registerGameHandlers = (
       const board = room.boards[socket.id];
       const expectedShips = room.ships[socket.id];
       if (!board || !expectedShips) {
-        console.error("No board or ships");
+        // console.error("No board or ships");
         socket.emit("error", "Internal server error");
         // room state corrupted
         socket.emit("game_updated", null);
@@ -75,23 +75,23 @@ export const registerGameHandlers = (
           // is other player ready?
           const opponentId = getOtherPlayer(socket.id, room.players)?.id;
 
-          console.log("Opponent id", opponentId);
+          // console.log("Opponent id", opponentId);
 
-          console.log("Players", room.players);
+          // console.log("Players", room.players);
 
           if (opponentId) {
             if (room.players[opponentId]!.ready) {
-              console.log("Opponnent ready, switch to playing.");
+              // console.log("Opponnent ready, switch to playing.");
               // we can start the game
               room.phase = "playing";
             } else {
-              console.log("Opponnent not ready, notify him.");
+              // console.log("Opponnent not ready, notify him.");
               // notify other user
               io.to(opponentId).emit("player_ready", self.name);
             }
           }
         }
-        console.log("room.phase", room.phase);
+        // console.log("room.phase", room.phase);
         if (room.phase === "placement") {
           socket.emit("game_updated", toGameState(socket.id, room));
         } else {
@@ -167,15 +167,15 @@ export const registerGameHandlers = (
 
     // opponent ships
     const enemyFleet = room.ships[opponentId];
-    console.log("enemyFleet", cell, enemyFleet);
+    // console.log("enemyFleet", cell, enemyFleet);
     if (enemyFleet && typeof cell === "number" && cell >= 0) {
       // find ship
       const index = enemyFleet.findIndex(({ id }) => id === cell);
-      console.log("index", index);
+      // console.log("index", index);
 
       if (index >= 0) {
         const enemyShip = enemyFleet[index];
-        console.log("enemyShip", enemyShip);
+        // console.log("enemyShip", enemyShip);
 
         if (enemyShip && enemyShip?.type === "placed") {
           enemyShip.hits++;
@@ -191,7 +191,7 @@ export const registerGameHandlers = (
       return ship.type === "placed" && ship.hits === ship.size;
     };
     const enemyHasShips = enemyFleet?.some((ship) => !shipIsSunk(ship));
-    console.log("enemyHasShips", enemyHasShips);
+    // console.log("enemyHasShips", enemyHasShips);
     if (!enemyHasShips) {
       // enemy fleet defeated
       historyEntry.finish = true;

@@ -12,7 +12,7 @@ export const registerSocketHandlers = (io: Server, socket: Socket) => {
 
   const rooms = RoomService.getRooms();
   console.log("User connected", socket.id);
-  console.log("Rooms", rooms.size, rooms);
+  // console.log("Rooms", rooms.size, rooms);
 
   // in the lobby - send open games
   io.emit("open_games", RoomService.getOpenGames());
@@ -48,6 +48,12 @@ export const registerSocketHandlers = (io: Server, socket: Socket) => {
 
           io.emit("open_games", RoomService.getOpenGames());
         }
+      }
+      if (room.phase === "waiting") {
+        // there should only be one user anyway
+        RoomService.deleteRoom(room.id);
+        io.emit("open_games", RoomService.getOpenGames());
+        return;
       }
       // notify other party
       // per player emit

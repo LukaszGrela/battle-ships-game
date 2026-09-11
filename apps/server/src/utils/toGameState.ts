@@ -9,9 +9,9 @@ import { getPlayerById } from "./getPlayerById";
 import { getOtherPlayer } from "./getOtherPlayer";
 
 export function toGameState(playerId: string, state: TRoomState): TGameState {
-  console.log("toGameState", playerId, state);
+  // console.log("toGameState", playerId, state);
   const player = getPlayerById(playerId, state.players)!;
-  console.log("player", player);
+  // console.log("player", player);
   if (state.phase === EGamePhase.Waiting) {
     return {
       id: state.id,
