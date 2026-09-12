@@ -21,7 +21,13 @@
     --ribbon-base-y-offset: 0;
 
     /* Theme */
+    /**
+     * `--background-left/right` overrides colour of the ribbon folds
+     */
     --background: var(--pirates-palette-4);
+    /**
+     * `--shadow-left/right` overrides colour of the ribbon triangles
+     */
     --shadow: var(--pirates-palette-5);
     --transition: all 0.1s ease-out;
     --ribbon-box-shadow: 0px 6px 10px 2px rgba(0, 0, 0, 0.25);
@@ -55,7 +61,7 @@
   top: var(--ribbon-base-y-offset);
 
   position: relative;
-  background-color: var(--background);
+  background: var(--background);
   min-width: var(--ribbon-min-width);
   max-width: var(--ribbon-max-width);
   min-height: var(--ribbon-min-height);
@@ -71,7 +77,6 @@
   content: "";
   position: absolute;
   z-index: -1;
-  background-color: var(--shadow);
   transition: var(--transition);
 }
 
@@ -81,6 +86,7 @@
   width: var(--ribbon-left-x-offset);
   height: var(--ribbon-left-y-offset);
   clip-path: polygon(0 0, 100% 0, 100% 100%);
+  background: var(--shadow-left, var(--shadow));
 }
 
 .ribbon::after {
@@ -89,12 +95,12 @@
   width: var(--ribbon-right-x-offset);
   height: var(--ribbon-right-y-offset);
   clip-path: polygon(0 0, 100% 0, 0 100%);
+  background: var(--shadow-right, var(--shadow));
 }
 
 /* Wspólna baza dla "wstążek" bocznych */
 .ribbon-fold {
   position: absolute;
-  background-color: var(--background);
   z-index: -2;
   transition: var(--transition);
 }
@@ -104,6 +110,8 @@
   width: var(--ribbon-fold-left-width);
   bottom: calc(-1 * var(--ribbon-left-y-offset));
   left: calc(-1 * var(--ribbon-fold-left-width) + var(--ribbon-left-x-offset));
+
+  background: var(--background-left, var(--background));
 
   clip-path: polygon(
     0 0,
@@ -121,6 +129,8 @@
   right: calc(
     -1 * var(--ribbon-fold-right-width) + var(--ribbon-right-x-offset)
   );
+
+  background: var(--background-right, var(--background));
 
   clip-path: polygon(
     0 0,
