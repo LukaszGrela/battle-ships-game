@@ -13,6 +13,7 @@ import { getShortPirateName } from "../../utils/getPirateyName";
 import { createEmptyBoard } from "@repo/game-logic";
 import { createNewRoom } from "../../utils/createNewRoom";
 import { nanoid } from "nanoid";
+import { stableHash } from "@repo/game-logic/src/utils/stableHash";
 
 export const registerRoomHandlers = (
   io: Server<IClientToServerEvents, IServerToClientEvents>,
@@ -39,6 +40,8 @@ export const registerRoomHandlers = (
           active: true,
           name: getShortPirateName(),
           ready: false,
+          seed: stableHash(socket.id),
+          owner: true,
         },
       );
 
@@ -57,6 +60,7 @@ export const registerRoomHandlers = (
         active: true,
         name: getShortPirateName(),
         ready: false,
+        seed: stableHash(socket.id),
       };
 
       room.players[socket.id] = anotherPlayer;
@@ -64,8 +68,12 @@ export const registerRoomHandlers = (
       room.phase = "placement";
 
       room.ships = getShips(Object.keys(room.players), [5, 4, 3, 3, 2]);
-      // room.game_started = new Date().toISOString();
-      //
+
+      // notify opponent that waiting is over
+      const other = getOtherPlayer(socket.id, room.players)!;
+      io.to(other.id).emit("opponent_connected", anotherPlayer.name);
+
+      // send open_games update, room is no longer open
       io.emit("open_games", RoomService.getOpenGames());
     } else {
       // no more space in the room

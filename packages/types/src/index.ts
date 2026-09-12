@@ -23,6 +23,11 @@ export interface IPlayer {
   name: string;
   active: boolean;
   ready: boolean;
+  seed: number;
+  /**
+   * Owner of the war room, this user created the game.
+   */
+  owner?: boolean;
 }
 
 export type TBoard<S = ECellStatus> = S[][];
@@ -143,7 +148,19 @@ export interface IServerToClientEvents {
    */
   open_games: (roomNames: TRoomIdentity[]) => void;
 
+  /**
+   * Emited when user has finished placing his ships and is ready to battle.
+   * @param playerName
+   * @returns
+   */
   player_ready: (playerName: string) => void;
+
+  /**
+   * Emited when user entered war room and `waiting` is finished.
+   * @param oponnetName
+   * @returns
+   */
+  opponent_connected: (oponnetName: string) => void;
 }
 
 // -----
