@@ -1,4 +1,4 @@
-.BoardGrid {
+.BoardGrid_container {
   /* Define border width and source image */
   border: 20px solid transparent;
   border-image-source: url("./game-board-9-slice.png");
@@ -12,9 +12,9 @@
 
 .BoardGrid_layout {
   display: grid;
-  grid-template-columns: repeat(11, 2rem);
-  grid-template-rows: repeat(11, 2rem);
-  gap: 8px;
+  grid-template-columns: 22px repeat(10, 2rem);
+  grid-template-rows: 22px repeat(10, 2rem);
+  
 }
 
 .BoardGrid_columns {
@@ -23,9 +23,10 @@
 
   display: grid;
   grid-template-columns: repeat(10, 2rem);
-  grid-template-rows: 2rem;
+  grid-template-rows: 22px;
   align-items: end;
-  gap: 8px;
+  justify-items: center;
+  
 }
 
 .BoardGrid_rows {
@@ -33,11 +34,11 @@
   grid-row-start: 2;
 
   display: grid;
-  grid-template-columns: 2rem;
+  grid-template-columns: 22px;
   grid-template-rows: repeat(10, 2rem);
   align-items: center;
   justify-items: end;
-  gap: 8px;
+  
 }
 
 .BoardGrid_grid {
@@ -51,7 +52,7 @@
   align-items: center;
   grid-template-columns: repeat(10, 2rem);
   grid-template-rows: repeat(10, 2rem);
-  gap: 8px;
+  
 }
 
 .Cell {

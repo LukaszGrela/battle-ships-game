@@ -1,10 +1,10 @@
 import styles from "./Game.module.css";
 
 import { FC, useCallback, useEffect, useMemo, useState } from "react";
+import { useImmer } from "use-immer";
 import { AppLayout } from "../components/AppLayout/AppLayout";
 import { useGameStore } from "../store/useGameStore";
 import { PlayerDetails } from "../components/PlayerDetails/PlayerDetails";
-import { TInteractivityProps } from "../components/Board/types";
 import {
   ECellStatus,
   TBoard,
@@ -13,8 +13,7 @@ import {
   TShipPlacementOrientation,
 } from "@repo/types";
 import { AvailableShips } from "../components/AvailableShips/AvailableShips";
-import { BoardGrid } from "../components/Board/BoardGrid";
-import { useImmer } from "use-immer";
+import { BoardGrid, TInteractivityProps } from "../components/Board";
 import { getCell, isValidPlacement, placeShip } from "@repo/game-logic";
 import { socket } from "../socket";
 
