@@ -1,0 +1,23 @@
+.PirateAvatar {
+  --avatar-x: 0;
+  --avatar-y: 0;
+
+  --avatar-size: 256px;
+
+  background-image: url("./avatars-1.png");
+  &[data-atlas="1"] {
+    background-image: url("./avatars-1.png");
+  }
+  &[data-atlas="2"] {
+    background-image: url("./avatars-2.png");
+  }
+  &[data-atlas="3"] {
+    background-image: url("./avatars-3.png");
+  }
+
+  width: var(--avatar-size);
+  height: var(--avatar-size);
+
+  background-position-x: calc(var(--avatar-x) * var(--avatar-size));
+  background-position-y: calc(var(--avatar-y) * var(--avatar-size));
+}
