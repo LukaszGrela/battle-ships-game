@@ -10,6 +10,7 @@ import { GameOver } from "./pages/GameOver";
 import { Game } from "./pages/Game";
 import { GamePlacement } from "./pages/GamePlacement";
 import { SplashScreen } from "./pages/SplashScreen";
+import { GameWaiting } from "./pages/GameWaiting";
 
 function App() {
   useSocketConnection();
@@ -25,7 +26,7 @@ function App() {
       if (selfId && gameState) {
         const phase = gameState.phase;
         if (phase === "waiting") {
-          return "game";
+          return "game-waiting" as const;
         }
         if (phase === "placement") {
           return "game-placement";
@@ -46,6 +47,7 @@ function App() {
     <>
       {page === "init" && <SplashScreen />}
       {page === "lobby" && <Lobby />}
+      {page === "game-waiting" && <GameWaiting />}
       {page === "game-placement" && <GamePlacement />}
       {page === "game" && <Game />}
       {page === "game-over" && <GameOver />}

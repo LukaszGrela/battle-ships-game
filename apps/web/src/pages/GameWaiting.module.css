@@ -1,0 +1,59 @@
+.GameWaiting {
+  display: flex;
+  height: calc(100vh - 2rem - 2rem - 12px);
+}
+.GameWaiting_container {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1rem;
+  width: 100%;
+}
+
+.GameWaiting_header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  flex: 0 0 256px;
+}
+
+.GameWaiting_message {
+  flex: 1 1 493px;
+}
+
+.GameWaiting_avatarName {
+  /* ribbon */
+  --ribbon-left-y-offset: 0.25rem;
+  --ribbon-fold-left-height: 2.5rem;
+  --ribbon-fold-left-width: 2rem;
+  --ribbon-left-notch-size: 0.75rem;
+  --ribbon-right-y-offset: 0.25rem;
+  --ribbon-fold-right-height: 2.5rem;
+  --ribbon-fold-right-width: 2rem;
+  --ribbon-right-notch-size: 0.75rem;
+  /* --background-left: var(--pirates-palette-29);
+  --background-right: var(--pirates-palette-30); */
+  --background: linear-gradient(
+    to bottom,
+    var(--pirates-palette-30) 0%,
+    var(--pirates-palette-29) 49%,
+    var(--pirates-palette-30) 100%
+  );
+  --ribbon-box-shadow:
+    0px 6px 10px 2px rgba(0, 0, 0, 0.25),
+    inset 0px 0 2px 0px rgba(0, 0, 0, 0.25);
+  --shadow: var(--pirates-palette-31);
+  --ribbon-min-width: 0;
+  --ribbon-max-width: calc(
+    calc(100vw - 2rem - 2rem - 12px) -
+      (
+        calc(var(--ribbon-fold-right-width) - var(--ribbon-right-x-offset)) +
+          calc(var(--ribbon-fold-left-width) - var(--ribbon-left-x-offset))
+      )
+  );
+
+  font-weight: bold;
+  -webkit-text-stroke: 3px var(--pirates-palette-16);
+  paint-order: stroke fill;
+}
