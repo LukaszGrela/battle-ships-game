@@ -1,0 +1,27 @@
+.ShipsBoard_board_container {
+  position: relative;
+}
+
+.ShipsBoard_board_owner :global(.container) {
+  border: 6px solid var(--pirates-owner-main);
+  border-radius: 6px;
+}
+
+.ShipsBoard_board_enemy {
+  border: 6px solid var(--pirates-enemy-main);
+  border-radius: 6px;
+}
+
+/* .ShipsBoard_board_game_layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+} */
+
+.ShipsBoard_board_ships_layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  /* background: red; */
+  border: 6px solid transparent;
+}

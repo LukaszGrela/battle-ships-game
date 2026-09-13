@@ -9,13 +9,15 @@ import {
   ECellStatus,
   TBoard,
   TCoordinate,
+  TPlacedShip,
   TShip,
   TShipPlacementOrientation,
 } from "@repo/types";
 import { AvailableShips } from "../components/AvailableShips/AvailableShips";
-import { BoardGrid, TInteractivityProps } from "../components/Board";
+import { TInteractivityProps } from "../components/Board";
 import { getCell, isValidPlacement, placeShip } from "@repo/game-logic";
 import { socket } from "../socket";
+import { ShipsBoard } from "../components/Board/ShipsBoard";
 
 const useSocketPlayerReady = () => {
   useEffect(() => {
@@ -131,13 +133,15 @@ export const GamePlacement: FC = () => {
   }, [gameState, setAvailableShips, updatePlacementBoard]);
 
   const handleApplyPlacement = useCallback(() => {
-    // reset board
+    // save placement
 
     socket.emit(
       "place_ships",
       availableShips as (TShip & { type: "pending" })[],
     );
   }, [availableShips]);
+
+  console.log("availableShips", availableShips);
 
   return (
     <AppLayout>
@@ -147,11 +151,17 @@ export const GamePlacement: FC = () => {
       />
 
       <section className={styles.Game_layout}>
-        <BoardGrid
-          board={myBoard}
-          heading={"Ustaw statki"}
-          {...placementInteractivity}
-        />
+        <div>
+          <h2>Ustaw statki</h2>
+          <ShipsBoard
+            board={myBoard}
+            owner={!!gameState?.self.owner}
+
+            ships={availableShips as TPlacedShip[]}
+
+            {...placementInteractivity}
+          />
+        </div>
         {gameState?.phase === "placement" && (
           <AvailableShips
             selected={shipSelected}

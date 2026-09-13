@@ -8,19 +8,19 @@ import { Grid } from "./Grid";
 export const BoardGrid: FC<TProps> = ({
   board,
   className,
-  heading,
+  pad = 1,
   ...interactiveProps
 }) => {
   console.log("BoardGrid", board);
   console.log("BoardGrid.interactiveProps", interactiveProps);
   return (
     <BoardGridContainer
+      pad={pad}
       rows={board.length ?? 0}
       columns={board.at(0)?.length ?? 0}
       className={classNames(styles.BoardGrid, className)}
-      heading={heading}
     >
-      <Grid board={board} {...interactiveProps} />
+      <Grid pad={pad} board={board} {...interactiveProps} />
     </BoardGridContainer>
   );
 };

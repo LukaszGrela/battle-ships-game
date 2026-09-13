@@ -30,7 +30,7 @@
   --pirates-palette-29: #dc2807;
   --pirates-palette-30: #a40e00;
   --pirates-palette-31: #8b0b01;
-  --pirates-palette-32: #D05B0B;
+  --pirates-palette-32: #d05b0b;
 }
 
 :root {
@@ -43,6 +43,10 @@
   --pirates-secondary: var(--pirates-palette-3);
   --pirates-info: var(--pirates-palette-24);
   --pirates-danger: var(--pirates-palette-30);
+
+  /* Players */
+  --pirates-owner-main: var(--pirates-palette-24);
+  --pirates-enemy-main: var(--pirates-palette-30);
 }
 
 *,

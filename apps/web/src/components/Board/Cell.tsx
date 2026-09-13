@@ -7,6 +7,10 @@ export const Cell: FC<TCell> = ({
   status,
   coords,
   disabled,
+  firstColumn,
+  firstRow,
+  lastColumn,
+  lastRow,
   ...interactiveProps
 }) => {
   const Tag = interactiveProps.isInteractive ? "button" : "div";
@@ -28,8 +32,13 @@ export const Cell: FC<TCell> = ({
       onClick={interactiveProps.isInteractive ? handleClick : undefined}
 
       data-type={status === ECellStatus.Empty ? undefined : status}
-    >
-      {`${status}`.charAt(0)}
-    </Tag>
+
+      data-col={coords.x}
+      data-row={coords.y}
+      data-first-column={firstColumn}
+      data-first-row={firstRow}
+      data-last-column={lastColumn}
+      data-last-row={lastRow}
+    />
   );
 };

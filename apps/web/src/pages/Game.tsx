@@ -39,14 +39,10 @@ export const Game: FC = () => {
         <section>Tura: {myTurn ? "Twoja kolej" : "Kolej przeciwnika"}</section>
       )}
       <section className={styles.Game_layout}>
-        <BoardGrid board={gameState?.myBoard ?? []} heading={"Twoja flota"} />
+        <BoardGrid board={gameState?.myBoard ?? []} />
         {gameState &&
           (gameState.phase === "playing" || gameState.phase === "finished") && (
-            <BoardGrid
-              board={gameState.enemyBoard}
-              heading="Flota wroga"
-              {...attackInteractivity}
-            />
+            <BoardGrid board={gameState.enemyBoard} {...attackInteractivity} />
           )}
       </section>
     </AppLayout>

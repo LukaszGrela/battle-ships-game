@@ -1,5 +1,4 @@
 import { TCoordinate, ECellStatus } from "@repo/types";
-import { ReactNode } from "react";
 
 export type TInteractiveCell = {
   isInteractive: true;
@@ -16,12 +15,20 @@ export type TInteractivityProps = TInteractiveCell | TStaticCell;
 export type TProps = {
   className?: string;
   board: ECellStatus[][];
-  heading?: ReactNode;
   disabled?: boolean;
+  /**
+   * Number of row/columns to pad around the grid
+   */
+  pad?: number;
 } & TInteractivityProps;
 
 export type TCell = {
   status: ECellStatus;
   coords: TCoordinate;
   disabled?: boolean;
+
+  lastColumn?: string | boolean;
+  lastRow?: string | boolean;
+  firstColumn?: string | boolean;
+  firstRow?: string | boolean;
 } & TInteractivityProps;
