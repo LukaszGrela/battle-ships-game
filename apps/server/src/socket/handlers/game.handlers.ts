@@ -6,7 +6,7 @@ import {
   TShip,
 } from "@repo/types";
 import { Server, Socket } from "socket.io";
-import { RoomService } from "../../services/room.service";
+import RoomService from "../../services/room.service";
 import {
   getCell,
   isSunk,
@@ -16,16 +16,17 @@ import {
 } from "@repo/game-logic";
 import { toGameState } from "../../utils/toGameState";
 import { getOtherPlayer } from "../../utils/getOtherPlayer";
-import { warRoomNames } from "../../utils/WarRoomNameService";
+import { setWaiting } from "../../utils/setWaiting";
 
 export const registerGameHandlers = (
   io: Server<IClientToServerEvents, IServerToClientEvents>,
   socket: Socket<IClientToServerEvents, IServerToClientEvents>,
 ) => {
   socket.on("place_ships", (ships) => {
+    const roomService = RoomService.getInstance();
     // console.log("Place ships");
     // room data
-    const room = RoomService.findRoomBySocketId(socket.id);
+    const room = roomService.findRoomBySocketId(socket.id);
     if (room) {
       // console.log("Room", room.name, room.phase);
       if (room.phase !== "placement") {
@@ -48,6 +49,9 @@ export const registerGameHandlers = (
           socket.emit("error", "Internal server error");
           // incoming data tampered
           socket.emit("game_updated", null);
+          // change game state
+          setWaiting(io, socket);
+          //
           return;
         }
 
@@ -97,6 +101,8 @@ export const registerGameHandlers = (
             }
           }
         }
+        // store changes
+        roomService.saveRoom(room);
         // console.log("room.phase", room.phase);
         if (room.phase === "placement") {
           socket.emit("game_updated", toGameState(socket.id, room));
@@ -116,7 +122,8 @@ export const registerGameHandlers = (
   });
 
   socket.on("attack_coordinate", (coord) => {
-    const room = RoomService.findRoomBySocketId(socket.id);
+    const roomService = RoomService.getInstance();
+    const room = roomService.findRoomBySocketId(socket.id);
 
     // 1. Validation logic
     if (!room || room.turn !== socket.id || room.phase !== "playing") {
@@ -213,28 +220,16 @@ export const registerGameHandlers = (
     // record move
     room.history.push(historyEntry);
 
+    // store room changes
+    roomService.saveRoom(room);
+
     // 4. broadcast update
+    const freshRoom = roomService.getRoom(room.id)!;
+    const players = freshRoom.players;
+
     // per player emit
-    Object.keys(room.players).forEach((playerId) => {
-      io.to(playerId).emit("game_updated", toGameState(playerId, room));
+    Object.keys(players).forEach((playerId) => {
+      io.to(playerId).emit("game_updated", toGameState(playerId, freshRoom));
     });
   });
-
-  socket.on(
-    "get_war_room_name",
-    function getWarRoomNameHandler(proposition: string | null, callback) {
-      if (proposition === null) {
-        // generate name
-        callback(warRoomNames.getAvailableName());
-      } else {
-        // test custom name
-        if (warRoomNames.isFreeToClaim(proposition)) {
-          callback(proposition);
-        } else {
-          // generate name
-          callback(warRoomNames.getAvailableName());
-        }
-      }
-    },
-  );
 };
