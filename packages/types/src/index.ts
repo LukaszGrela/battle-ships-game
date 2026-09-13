@@ -74,6 +74,8 @@ export type TRoomIdentity = {
   game_created: string;
   game_started: string | null;
   game_finished: string | null;
+
+  phase: TStringifiedEnum<EGamePhase>;
 };
 export type TRoomState = TRoomIdentity & {
   players: Record<TUserId, IPlayer>;
@@ -120,7 +122,7 @@ export interface IClientToServerEvents {
    */
   join_game: (roomId: string | Pick<TRoomIdentity, "id" | "name">) => void;
   leave_game: () => void;
-  
+
   place_ships: (ships: (TShip & { type: "pending" })[]) => void;
 
   attack_coordinate: (coord: TCoordinate) => void;
@@ -134,6 +136,8 @@ export interface IClientToServerEvents {
     proposition: string | null,
     callback: (name: string | null) => void,
   ) => void;
+
+  get_rooms: (callback: (rooms: TRoomIdentity[]) => void) => void;
 }
 
 export interface IServerToClientEvents {
