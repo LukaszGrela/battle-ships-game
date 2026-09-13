@@ -7,7 +7,13 @@ import {
 } from "@repo/types";
 import { Server, Socket } from "socket.io";
 import { RoomService } from "../../services/room.service";
-import { getCell, placeShip, resolveAttack, setCell } from "@repo/game-logic";
+import {
+  getCell,
+  isSunk,
+  placeShip,
+  resolveAttack,
+  setCell,
+} from "@repo/game-logic";
 import { toGameState } from "../../utils/toGameState";
 import { getOtherPlayer } from "../../utils/getOtherPlayer";
 import { warRoomNames } from "../../utils/WarRoomNameService";
@@ -53,7 +59,7 @@ export const registerGameHandlers = (
               return {
                 type: "placed",
                 coords: ship.coords,
-                hits: 0,
+                hits: [],
                 id: ship.id,
                 orientation: ship.orientation,
                 size: ship.size,
@@ -177,9 +183,9 @@ export const registerGameHandlers = (
         const enemyShip = enemyFleet[index];
         // console.log("enemyShip", enemyShip);
 
-        if (enemyShip && enemyShip?.type === "placed") {
-          enemyShip.hits++;
-          if (enemyShip.hits === enemyShip.size) {
+        if (enemyShip && enemyShip?.type === "placed" && !isSunk(enemyShip)) {
+          enemyShip.hits.push(coord);
+          if (enemyShip.hits.length === enemyShip.size) {
             // vessel sunk
             historyEntry.isSunk = true;
           }
@@ -187,10 +193,7 @@ export const registerGameHandlers = (
       }
     }
     // check end game condition
-    const shipIsSunk = (ship: TShip) => {
-      return ship.type === "placed" && ship.hits === ship.size;
-    };
-    const enemyHasShips = enemyFleet?.some((ship) => !shipIsSunk(ship));
+    const enemyHasShips = enemyFleet?.some((ship) => !isSunk(ship));
     // console.log("enemyHasShips", enemyHasShips);
     if (!enemyHasShips) {
       // enemy fleet defeated

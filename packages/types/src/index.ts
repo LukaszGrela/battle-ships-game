@@ -1,6 +1,7 @@
 export type TCoordinate = { x: number; y: number };
 
 export enum ECellStatus {
+  Margin = "margin",
   Empty = "empty",
   Ship = "ship",
   Hit = "hit",
@@ -34,10 +35,10 @@ export type TBoard<S = ECellStatus> = S[][];
 
 export type TShipPlacementOrientation = "horizontal" | "vertical";
 
-type TPlacedShip = {
+type TPlacedShipProps = {
   coords: TCoordinate;
   orientation: TShipPlacementOrientation;
-  hits: number;
+  hits: TCoordinate[];
   type: "placed";
 };
 
@@ -45,7 +46,7 @@ export type TShip = {
   id: number;
   size: number;
 } & (
-  | TPlacedShip
+  | TPlacedShipProps
   | {
       type: "pending";
       placed: boolean;
@@ -53,6 +54,8 @@ export type TShip = {
       orientation?: TShipPlacementOrientation;
     }
 );
+
+export type TPlacedShip = TShip & { type: "placed" };
 
 export interface IHistoryEntry {
   init?: boolean;
@@ -117,6 +120,7 @@ export interface IClientToServerEvents {
    */
   join_game: (roomId: string | Pick<TRoomIdentity, "id" | "name">) => void;
   leave_game: () => void;
+  
   place_ships: (ships: (TShip & { type: "pending" })[]) => void;
 
   attack_coordinate: (coord: TCoordinate) => void;
