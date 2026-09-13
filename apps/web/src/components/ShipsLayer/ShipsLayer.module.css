@@ -1,0 +1,12 @@
+.ShipsLayer {
+  pointer-events: none;
+  & :global(.container) {
+    background: none;
+  }
+}
+
+.Grid {
+  &::after {
+    background: none;
+  }
+}
