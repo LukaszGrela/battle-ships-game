@@ -156,7 +156,13 @@ export const registerGameHandlers = (
       return;
     }
 
-    if (cell === ECellStatus.Hit || cell === ECellStatus.Miss) return; // Prevent attacking same spot
+    if (
+      cell === ECellStatus.Hit ||
+      cell === ECellStatus.Destroyed ||
+      cell === ECellStatus.Miss
+    )
+      return; // Prevent attacking same spot
+
     // here coords are correct
 
     // Logic: Update board status

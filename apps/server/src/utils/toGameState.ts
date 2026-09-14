@@ -7,6 +7,7 @@ import {
 } from "@repo/types";
 import { getPlayerById } from "./getPlayerById";
 import { getOtherPlayer } from "./getOtherPlayer";
+import { isSunk } from "@repo/game-logic";
 
 export function toGameState(playerId: string, state: TRoomState): TGameState {
   // console.log("toGameState", playerId, state);
@@ -31,7 +32,7 @@ export function toGameState(playerId: string, state: TRoomState): TGameState {
     return {
       id: state.id,
       name: state.name,
-      phase: state.phase,
+      phase: state.phase as EGamePhase.Playing | EGamePhase.Finished,
       game_created: state.game_created,
       game_finished: state.game_finished,
       game_started: state.game_started,
@@ -52,6 +53,7 @@ export function toGameState(playerId: string, state: TRoomState): TGameState {
           return cell;
         });
       }),
+      enemyDestroyedShips: state.ships[player.id]?.filter(isSunk) ?? [],
     };
   }
 }
