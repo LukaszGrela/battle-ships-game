@@ -7,7 +7,7 @@ import {
 } from "@repo/types";
 import { getCell, TGetCellFailure } from "./cell";
 
-function cellIsEmpty<S = ECellStatus>(
+export function cellIsEmpty<S = ECellStatus>(
   board: TBoard<S>,
   coords: TCoordinate,
 ): boolean {

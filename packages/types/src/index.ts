@@ -6,6 +6,7 @@ export enum ECellStatus {
   Ship = "ship",
   Hit = "hit",
   Miss = "miss",
+  Destroyed = "destroyed",
 }
 
 export enum EGamePhase {
@@ -112,6 +113,7 @@ export type TGameState = Omit<
         > & {};
         enemy: IPlayer;
         enemyBoard: TBoard<Exclude<ECellStatus, ECellStatus.Ship>>;
+        enemyDestroyedShips: TShip[];
       }
   );
 

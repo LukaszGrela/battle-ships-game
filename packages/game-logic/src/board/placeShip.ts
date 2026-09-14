@@ -22,3 +22,24 @@ export function placeShip<S = ECellStatus>(
     setCell<S>(board, placementCoords.x, placementCoords.y, ship.id as S);
   }
 }
+
+export function removeShip<S = ECellStatus>(
+  board: TBoard<S>,
+  coords: TCoordinate,
+  ship: TShip,
+  orientation: TShipPlacementOrientation,
+) {
+  for (let offset = 0; offset < ship.size; offset++) {
+    const placementCoords =
+      orientation === "horizontal"
+        ? { x: coords.x + offset, y: coords.y }
+        : { x: coords.x, y: coords.y + offset };
+
+    setCell<S>(
+      board,
+      placementCoords.x,
+      placementCoords.y,
+      ECellStatus.Empty as S,
+    );
+  }
+}
