@@ -18,11 +18,11 @@ type TGridData = {
   columnsLength: number;
 } & (TMargin | TCell);
 
-const random = seedRandom(1979);
 
 export const Grid: FC<
-  Pick<TProps, "board" | "disabled" | "pad"> & TInteractivityProps
+Pick<TProps, "board" | "disabled" | "pad"> & TInteractivityProps
 > = ({ board, pad = 1, ...interactiveProps }) => {
+  const random = seedRandom(1979);
   const inert = interactiveProps.disabled;
 
   const flatBoard: Array<TGridData> = useMemo(() => {

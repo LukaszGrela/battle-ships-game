@@ -2,10 +2,11 @@ import styles from "./Game.module.css";
 import { FC, useMemo } from "react";
 import { AppLayout } from "../components/AppLayout/AppLayout";
 import { useGameStore } from "../store/useGameStore";
-import { BoardGrid, TInteractivityProps } from "../components/Board";
+import { TInteractivityProps } from "../components/Board";
 import { PlayerDetails } from "../components/PlayerDetails/PlayerDetails";
-import { TCoordinate } from "@repo/types";
+import { TCoordinate, TPlacedShip } from "@repo/types";
 import { socket } from "../socket";
+import { ShipsBoard } from "../components/Board/ShipsBoard";
 
 export const Game: FC = () => {
   const { gameState, selfId } = useGameStore();
@@ -39,11 +40,25 @@ export const Game: FC = () => {
         <section>Tura: {myTurn ? "Twoja kolej" : "Kolej przeciwnika"}</section>
       )}
       <section className={styles.Game_layout}>
-        <BoardGrid board={gameState?.myBoard ?? []} />
         {gameState &&
           (gameState.phase === "playing" || gameState.phase === "finished") && (
-            <BoardGrid board={gameState.enemyBoard} {...attackInteractivity} />
+            <ShipsBoard
+              board={gameState.myBoard}
+              owner={!!gameState.self.owner}
+              ships={gameState.ships as TPlacedShip[]}
+            />
           )}
+        {gameState && gameState.phase === "playing" && (
+          <>
+            <ShipsBoard
+              board={gameState.enemyBoard}
+              owner={!!gameState?.self.owner === false}
+              ships={gameState.enemyDestroyedShips as TPlacedShip[]}
+
+              {...attackInteractivity}
+            />
+          </>
+        )}
       </section>
     </AppLayout>
   );
