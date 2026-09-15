@@ -79,13 +79,22 @@ class RoomService implements IRoomService {
   listRooms(): TRoomIdentity[] {
     this.log("listRooms");
     return Array.from(this.rooms.values()).map(
-      ({ id, name, game_finished, game_started, game_created, phase }) => ({
+      ({
         id,
         name,
         game_finished,
         game_started,
         game_created,
         phase,
+        result,
+      }) => ({
+        id,
+        name,
+        game_finished,
+        game_started,
+        game_created,
+        phase,
+        //TODO: add results field
       }),
     );
   }

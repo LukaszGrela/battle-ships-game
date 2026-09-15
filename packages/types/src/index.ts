@@ -109,10 +109,20 @@ export type TGameState = Omit<
     | {
         ships: TShip[];
         phase: TStringifiedEnum<
-          Exclude<EGamePhase, EGamePhase.Waiting | EGamePhase.Placement>
+          Exclude<
+            EGamePhase,
+            EGamePhase.Waiting | EGamePhase.Placement | EGamePhase.Finished
+          >
         > & {};
         enemy: IPlayer;
         enemyBoard: TBoard<Exclude<ECellStatus, ECellStatus.Ship>>;
+        enemyDestroyedShips: TShip[];
+      }
+    | {
+        ships: TShip[];
+        phase: TStringifiedEnum<EGamePhase.Finished> & {};
+        enemy: IPlayer;
+        enemyBoard: TBoard;
         enemyDestroyedShips: TShip[];
       }
   );
@@ -163,7 +173,7 @@ export interface IServerToClientEvents {
    * @param playerName
    * @returns
    */
-  player_ready: (playerName: string) => void;
+  player_ready: (playerName: Pick<IPlayer, "name" | "seed" | "owner">) => void;
 
   /**
    * Emited when user entered war room and `waiting` is finished.
