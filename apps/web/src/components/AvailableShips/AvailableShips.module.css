@@ -1,23 +1,35 @@
 .AvailableShips {
+  display: flex;
+  flex-direction: column;
+  gap:8px
 }
 
 .Option {
-  border: 1px solid #d0d0d0;
+  position: relative;
+
+  background-color: var(--pirates-palette-24);
+
+  border: 1px solid var(--pirates-palette-25);
   border-radius: 6px;
+  border-color: var(--pirates-palette-25);
+
   padding: 4px;
   padding-left: 2rem;
 
-  &[data-selected] {
-    border-color: #999;
-  }
+  font-weight: bold;
+  color: var(--pirates-foreground);
 
-  &:hover:not(:disabled) {
-    .Ship {
-      & span {
-        background-color: #aaa;
-      }
-    }
+  &[data-selected] {
+    background-color: var(--pirates-palette-23);
+    border-color: var(--pirates-palette-24);
   }
+}
+
+.Option_label {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
 }
 
 .GridSlot {
@@ -29,6 +41,9 @@
 }
 
 .Ship {
+  position: relative;
+  height: 32px;
+  width: calc(5 * 32px);
   display: flex;
   &[data-vertical] {
     flex-direction: column;
@@ -36,7 +51,34 @@
   & span {
     width: calc(2rem - 8px - 2px - 2px);
     height: calc(2rem - 8px - 2px - 2px);
-    background-color: #ccc;
-    border: 1px solid #c0c0c0;
+  }
+
+  &::before {
+    position: absolute;
+    content: "";
+    width: 32px;
+    background-repeat: no-repeat;
+    background-size: 64px;
+    background-clip: unset;
+    background-origin: border-box;
+    background-position: -16px 0;
+    transform-origin: 0px 0px;
+    transform: rotate(-90deg) translate(-32px, 0);
+  }
+  &[data-size="2"]::before {
+    height: calc(2 * 32px);
+    background-image: url("./ships/ship-64-2.png");
+  }
+  &[data-size="3"]::before {
+    height: calc(3 * 32px);
+    background-image: url("./ships/ship-64-3.png");
+  }
+  &[data-size="4"]::before {
+    height: calc(4 * 32px);
+    background-image: url("./ships/ship-64-4.png");
+  }
+  &[data-size="5"]::before {
+    height: calc(5 * 32px);
+    background-image: url("./ships/ship-64-5.png");
   }
 }
