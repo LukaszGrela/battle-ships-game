@@ -97,11 +97,11 @@
     width: 200px;
     height: 200px;
 
-    z-index: -1;
   }
 }
 
 .Cell {
+  --cell-explosion-index: 0;
   background-color: var(--pirates-palette-24);
 
   border-width: 0;
@@ -120,6 +120,11 @@
       [data-type="miss"]
     ) {
     background-color: #aaa;
+    &[data-type="hit"] {
+      background-image: url("./explosions-64.png");
+      background-position: 0
+        calc(var(--cell-explosion-index) * var(--grid-size) * -1);
+    }
   }
 
   &[data-type="miss"] {

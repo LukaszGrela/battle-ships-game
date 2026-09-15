@@ -1,5 +1,5 @@
 import styles from "./BoardGrid.module.css";
-import { FC, useCallback, MouseEvent } from "react";
+import { FC, useCallback, MouseEvent, CSSProperties } from "react";
 import { TCell } from "./types";
 import { ECellStatus } from "@repo/types";
 
@@ -11,6 +11,7 @@ export const Cell: FC<TCell> = ({
   firstRow,
   lastColumn,
   lastRow,
+  explosionIndex = 0,
   ...interactiveProps
 }) => {
   const Tag = interactiveProps.isInteractive ? "button" : "div";
@@ -39,6 +40,12 @@ export const Cell: FC<TCell> = ({
       data-first-row={firstRow}
       data-last-column={lastColumn}
       data-last-row={lastRow}
+      style={
+        {
+          "--cell-explosion-index": explosionIndex,
+        } as CSSProperties
+      }
+      data-explosion-index={explosionIndex}
     />
   );
 };

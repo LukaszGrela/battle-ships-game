@@ -31,4 +31,6 @@ export type TCell = {
   lastRow?: string | boolean;
   firstColumn?: string | boolean;
   firstRow?: string | boolean;
+  
+  explosionIndex?: number;
 } & TInteractivityProps;

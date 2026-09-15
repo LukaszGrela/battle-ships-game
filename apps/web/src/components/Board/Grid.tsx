@@ -3,6 +3,7 @@ import { FC, useMemo } from "react";
 import { TInteractivityProps, TProps } from "./types";
 import { Cell } from "./Cell";
 import { ECellStatus } from "@repo/types";
+import { seedRandom } from "@repo/game-logic";
 
 type TMargin = { type: "margin" };
 type TCell = {
@@ -16,6 +17,8 @@ type TGridData = {
   rowsLength: number;
   columnsLength: number;
 } & (TMargin | TCell);
+
+const random = seedRandom(1979);
 
 export const Grid: FC<
   Pick<TProps, "board" | "disabled" | "pad"> & TInteractivityProps
@@ -83,6 +86,8 @@ export const Grid: FC<
             lastRow={y === rowsLength - 1 ? "" : undefined}
             firstColumn={x === 0 ? "" : undefined}
             firstRow={y === 0 ? "" : undefined}
+            // 3 number of frames from explosion atlas
+            explosionIndex={random.nextInt(0, 2)}
 
             {...interactiveProps}
           />
