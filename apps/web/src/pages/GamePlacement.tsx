@@ -1,12 +1,14 @@
 import styles from "./Game.module.css";
 
 import { FC, useCallback, useEffect, useMemo, useState } from "react";
+import { Draft } from "immer";
 import { useImmer } from "use-immer";
 import { AppLayout } from "../components/AppLayout/AppLayout";
 import { useGameStore } from "../store/useGameStore";
 import { PlayerDetails } from "../components/PlayerDetails/PlayerDetails";
 import {
   ECellStatus,
+  IPlayer,
   TBoard,
   TCoordinate,
   TPlacedShip,
@@ -15,14 +17,21 @@ import {
 } from "@repo/types";
 import { AvailableShips } from "../components/AvailableShips/AvailableShips";
 import { TInteractivityProps } from "../components/Board";
-import { getCell, isValidPlacement, placeShip } from "@repo/game-logic";
+import {
+  getCell,
+  isValidPlacement,
+  placeShip,
+  removeShip,
+} from "@repo/game-logic";
 import { socket } from "../socket";
 import { ShipsBoard } from "../components/Board/ShipsBoard";
 
 const useSocketPlayerReady = () => {
   useEffect(() => {
-    const playerReadyCallback = (playerName: string) => {
-      console.log(`Player ${playerName} is ready!`);
+    const playerReadyCallback = (
+      playerName: Pick<IPlayer, "name" | "seed" | "owner">,
+    ) => {
+      console.log(`Player ${playerName.name} is ready!`);
     };
     socket.on("player_ready", playerReadyCallback);
 
@@ -58,6 +67,59 @@ export const GamePlacement: FC = () => {
   );
 
   const [shipSelected, onShipSelected] = useState<TShip | null>(null);
+
+  const rotateShipUnderPointer = useCallback(
+    (
+      cell: number | ECellStatus,
+      placementBoardDraft: Draft<TBoard<number | ECellStatus>>,
+      // TODO: to implement rotate around point
+      _coords: TCoordinate,
+    ) => {
+      // get ship
+      const ship = availableShips.find((needle) => needle.id === cell);
+      if (ship && ship.orientation && ship.coords) {
+        const orientation: TShipPlacementOrientation =
+          ship.orientation === "horizontal" ? "vertical" : "horizontal";
+
+        // remove from placement board
+        removeShip(placementBoardDraft, ship.coords, ship, ship.orientation);
+
+        // check if rotation is possible
+        const validationResult = isValidPlacement(
+          placementBoardDraft,
+          ship.coords,
+          ship,
+          orientation,
+        );
+        // place with opposite orientation
+        if (validationResult === 1) {
+          placeShip(placementBoardDraft, ship.coords, ship, orientation);
+          setAvailableShips((draft) => {
+            // mark as selected
+            const toUpdate = draft.find((needle) => needle.id === ship.id);
+            if (toUpdate && toUpdate.type === "pending") {
+              toUpdate.orientation = orientation;
+            }
+          });
+        } else {
+          // restore original
+          placeShip(placementBoardDraft, ship.coords, ship, ship.orientation!);
+
+          if (validationResult == -1) {
+            console.warn("Cell not empty");
+          }
+          if (validationResult == -2) {
+            console.warn("Not enough space for ship (or out of bounds)");
+          }
+          if (validationResult == -3) {
+            console.warn("Another boat next to it");
+          }
+        }
+      }
+    },
+    [availableShips, setAvailableShips],
+  );
+
   const placeShipHandler = useCallback(
     async (coords: TCoordinate, modifier?: boolean) => {
       console.log("placeShipHandler", coords);
@@ -67,7 +129,15 @@ export const GamePlacement: FC = () => {
       console.log("place_ship", shipSelected, orientation, coords);
 
       updatePlacementBoard((draft) => {
-        if (!shipSelected) return;
+        if (!shipSelected) {
+          // whats under the pointer?
+
+          const cell = getCell(draft, coords.x, coords.y);
+          if (cell != ECellStatus.Empty) {
+            rotateShipUnderPointer(cell, draft, coords);
+          }
+          return;
+        }
         console.log("updatePlacementBoard", JSON.stringify(draft, null, 2));
 
         const row = draft[coords.y];
@@ -106,10 +176,15 @@ export const GamePlacement: FC = () => {
         console.log(">", row?.[coords.x], getCell(draft, coords.x, coords.y));
       });
     },
-    [setAvailableShips, shipSelected, updatePlacementBoard],
+    [
+      rotateShipUnderPointer,
+      setAvailableShips,
+      shipSelected,
+      updatePlacementBoard,
+    ],
   );
   const placementInteractivity: TInteractivityProps = useMemo(() => {
-    if (gameState?.phase === "placement") {
+    if (gameState?.phase === "placement" && !gameState.self.ready) {
       return {
         isInteractive: true,
         onClick: placeShipHandler,
@@ -118,7 +193,7 @@ export const GamePlacement: FC = () => {
     return {
       isInteractive: false,
     };
-  }, [gameState?.phase, placeShipHandler]);
+  }, [gameState?.phase, gameState?.self.ready, placeShipHandler]);
 
   const handleResetPlacement = useCallback(() => {
     // reset ships
