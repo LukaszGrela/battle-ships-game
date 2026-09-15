@@ -53,7 +53,7 @@ export function toGameState(playerId: string, state: TRoomState): TGameState {
           return cell;
         });
       }),
-      enemyDestroyedShips: state.ships[player.id]?.filter(isSunk) ?? [],
+      enemyDestroyedShips: state.ships[enemy.id]?.filter(isSunk) ?? [],
     };
   }
 }

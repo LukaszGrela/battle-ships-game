@@ -10,6 +10,7 @@ import RoomService from "../../services/room.service";
 import {
   getCell,
   isSunk,
+  isValidPlacement,
   placeShip,
   resolveAttack,
   setCell,
@@ -17,6 +18,18 @@ import {
 import { toGameState } from "../../utils/toGameState";
 import { getOtherPlayer } from "../../utils/getOtherPlayer";
 import { setWaiting } from "../../utils/setWaiting";
+
+function dataTampered(
+  io: Server<IClientToServerEvents, IServerToClientEvents>,
+  socket: Socket<IClientToServerEvents, IServerToClientEvents>,
+) {
+  socket.emit("error", "Internal server error");
+  // kick out (ab)user
+  socket.emit("game_updated", null);
+
+  // change game state
+  setWaiting(io, socket);
+}
 
 export const registerGameHandlers = (
   io: Server<IClientToServerEvents, IServerToClientEvents>,
@@ -37,20 +50,14 @@ export const registerGameHandlers = (
       const board = room.boards[socket.id];
       const expectedShips = room.ships[socket.id];
       if (!board || !expectedShips) {
-        // console.error("No board or ships");
-        socket.emit("error", "Internal server error");
-        // room state corrupted
-        socket.emit("game_updated", null);
+        console.error("No board or ships");
+        dataTampered(io, socket);
       } else {
         if (expectedShips.length !== ships.length) {
           console.error(
             "Data tampered, expected ships length != incoming ships length",
           );
-          socket.emit("error", "Internal server error");
-          // incoming data tampered
-          socket.emit("game_updated", null);
-          // change game state
-          setWaiting(io, socket);
+          dataTampered(io, socket);
           //
           return;
         }
@@ -58,6 +65,11 @@ export const registerGameHandlers = (
         const placedShips = ships
           .map((ship) => {
             if (ship.coords && ship.orientation) {
+              if (
+                !isValidPlacement(board, ship.coords, ship, ship.orientation)
+              ) {
+                return null;
+              }
               placeShip(board, ship.coords, ship, ship.orientation);
               const { type, ...parts } = ship;
               return {
@@ -75,8 +87,7 @@ export const registerGameHandlers = (
         if (placedShips.length !== expectedShips.length) {
           console.error("Some ships are not placed.");
 
-          socket.emit("error", "Some ships are not placed.");
-          socket.emit("game_updated", toGameState(socket.id, room));
+          dataTampered(io, socket);
           return;
         } else {
           const self = room.players[socket.id]!;
@@ -97,7 +108,11 @@ export const registerGameHandlers = (
             } else {
               // console.log("Opponnent not ready, notify him.");
               // notify other user
-              io.to(opponentId).emit("player_ready", self.name);
+              io.to(opponentId).emit("player_ready", {
+                name: self.name,
+                seed: self.seed,
+                owner: self.owner,
+              });
             }
           }
         }
