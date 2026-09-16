@@ -123,9 +123,13 @@ export const GamePlacement: FC = () => {
   const placeShipHandler = useCallback(
     async (coords: TCoordinate, modifier?: boolean) => {
       console.log("placeShipHandler", coords);
-      const orientation: TShipPlacementOrientation = modifier
-        ? "vertical"
-        : "horizontal";
+      let orientation: TShipPlacementOrientation =
+        shipSelected?.orientation ?? "horizontal";
+
+      if (modifier) {
+        // flip
+        orientation = orientation === "horizontal" ? "vertical" : "horizontal";
+      }
       console.log("place_ship", shipSelected, orientation, coords);
 
       updatePlacementBoard((draft) => {
@@ -151,9 +155,11 @@ export const GamePlacement: FC = () => {
         );
         if (validationResult === 1) {
           placeShip(draft, coords, shipSelected, orientation);
-          setAvailableShips((draft) => {
+          setAvailableShips((draftShips) => {
             // mark as selected
-            const ship = draft.find((needle) => needle.id === shipSelected.id);
+            const ship = draftShips.find(
+              (needle) => needle.id === shipSelected.id,
+            );
             if (ship && ship.type === "pending") {
               ship.placed = true;
               ship.coords = coords;
@@ -219,12 +225,14 @@ export const GamePlacement: FC = () => {
   console.log("availableShips", availableShips);
 
   return (
-    <AppLayout>
-      <PlayerDetails
-        id={gameState?.self.id ?? ""}
-        name={gameState?.self.name ?? ""}
-      />
-
+    <AppLayout
+      header={
+        <PlayerDetails
+          id={gameState?.self.id ?? ""}
+          name={gameState?.self.name ?? ""}
+        />
+      }
+    >
       <section className={styles.Game_layout}>
         <div>
           <h2>Ustaw statki</h2>

@@ -18,7 +18,7 @@ export function drawShip(
 
   // ── źródło: ZAWSZE w pikselach arkusza ───────────
   // pas 3 kolumn (zaokrąglenie kadłuba + szczątki)
-  const cols = 3; // zmień na 1 dla sprite'a "intact" jednokolumnowego
+  const cols = 3;
   const src = {
     sx: 0,
     sy: 0,
@@ -42,7 +42,7 @@ export function drawShip(
   ctx.translate(px, py);
   ctx.rotate(-Math.PI / 2);
 
-  // intact (1 kolumna): lx = -CELL, pas 3-kolumnowy: lx = -2*CELL
+  // pas 3-kolumnowy: lx = -2*CELL
   const lx = -((cols + 1) / 2) * CELL;
   ctx.drawImage(img, src.sx, src.sy, src.sw, src.sh, lx, 0, dw, dh);
   ctx.restore();

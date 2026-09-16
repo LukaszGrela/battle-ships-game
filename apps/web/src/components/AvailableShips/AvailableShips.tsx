@@ -7,7 +7,7 @@ export const AvailableShips: FC<{
   ships: (TShip & { type: "pending" })[];
 
   selected: TShip | null;
-  onSelection: (ship: TShip | null, vertical?: boolean) => void;
+  onSelection: (ship: TShip | null) => void;
   onApply: () => void;
   onReset: () => void;
 
@@ -28,7 +28,10 @@ export const AvailableShips: FC<{
       if (ship.id === selected?.id) {
         onSelection(null);
       } else {
-        onSelection(ship, vertical);
+        onSelection({
+          ...ship,
+          orientation: vertical ? "vertical" : "horizontal",
+        });
       }
     },
     [onSelection, selected, vertical],
