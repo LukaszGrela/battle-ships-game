@@ -20,6 +20,10 @@ export type TProps = {
    * Number of row/columns to pad around the grid
    */
   pad?: number;
+  /**
+   * Size of the grid cell in pixels
+   */
+  gridCellSize?: number;
 } & TInteractivityProps;
 
 export type TCell = {
@@ -31,6 +35,6 @@ export type TCell = {
   lastRow?: string | boolean;
   firstColumn?: string | boolean;
   firstRow?: string | boolean;
-  
+
   explosionIndex?: number;
 } & TInteractivityProps;

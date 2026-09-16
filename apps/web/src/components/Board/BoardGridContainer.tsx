@@ -6,7 +6,7 @@ import { RowLabels } from "./RowLabels";
 import { classNames } from "../../utils/classNames";
 
 export const BoardGridContainer: FC<
-  Pick<TProps, "className" | "pad"> & {
+  Pick<TProps, "className" | "pad" | "gridCellSize"> & {
     children: ReactNode;
     rows: number;
     columns: number;
@@ -23,7 +23,8 @@ export const BoardGridContainer: FC<
   gridSlotClassName,
   hideColumnLabels,
   hideRowLabels,
-  pad = 1,
+  pad = 0,
+  gridCellSize = 16,
 }) => {
   return (
     <div
@@ -31,6 +32,7 @@ export const BoardGridContainer: FC<
       style={
         {
           "--grid-pad": pad,
+          "--grid-size": `${gridCellSize}px`,
         } as CSSProperties
       }
     >

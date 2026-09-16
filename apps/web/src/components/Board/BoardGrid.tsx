@@ -9,6 +9,7 @@ export const BoardGrid: FC<TProps> = ({
   board,
   className,
   pad = 1,
+  gridCellSize,
   ...interactiveProps
 }) => {
   console.log("BoardGrid", board);
@@ -16,6 +17,7 @@ export const BoardGrid: FC<TProps> = ({
   return (
     <BoardGridContainer
       pad={pad}
+      gridCellSize={gridCellSize}
       rows={board.length ?? 0}
       columns={board.at(0)?.length ?? 0}
       className={classNames(styles.BoardGrid, className)}

@@ -5,7 +5,7 @@ import { BoardGrid } from "./BoardGrid";
 import { ShipsLayer } from "../ShipsLayer/ShipsLayer";
 import { TBoard, TPlacedShip } from "@repo/types";
 import { TInteractivityProps } from "./types";
-import { GRID_PAD } from "../../utils/ships/constants";
+import { CELL, GRID_PAD } from "../../utils/ships/constants";
 
 export const ShipsBoard: FC<
   {
@@ -18,6 +18,7 @@ export const ShipsBoard: FC<
     <div className={styles.ShipsBoard_board_container}>
       <BoardGrid
         pad={GRID_PAD}
+        gridCellSize={CELL}
         className={classNames(
           owner ? styles.ShipsBoard_board_owner : styles.ShipsBoard_board_enemy,
           styles.ShipsBoard_board_game_layer,
@@ -29,6 +30,9 @@ export const ShipsBoard: FC<
       <ShipsLayer
         className={styles.ShipsBoard_board_ships_layer}
         ships={ships}
+
+        pad={GRID_PAD}
+        gridCellSize={CELL}
 
         rows={board.length ?? 0}
         columns={board.at(0)?.length ?? 0}

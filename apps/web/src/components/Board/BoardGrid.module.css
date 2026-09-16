@@ -3,7 +3,7 @@
 
   --grid-columns: calc(10 + var(--grid-pad, 0) * 2);
   --grid-rows: calc(10 + var(--grid-pad, 0) * 2);
-  --grid-size: 4rem;
+  --grid-size: 2rem;
   --grid-labels-size: 1.5rem;
 
   --grid-labels: var(--pirates-palette-16);
@@ -96,7 +96,6 @@
 
     width: 200px;
     height: 200px;
-
   }
 }
 
@@ -116,6 +115,8 @@
     background-color: var(--pirates-palette-23);
   }
 
+  background-size: var(--grid-size);
+  
   &[data-type]:not([data-type="empty"]):not([data-type="margin"]):not(
       [data-type="miss"]
     ) {
