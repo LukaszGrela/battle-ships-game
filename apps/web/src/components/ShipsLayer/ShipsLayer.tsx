@@ -14,7 +14,9 @@ export const ShipsLayer: FC<{
   rows: number;
   columns: number;
   ships: TShip[];
-}> = ({ className, ships, rows, columns }) => {
+  pad?: number;
+  gridCellSize?: number;
+}> = ({ className, ships, rows, columns, gridCellSize, pad }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const images = useShipImages(ships);
   console.log("[ShipsLayer]", images);
@@ -75,6 +77,17 @@ export const ShipsLayer: FC<{
               Math.PI * 2,
             );
             ctx.fill();
+            ctx.strokeStyle = "rgba(220, 38, 38, 0.85)";
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.arc(
+              x * CELL + CELL / 2,
+              y * CELL + CELL / 2,
+              CELL * 0.32,
+              0,
+              Math.PI * 2,
+            );
+            ctx.stroke();
           }
         }
       } else {
@@ -90,6 +103,8 @@ export const ShipsLayer: FC<{
       className={classNames(styles.BoardGrid, ownStyles.ShipsLayer, className)}
       hideColumnLabels
       hideRowLabels
+      pad={pad}
+      gridCellSize={gridCellSize}
     >
       <canvas
         ref={canvasRef}
