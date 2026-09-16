@@ -1,4 +1,5 @@
-import styles from "./Game.module.css";
+import gameStyles from "./Game.module.css";
+import styles from "./GamePlacement.module.css";
 
 import { FC, useCallback, useEffect, useMemo, useState } from "react";
 import { Draft } from "immer";
@@ -226,16 +227,16 @@ export const GamePlacement: FC = () => {
 
   return (
     <AppLayout
+      headerClassName={styles.Header}
       header={
-        <PlayerDetails
-          id={gameState?.self.id ?? ""}
-          name={gameState?.self.name ?? ""}
-        />
+        <>
+          {gameState && <PlayerDetails self={gameState.self} />}
+          <h2>Ustaw statki</h2>
+        </>
       }
     >
-      <section className={styles.Game_layout}>
+      <section className={gameStyles.Game_layout}>
         <div>
-          <h2>Ustaw statki</h2>
           <ShipsBoard
             board={myBoard}
             owner={!!gameState?.self.owner}

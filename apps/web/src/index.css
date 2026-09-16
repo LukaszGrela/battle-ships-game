@@ -31,6 +31,10 @@
   --pirates-palette-30: #a40e00;
   --pirates-palette-31: #8b0b01;
   --pirates-palette-32: #d05b0b;
+  --pirates-palette-33: hsl(212, 100%, 26%);
+  --pirates-palette-34: hsl(212, 100%, 20%);
+  --pirates-palette-35: hsl(4, 100%, 22%);
+  --pirates-palette-36: hsl(4, 100%, 19%);
 }
 
 :root {
