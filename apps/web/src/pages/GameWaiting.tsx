@@ -4,6 +4,7 @@ import { PlayerAvatar } from "../components/PirateAvatar/PirateAvatar";
 import { Ribbon } from "../components/Ribbon/Ribbon";
 import { useGameStore } from "../store/useGameStore";
 import { WaitingScreen } from "../components/WaitingScreen/WaitingScreen";
+import { classNames } from "../utils/classNames";
 
 export const GameWaiting = () => {
   const { gameState } = useGameStore();
@@ -33,7 +34,12 @@ export const GameHeader = () => {
             player={gameState!.self}
             className={styles.GameWaiting_avatar}
           />
-          <Ribbon className={styles.GameWaiting_avatarName}>
+          <Ribbon
+            className={classNames(
+              styles.GameWaiting_avatarName,
+              gameState?.self.owner && styles.owner,
+            )}
+          >
             {gameState?.self.name}
           </Ribbon>
         </div>

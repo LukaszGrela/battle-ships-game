@@ -34,16 +34,10 @@
   --ribbon-right-notch-size: 0.75rem;
   /* --background-left: var(--pirates-palette-29);
   --background-right: var(--pirates-palette-30); */
-  --background: linear-gradient(
-    to bottom,
-    var(--pirates-palette-30) 0%,
-    var(--pirates-palette-29) 49%,
-    var(--pirates-palette-30) 100%
-  );
+
   --ribbon-box-shadow:
     0px 6px 10px 2px rgba(0, 0, 0, 0.25),
     inset 0px 0 2px 0px rgba(0, 0, 0, 0.25);
-  --shadow: var(--pirates-palette-31);
   --ribbon-min-width: 0;
   --ribbon-max-width: calc(
     calc(100vw - 2rem - 2rem - 12px) -
@@ -56,4 +50,22 @@
   font-weight: bold;
   -webkit-text-stroke: 3px var(--pirates-palette-16);
   paint-order: stroke fill;
+
+  --background: linear-gradient(
+    to bottom,
+    var(--pirates-enemy-main) 0%,
+    var(--pirates-palette-29) 49%,
+    var(--pirates-enemy-main) 100%
+  );
+  --shadow: var(--pirates-palette-31);
+}
+
+.owner {
+  --background: linear-gradient(
+    to bottom,
+    var(--pirates-owner-main) 0%,
+    var(--pirates-palette-23) 49%,
+    var(--pirates-owner-main) 100%
+  );  
+  --shadow: var(--pirates-palette-25);
 }
