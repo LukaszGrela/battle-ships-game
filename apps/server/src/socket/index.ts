@@ -12,11 +12,16 @@ import { toGameState } from "../utils/toGameState";
 import { setWaiting } from "../utils/setWaiting";
 import { getOtherPlayer } from "../utils/getOtherPlayer";
 import { warRoomNames } from "../utils/WarRoomNameService";
+import RoomServiceSingleton from "../services/room.service";
+
+const activeConnections = new Set();
 
 export const registerSocketHandlers = (
   io: Server<IClientToServerEvents, IServerToClientEvents>,
   socket: Socket<IClientToServerEvents, IServerToClientEvents>,
 ) => {
+  activeConnections.add(socket.id);
+
   registerRoomHandlers(io, socket);
   registerGameHandlers(io, socket);
   const roomService = RoomService.getInstance();
@@ -62,10 +67,22 @@ export const registerSocketHandlers = (
     },
   );
 
+  console.log("[STATS] active users", activeConnections.size);
+
+  socket.on("get_stats", function getStats(callback) {
+    const roomService = RoomServiceSingleton.getInstance();
+    callback({
+      activePlayers: activeConnections.size,
+      activeGames: roomService.activeGames(),
+      playedGames: roomService.playedGames(),
+    });
+  });
+
   // user has disonnected
   socket.on("disconnect", (reason: DisconnectReason) => {
     // Logic: If player leaves, broadcast game_over or handle session
     console.log("Player disconnected", socket.id, "due to", reason);
+    activeConnections.delete(socket.id);
     const room = roomService.findRoomBySocketId(socket.id);
     if (room) {
       if (room.phase === "playing") {

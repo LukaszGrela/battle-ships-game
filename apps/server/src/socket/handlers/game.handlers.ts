@@ -18,6 +18,7 @@ import {
 import { toGameState } from "../../utils/toGameState";
 import { getOtherPlayer } from "../../utils/getOtherPlayer";
 import { setWaiting } from "../../utils/setWaiting";
+import { warRoomNames } from "../../utils/WarRoomNameService";
 
 function dataTampered(
   io: Server<IClientToServerEvents, IServerToClientEvents>,
@@ -105,6 +106,7 @@ export const registerGameHandlers = (
               // console.log("Opponnent ready, switch to playing.");
               // we can start the game
               room.phase = "playing";
+              room.game_started = new Date().toISOString();
             } else {
               // console.log("Opponnent not ready, notify him.");
               // notify other user
@@ -234,6 +236,8 @@ export const registerGameHandlers = (
         [opponentId]: "lost",
       };
       room.game_finished = new Date().toISOString();
+      //
+      warRoomNames.releaseRoom(room.name);
     } else {
       // 3. switch turn
       room.turn = opponentId; // Pass turn

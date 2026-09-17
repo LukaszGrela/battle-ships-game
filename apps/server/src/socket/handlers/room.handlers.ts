@@ -129,6 +129,17 @@ export const registerRoomHandlers = (
         Object.keys(room.players).forEach((playerId) => {
           io.to(playerId).emit("game_updated", toGameState(playerId, room));
         });
+      } else {
+        // make leaving user inactive
+        if (room.players[socket.id]) {
+          room.players[socket.id]!.active = false;
+          // store room changes
+          roomService.saveRoom(room);
+        }
+        // per player emit
+        Object.keys(room.players).forEach((playerId) => {
+          io.to(playerId).emit("game_updated", toGameState(playerId, room));
+        });
       }
     } else {
       socket.emit("error", "No game to leave");
