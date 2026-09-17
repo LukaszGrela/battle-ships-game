@@ -174,7 +174,9 @@ export interface IServerToClientEvents {
    * @param playerName
    * @returns
    */
-  player_ready: (playerName: Pick<IPlayer, "name" | "seed" | "owner">) => void;
+  player_ready: (
+    playerName: Pick<IPlayer, "name" | "seed" | "owner" | "ready">,
+  ) => void;
 
   /**
    * Emited when user entered war room and `waiting` is finished.

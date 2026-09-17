@@ -112,6 +112,7 @@ export const registerGameHandlers = (
                 name: self.name,
                 seed: self.seed,
                 owner: self.owner,
+                ready: self.ready,
               });
             }
           }
