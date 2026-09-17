@@ -4,7 +4,7 @@
 
   cursor: pointer;
 
-  &[data-style]:not([data-style="custom"]) {
+  &[data-type]:not([data-type="custom"]) {
     padding: var(--padding);
     border-radius: 6px;
     /* outline: 2px solid red; */
@@ -31,7 +31,7 @@
     align-items: center;
   }
 
-  &[data-style="primary"] {
+  &[data-type="primary"] {
     color: var(--pirates-palette-20);
 
     border-color: var(--pirates-palette-26);
@@ -56,7 +56,7 @@
       );
     }
   }
-  &[data-style="secondary"] {
+  &[data-type="secondary"] {
     color: var(--pirates-palette-20);
 
     border-color: var(--pirates-palette-2);
@@ -81,7 +81,7 @@
       );
     }
   }
-  &[data-style="info"] {
+  &[data-type="info"] {
     color: var(--pirates-palette-20);
 
     border-color: var(--pirates-palette-23);
@@ -106,7 +106,7 @@
       );
     }
   }
-  &[data-style="danger"] {
+  &[data-type="danger"] {
     color: var(--pirates-palette-20);
 
     border-color: var(--pirates-palette-29);

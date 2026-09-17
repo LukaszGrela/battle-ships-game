@@ -6,7 +6,7 @@ import { Power } from "../icons";
 export const DisconnetButton: FC<{ className?: string }> = ({ className }) => {
   const { disconnect } = useSocket();
   return (
-    <Button className={className} style="danger" onClick={disconnect}>
+    <Button className={className} type="danger" onClick={disconnect}>
       <span>Disconnect</span>
       <Power />
     </Button>

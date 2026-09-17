@@ -48,7 +48,7 @@ export const AvailableShips: FC<{
           const { id, size, placed } = ship;
           return (
             <Button
-              style="custom"
+              type="custom"
               key={id}
               className={styles.Option}
               data-placed={placed ? "" : undefined}
@@ -75,7 +75,7 @@ export const AvailableShips: FC<{
         </label>
       </div>
       <div>
-        <Button style="secondary" onClick={onReset} disabled={disableReset}>
+        <Button type="secondary" onClick={onReset} disabled={disableReset}>
           Zresetuj
         </Button>
         <Button onClick={onApply} disabled={disableApply}>

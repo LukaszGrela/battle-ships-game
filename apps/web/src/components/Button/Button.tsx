@@ -1,19 +1,12 @@
 import styles from "./Button.module.css";
-import { FC, ReactNode } from "react";
+import { FC } from "react";
 import { classNames } from "../../utils/classNames";
+import { TButtonProps } from "./types";
 
-export const Button: FC<
-  {
-    disabled?: boolean;
-    children?: ReactNode;
-    className?: string;
-    style?: "primary" | "secondary" | "info" | "danger" | "custom";
-    onClick?: () => void;
-  } & { [key: `data-${string}`]: string | boolean | number | undefined }
-> = ({
+export const Button: FC<TButtonProps> = ({
   className,
   children,
-  style = "primary",
+  type = "primary",
   disabled,
   onClick,
   ...rest
@@ -23,7 +16,7 @@ export const Button: FC<
       className={classNames(className, styles.Button)}
       disabled={disabled}
       onClick={onClick}
-      data-style={style}
+      data-type={type}
       {...rest}
     >
       {children}

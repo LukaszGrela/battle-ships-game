@@ -134,7 +134,7 @@ export const CreateNewGame: FC<{ className?: string }> = ({ className }) => {
         <Button
           onClick={createGameHandler}
           disabled={!inputValue}
-          style="primary"
+          type="primary"
           className={styles.createGame}
         >
           <AnchorIcon />
@@ -171,7 +171,7 @@ const RandomGameName: FC<{
     <Button
       onClick={handleClick}
       disabled={isPending}
-      style="info"
+      type="info"
       className={className}
     >
       <span>Random name</span>

@@ -13,7 +13,7 @@ export const SplashScreen = () => {
           src="./title.png"
           className={styles.logo}
         />
-        <Button style="custom" onClick={connect} className={styles.connect}>
+        <Button type="custom" onClick={connect} className={styles.connect}>
           <Ribbon className={styles.goldButton}>
             Connect to the Battleships Game server
           </Ribbon>
