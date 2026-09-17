@@ -2,10 +2,11 @@ import type { FC, PropsWithChildren } from "react";
 import { useGameStore } from "../../store/useGameStore";
 import { socket } from "../../socket";
 import { Button } from "../Button/Button";
+import { TButtonProps } from "../Button/types";
 
-export const EmitLeaveGameButton: FC<PropsWithChildren<{}>> = ({
-  children = "Leave Game",
-}) => {
+export const EmitLeaveGameButton: FC<
+  PropsWithChildren<Pick<TButtonProps, "type">>
+> = ({ children = "Leave Game", type }) => {
   const { selfId, gameState, setGameState, setSelfId, setError } =
     useGameStore();
   const gameFinished = gameState?.phase === "finished";
@@ -15,12 +16,11 @@ export const EmitLeaveGameButton: FC<PropsWithChildren<{}>> = ({
       setGameState(null);
       setSelfId(null);
       setError(null);
-    } else {
-      socket.emit("leave_game");
     }
+    socket.emit("leave_game");
   };
   return (
-    <Button onClick={leaveGame} disabled={!!selfId === false}>
+    <Button onClick={leaveGame} disabled={!!selfId === false} type={type}>
       {children}
     </Button>
   );
