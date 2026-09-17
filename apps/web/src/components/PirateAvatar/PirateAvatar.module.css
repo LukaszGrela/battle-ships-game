@@ -1,24 +1,24 @@
 .PirateAvatar {
-  /* krok w atlasie — stały, bo taka jest siatka pliku */
+  /* atlas cell/sprite step, match file defined grid size */
   --sprite-step: 256px;
 
-  /* rozmiar wyświetlania — dowolny, np. 64px, 96px... */
-  --avatar-size: 256px;
+  /* display size — any, eg. 64px, 96px... defaults to file cell size */
+  /* --avatar-size: 256px; */
 
   --avatar-x: 0;
   --avatar-y: 0;
 
-  width: var(--avatar-size);
-  height: var(--avatar-size);
+  width: var(--avatar-size, 256px);
+  height: var(--avatar-size, 256px);
 
   background-image: url("./avatars-1.png");
   &[data-atlas="2"] { background-image: url("./avatars-2.png"); }
   &[data-atlas="3"] { background-image: url("./avatars-3.png"); }
 
-  /* przeskaluj CAŁY atlas proporcjonalnie do rozmiaru wyświetlania */
-  background-size: calc(var(--sprite-step) * 4 * (var(--avatar-size) / var(--sprite-step)));
+  /* scale WHOLE atlas file proportionallyto display size */
+  background-size: calc(var(--sprite-step) * 4 * (var(--avatar-size, 256px) / var(--sprite-step)));
   /* = 4 * avatar-size */
 
-  background-position-x: calc(var(--avatar-x) * var(--avatar-size));
-  background-position-y: calc(var(--avatar-y) * var(--avatar-size));
+  background-position-x: calc(var(--avatar-x) * var(--avatar-size, 256px));
+  background-position-y: calc(var(--avatar-y) * var(--avatar-size, 256px));
 }
