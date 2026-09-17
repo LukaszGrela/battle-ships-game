@@ -1,15 +1,29 @@
 .PlayerDetails {
   position: relative;
   isolation: isolate;
-  margin-bottom: 1rem;;
+  margin-bottom: 1rem;
+  width: 100%;
+  &[data-enemy]:not([data-enemy-ready]) {
+    opacity: 0.5;
+  }
 }
 .Avatar {
   --avatar-size: 128px;
+  [data-enemy] & {
+    position: absolute;
+    right: 0;
+  }
 }
-.Ribbon {
+
+.playerReady {
+  color: var(--pirates-accented);
+  font-weight: 700;
   position: absolute;
-  bottom: 0;
-  z-index: -1;
+  bottom: 4rem;
+  right: 128px;
+}
+
+.Ribbon_shape {
   /* ribbon */
   --ribbon-left-y-offset: 0.25rem;
   --ribbon-fold-left-height: 2.5rem;
@@ -21,11 +35,7 @@
   --ribbon-right-notch-size: 0.75rem;
   /* --background-left: var(--pirates-palette-29);
   --background-right: var(--pirates-palette-30); */
-
-  --ribbon-box-shadow:
-    0px 6px 10px 2px rgba(0, 0, 0, 0.25),
-    inset 0px 0 2px 0px rgba(0, 0, 0, 0.25);
-  --ribbon-min-width: 0;
+  --ribbon-min-width: 8rem;
   --ribbon-max-width: calc(
     calc(100vw - 2rem - 2rem - 12px) -
       (
@@ -33,6 +43,41 @@
           calc(var(--ribbon-fold-left-width) - var(--ribbon-left-x-offset))
       )
   );
+
+  [data-enemy] & {
+    --ribbon-right-y-offset: 0.25rem;
+    --ribbon-fold-right-height: 2.5rem;
+    --ribbon-fold-right-width: 128px;
+    --ribbon-right-notch-size: 0.75rem;
+    --ribbon-left-y-offset: 0.25rem;
+    --ribbon-fold-left-height: 2.5rem;
+    --ribbon-fold-left-width: 2rem;
+    --ribbon-left-notch-size: 0.75rem;
+
+    --ribbon-max-width: calc(
+      calc(100vw - 2rem - 2rem - 12px) -
+        (
+          calc(var(--ribbon-fold-right-width) - var(--ribbon-right-x-offset)) +
+            calc(var(--ribbon-fold-left-width) - var(--ribbon-left-x-offset))
+        )
+    );
+  }
+}
+
+.Ribbon {
+  composes: Ribbon_shape;
+
+  position: absolute;
+  bottom: 0;
+  z-index: -1;
+
+  [data-enemy] & {
+    right: 0;
+  }
+
+  --ribbon-box-shadow:
+    0px 6px 10px 2px rgba(0, 0, 0, 0.25),
+    inset 0px 0 2px 0px rgba(0, 0, 0, 0.25);
 
   font-weight: bold;
   -webkit-text-stroke: 3px var(--pirates-palette-16);
