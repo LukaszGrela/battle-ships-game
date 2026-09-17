@@ -37,6 +37,15 @@ interface IRoomService {
   listRooms: () => TRoomIdentity[];
 
   setWaiting: (playerId: string) => void;
+
+  /**
+   * Number of active games (phase placement/playing)
+   */
+  activeGames: () => number;
+  /**
+   * Number of completed games (phase finished)
+   */
+  playedGames: () => number;
 }
 
 class RoomService implements IRoomService {
@@ -115,6 +124,20 @@ class RoomService implements IRoomService {
     room.ships = {};
 
     this.saveRoom(room);
+  }
+
+  activeGames(): number {
+    return Array.from(this.rooms.values()).filter(
+      (needle) =>
+        needle.phase === EGamePhase.Placement ||
+        needle.phase === EGamePhase.Playing,
+    ).length;
+  }
+
+  playedGames(): number {
+    return Array.from(this.rooms.values()).filter(
+      (needle) => needle.phase === EGamePhase.Finished,
+    ).length;
   }
 
   private rooms: TRoomsMap = new Map<string, TRoomState>();
