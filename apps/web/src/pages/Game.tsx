@@ -3,15 +3,16 @@ import { FC, useMemo } from "react";
 import { AppLayout } from "../components/AppLayout/AppLayout";
 import { useGameStore } from "../store/useGameStore";
 import { TInteractivityProps } from "../components/Board";
-import { PlayerDetails } from "../components/PlayerDetails/PlayerDetails";
 import { TCoordinate, TPlacedShip } from "@repo/types";
 import { socket } from "../socket";
 import { ShipsBoard } from "../components/Board/ShipsBoard";
+import {
+  GameHeader,
+  TGameHeaderAllowedState,
+} from "../components/GameHeader/GameHeader";
 
 export const Game: FC = () => {
   const { gameState, selfId } = useGameStore();
-  const playerId = selfId ?? "";
-  console.log(gameState);
 
   const myTurn = gameState?.turn === selfId;
 
@@ -32,10 +33,13 @@ export const Game: FC = () => {
     }, [gameState?.phase, myTurn]);
 
   return (
-    <AppLayout>
-      <h2>Game</h2>
-      <section>{gameState?.phase}</section>
-      <PlayerDetails id={playerId} name={gameState?.self.name ?? ""} />
+    <AppLayout
+      header={
+        gameState && (
+          <GameHeader gameState={gameState as TGameHeaderAllowedState} />
+        )
+      }
+    >
       {gameState?.phase === "playing" && (
         <section>Tura: {myTurn ? "Twoja kolej" : "Kolej przeciwnika"}</section>
       )}

@@ -23,7 +23,7 @@ export const GameWaiting = () => {
   );
 };
 
-export const GameHeader = () => {
+const GameHeader = () => {
   const { gameState, selfId } = useGameStore();
 
   return (
