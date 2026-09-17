@@ -1,0 +1,8 @@
+.GameHeader {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+}
+.Header_title {
+  height: 120px;
+}
