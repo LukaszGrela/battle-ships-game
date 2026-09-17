@@ -151,6 +151,14 @@ export interface IClientToServerEvents {
   ) => void;
 
   get_rooms: (callback: (rooms: TRoomIdentity[]) => void) => void;
+
+  get_stats: (
+    callback: (stats: {
+      activeGames: number;
+      playedGames: number;
+      activePlayers: number;
+    }) => void,
+  ) => void;
 }
 
 export interface IServerToClientEvents {
