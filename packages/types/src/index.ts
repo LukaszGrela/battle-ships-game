@@ -105,6 +105,7 @@ export type TGameState = Omit<
     | {
         phase: TStringifiedEnum<EGamePhase.Placement> & {};
         ships: TShip[];
+        enemy: IPlayer;
       }
     | {
         ships: TShip[];

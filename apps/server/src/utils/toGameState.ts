@@ -27,6 +27,7 @@ export function toGameState(playerId: string, state: TRoomState): TGameState {
       myBoard: state.boards[player.id] ?? [],
     };
   } else if (state.phase === "placement") {
+    const enemy = getOtherPlayer(playerId, state.players)!;
     return {
       id: state.id,
       name: state.name,
@@ -37,6 +38,7 @@ export function toGameState(playerId: string, state: TRoomState): TGameState {
       result: state.result,
       turn: state.turn,
       self: player,
+      enemy,
       myBoard: state.boards[player.id] ?? [],
       ships: state.ships[player.id] ?? [],
     };
