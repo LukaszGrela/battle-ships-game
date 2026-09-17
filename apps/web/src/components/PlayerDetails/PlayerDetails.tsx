@@ -10,12 +10,13 @@ export const PlayerDetails: FC<{
   enemy?: boolean;
   phase: EGamePhase;
 }> = ({ self, enemy, phase }) => {
-  const { name, owner, ready } = self;
+  const { name, owner, ready, active } = self;
   return (
     <div
       className={styles.PlayerDetails}
       data-enemy={enemy ? "" : undefined}
-      data-enemy-ready={enemy && ready ? "" : undefined}
+      data-enemy-ready={enemy && ready && active ? "" : undefined}
+      data-enemy-inactive={!active && ready ? "" : undefined}
     >
       <div className={styles.Avatar}>
         <PlayerAvatar player={self} />
@@ -25,6 +26,9 @@ export const PlayerDetails: FC<{
       </Ribbon>
       {enemy && ready && phase === EGamePhase.Placement && (
         <span className={styles.playerReady}>Player Ready!</span>
+      )}
+      {enemy && !active && phase === EGamePhase.Finished && (
+        <span className={styles.playerReady}>Player left the game!</span>
       )}
     </div>
   );
