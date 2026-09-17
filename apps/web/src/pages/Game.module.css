@@ -1,5 +1,21 @@
 .Game_layout {
+  container-type: inline-size;
   display: flex;
-  flex-direction: row;
-  gap: 1rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 2rem;
+}
+
+.columns {
+  flex: 0 0 446px;
+}
+.left {
+  composes: columns;
+}
+.right {
+  composes: columns;
+
+  @container (max-width: 924px) {
+    order: -1;
+  }
 }

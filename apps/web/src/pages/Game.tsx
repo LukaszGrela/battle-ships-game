@@ -47,6 +47,7 @@ export const Game: FC = () => {
         {gameState &&
           (gameState.phase === "playing" || gameState.phase === "finished") && (
             <ShipsBoard
+              className={styles.left}
               board={gameState.myBoard}
               owner={!!gameState.self.owner}
               ships={gameState.ships as TPlacedShip[]}
@@ -55,6 +56,7 @@ export const Game: FC = () => {
         {gameState && gameState.phase === "playing" && (
           <>
             <ShipsBoard
+              className={styles.right}
               board={gameState.enemyBoard}
               owner={!!gameState?.self.owner === false}
               ships={gameState.enemyDestroyedShips as TPlacedShip[]}
