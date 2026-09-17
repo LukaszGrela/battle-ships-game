@@ -84,6 +84,7 @@
 
   &::after {
     content: "";
+    pointer-events: none;
 
     position: absolute;
     right: -3rem;

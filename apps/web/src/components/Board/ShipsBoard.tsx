@@ -12,10 +12,12 @@ export const ShipsBoard: FC<
     owner?: boolean;
     board: TBoard;
     ships: TPlacedShip[];
+
+    className?: string;
   } & TInteractivityProps
-> = ({ owner, board, ships, ...interactivity }) => {
+> = ({ owner, board, ships, className, ...interactivity }) => {
   return (
-    <div className={styles.ShipsBoard_board_container}>
+    <div className={classNames(styles.ShipsBoard_board_container, className)}>
       <BoardGrid
         pad={GRID_PAD}
         gridCellSize={CELL}
