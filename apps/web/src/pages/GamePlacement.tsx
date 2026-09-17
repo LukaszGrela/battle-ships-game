@@ -1,15 +1,13 @@
 import gameStyles from "./Game.module.css";
 import styles from "./GamePlacement.module.css";
 
-import { FC, useCallback, useEffect, useMemo, useState } from "react";
+import { FC, useCallback, useMemo, useState } from "react";
 import { Draft } from "immer";
 import { useImmer } from "use-immer";
 import { AppLayout } from "../components/AppLayout/AppLayout";
 import { useGameStore } from "../store/useGameStore";
-import { PlayerDetails } from "../components/PlayerDetails/PlayerDetails";
 import {
   ECellStatus,
-  IPlayer,
   TBoard,
   TCoordinate,
   TPlacedShip,
@@ -26,26 +24,13 @@ import {
 } from "@repo/game-logic";
 import { socket } from "../socket";
 import { ShipsBoard } from "../components/Board/ShipsBoard";
-
-const useSocketPlayerReady = () => {
-  useEffect(() => {
-    const playerReadyCallback = (
-      playerName: Pick<IPlayer, "name" | "seed" | "owner">,
-    ) => {
-      console.log(`Player ${playerName.name} is ready!`);
-    };
-    socket.on("player_ready", playerReadyCallback);
-
-    return () => {
-      socket.off("player_ready", playerReadyCallback);
-    };
-  }, []);
-};
+import {
+  GameHeader,
+  TGameHeaderAllowedState,
+} from "../components/GameHeader/GameHeader";
 
 export const GamePlacement: FC = () => {
   const { gameState } = useGameStore();
-
-  useSocketPlayerReady();
 
   const [placementBoard, updatePlacementBoard] = useImmer<
     TBoard<ECellStatus | number>
@@ -230,8 +215,10 @@ export const GamePlacement: FC = () => {
       headerClassName={styles.Header}
       header={
         <>
-          {gameState && <PlayerDetails self={gameState.self} />}
-          <h2>Ustaw statki</h2>
+          {gameState && (
+            <GameHeader gameState={gameState as TGameHeaderAllowedState} />
+          )}
+          <h2>Place your ships</h2>
         </>
       }
     >
