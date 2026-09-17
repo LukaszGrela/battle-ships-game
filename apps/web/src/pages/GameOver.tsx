@@ -6,6 +6,11 @@ import { useGameStore } from "../store/useGameStore";
 import { Button } from "../components/Button/Button";
 import { ShipsBoard } from "../components/Board/ShipsBoard";
 import { TPlacedShip } from "@repo/types";
+import {
+  GameHeader,
+  TGameHeaderAllowedState,
+} from "../components/GameHeader/GameHeader";
+import { EmitLeaveGameButton } from "../components/EmitLeaveGameButton/EmitLeaveGameButton";
 
 export const GameOver: FC = () => {
   const { gameState } = useGameStore();
@@ -14,7 +19,13 @@ export const GameOver: FC = () => {
   const myResults = state?.result[state.self.id];
 
   return (
-    <AppLayout>
+    <AppLayout
+      header={
+        gameState && (
+          <GameHeader gameState={gameState as TGameHeaderAllowedState} />
+        )
+      }
+    >
       <h2>Game Over</h2>
       {myResults && (
         <section>{myResults === "win" ? "Wygrałeś!" : "Przegrałeś!"}</section>
@@ -40,7 +51,10 @@ export const GameOver: FC = () => {
       </section>
       <section>
         <Button>Zaproponuj rewanż</Button>
-        <Button style="secondary">Zakoncz gre</Button>
+
+        <EmitLeaveGameButton type="secondary">
+          Exit to Lobby
+        </EmitLeaveGameButton>
       </section>
     </AppLayout>
   );
