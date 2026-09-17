@@ -1,5 +1,6 @@
 .BoardGrid {
   --grid-pad: 0;
+  --grid-outer-corners-radius: 1rem;
 
   --grid-columns: calc(10 + var(--grid-pad, 0) * 2);
   --grid-rows: calc(10 + var(--grid-pad, 0) * 2);
@@ -116,7 +117,7 @@
   }
 
   background-size: var(--grid-size);
-  
+
   &[data-type]:not([data-type="empty"]):not([data-type="margin"]):not(
       [data-type="miss"]
     ) {
@@ -135,18 +136,18 @@
 
   &[data-first-row] {
     &[data-first-column] {
-      border-top-left-radius: 6px;
+      border-top-left-radius: var(--grid-outer-corners-radius, 1rem);
     }
     &[data-last-column] {
-      border-top-right-radius: 6px;
+      border-top-right-radius: var(--grid-outer-corners-radius, 1rem);
     }
   }
   &[data-last-row] {
     &[data-first-column] {
-      border-bottom-left-radius: 6px;
+      border-bottom-left-radius: var(--grid-outer-corners-radius, 1rem);
     }
     &[data-last-column] {
-      border-bottom-right-radius: 6px;
+      border-bottom-right-radius: var(--grid-outer-corners-radius, 1rem);
     }
   }
 
