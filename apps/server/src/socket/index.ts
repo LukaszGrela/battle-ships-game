@@ -11,16 +11,16 @@ import {
 import { toGameState } from "../utils/toGameState";
 import { setWaiting } from "../utils/setWaiting";
 import { getOtherPlayer } from "../utils/getOtherPlayer";
-import { warRoomNames } from "../utils/WarRoomNameService";
+import { warRoomNames } from "../services/WarRoomName.service";
 import RoomServiceSingleton from "../services/room.service";
-
-const activeConnections = new Set();
+import { emitStats } from "../utils/emitStats";
+import ActiveUsersServiceSingleton from "../services/users.service";
 
 export const registerSocketHandlers = (
   io: Server<IClientToServerEvents, IServerToClientEvents>,
   socket: Socket<IClientToServerEvents, IServerToClientEvents>,
 ) => {
-  activeConnections.add(socket.id);
+  ActiveUsersServiceSingleton.getInstance().setUser(socket.id);
 
   registerRoomHandlers(io, socket);
   registerGameHandlers(io, socket);
@@ -67,22 +67,18 @@ export const registerSocketHandlers = (
     },
   );
 
-  console.log("[STATS] active users", activeConnections.size);
+  console.log(
+    "[STATS] active users",
+    ActiveUsersServiceSingleton.getInstance().countUsers(),
+  );
 
-  socket.on("get_stats", function getStats(callback) {
-    const roomService = RoomServiceSingleton.getInstance();
-    callback({
-      activePlayers: activeConnections.size,
-      activeGames: roomService.activeGames(),
-      playedGames: roomService.playedGames(),
-    });
-  });
+  emitStats(io);
 
   // user has disonnected
   socket.on("disconnect", (reason: DisconnectReason) => {
     // Logic: If player leaves, broadcast game_over or handle session
     console.log("Player disconnected", socket.id, "due to", reason);
-    activeConnections.delete(socket.id);
+    ActiveUsersServiceSingleton.getInstance().removeUser(socket.id);
     const room = roomService.findRoomBySocketId(socket.id);
     if (room) {
       if (room.phase === "playing") {
@@ -104,17 +100,8 @@ export const registerSocketHandlers = (
           io.emit("open_games", roomService.getOpenGames());
           return;
         } else {
-          // // reset to a waiting state
-          // room.phase = EGamePhase.Waiting as never;
-
-          // io.emit("open_games", RoomService.getOpenGames());
+          //
           setWaiting(io, socket);
-          const other = getOtherPlayer(socket.id, room.players);
-          console.log(
-            "[index][on disconnect]",
-            other && roomService.findRoomBySocketId(other?.id)?.phase,
-            other && roomService.getRoom(room?.id)?.phase,
-          );
         }
       } else if (room.phase === "waiting") {
         // there should only be one user anyway
@@ -133,5 +120,6 @@ export const registerSocketHandlers = (
         );
       });
     }
+    emitStats(io);
   });
 };

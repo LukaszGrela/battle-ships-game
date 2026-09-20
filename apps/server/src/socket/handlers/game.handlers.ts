@@ -18,7 +18,8 @@ import {
 import { toGameState } from "../../utils/toGameState";
 import { getOtherPlayer } from "../../utils/getOtherPlayer";
 import { setWaiting } from "../../utils/setWaiting";
-import { warRoomNames } from "../../utils/WarRoomNameService";
+import { warRoomNames } from "../../services/WarRoomName.service";
+import { emitStats } from "../../utils/emitStats";
 
 function dataTampered(
   io: Server<IClientToServerEvents, IServerToClientEvents>,
@@ -238,6 +239,8 @@ export const registerGameHandlers = (
       room.game_finished = new Date().toISOString();
       //
       warRoomNames.releaseRoom(room.name);
+      //
+      emitStats(io);
     } else {
       // 3. switch turn
       room.turn = opponentId; // Pass turn

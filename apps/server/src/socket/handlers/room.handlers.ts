@@ -8,7 +8,7 @@ import {
 } from "@repo/types";
 import { getOtherPlayer } from "../../utils/getOtherPlayer";
 import { toGameState } from "../../utils/toGameState";
-import { warRoomNames } from "../../utils/WarRoomNameService";
+import { warRoomNames } from "../../services/WarRoomName.service";
 import { getShips } from "../../utils/getShips";
 import { getShortPirateName } from "../../utils/getPirateyName";
 import { createEmptyBoard } from "@repo/game-logic";
@@ -16,6 +16,7 @@ import { createNewRoom } from "../../utils/createNewRoom";
 import { nanoid } from "nanoid";
 import { stableHash } from "@repo/game-logic/src/utils/stableHash";
 import { setWaiting } from "../../utils/setWaiting";
+import { emitStats } from "../../utils/emitStats";
 
 export const registerRoomHandlers = (
   io: Server<IClientToServerEvents, IServerToClientEvents>,
@@ -55,6 +56,7 @@ export const registerRoomHandlers = (
 
       // Game started - send open games
       io.emit("open_games", roomService.getOpenGames());
+      emitStats(io);
     } else if (Object.keys(room.players).length < 2) {
       // Other player joins the battle
       room.boards[socket.id] = createEmptyBoard();
@@ -83,12 +85,14 @@ export const registerRoomHandlers = (
 
       // send open_games update, room is no longer open
       io.emit("open_games", roomService.getOpenGames());
+      emitStats(io);
     } else {
       // no more space in the room
       socket.emit("error", "Room full");
 
       // Someone wanted to join - send open games
       io.emit("open_games", roomService.getOpenGames());
+      emitStats(io);
       return;
     }
 
@@ -145,5 +149,6 @@ export const registerRoomHandlers = (
       socket.emit("error", "No game to leave");
     }
     io.emit("open_games", roomService.getOpenGames());
+    emitStats(io);
   });
 };

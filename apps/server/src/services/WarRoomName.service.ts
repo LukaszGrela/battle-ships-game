@@ -1,4 +1,4 @@
-import { generateWarRoomName, MAX_COMBINATIONS } from "./generateWarRoomName";
+import { generateWarRoomName, MAX_COMBINATIONS } from "../utils/generateWarRoomName";
 
 export class WarRoomNameService {
   private activeRooms = new Set<string>();
