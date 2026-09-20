@@ -13,9 +13,9 @@ import {
 import { socket } from "../../socket";
 import { RoomNameInput } from "../RoomNameInput/RoomNameInput";
 import { Button } from "../Button/Button";
-import { Ribbon } from "../Ribbon/Ribbon";
 import { AnchorIcon, RandomizeIcon } from "../icons";
 import { classNames } from "../../utils/classNames";
+import { DecoratedContainer } from "../DecoratedContainer";
 
 export const CreateNewGame: FC<{ className?: string }> = ({ className }) => {
   const [inputValue, setInputValue] = useState("");
@@ -27,12 +27,14 @@ export const CreateNewGame: FC<{ className?: string }> = ({ className }) => {
 
   // 1. Calculate synchronous formatting status during render (No setState in Effect!)
   const isTooShort = trimmed.length > 0 && trimmed.length < 3;
-  const isEmpty = trimmed.length === 0;
+  const isEmpty = trimmed.length === 0 && deferredValue.length > 0;
 
   // 2. Derive overall status directly
-  let status: "idle" | "invalid" | "valid" | "taken" = "idle";
+  let status: "idle" | "invalid" | "empty" | "valid" | "taken" = "idle";
   if (isTooShort) {
     status = "invalid";
+  } else if (isEmpty) {
+    status = "empty";
   } else if (!isEmpty && isUnique !== null) {
     status = isUnique ? "valid" : "taken";
   }
@@ -93,18 +95,19 @@ export const CreateNewGame: FC<{ className?: string }> = ({ className }) => {
     if (inputValue) socket.emit("join_game", inputValue);
   }, [inputValue]);
 
+  const inputstatus = status === "empty" ? "invalid" : status;
   return (
-    <div className={classNames(styles.CreateNewGame, className)}>
-      <h3>
-        <Ribbon className={styles.headerRibbon}>Create new game</Ribbon>
-      </h3>
+    <DecoratedContainer
+      className={classNames(styles.CreateNewGame, className)}
+      header={<span className={styles.shadow}>Create new game</span>}
+    >
       <div className={styles.CreateNewGame_container}>
         <div className={styles.input_row}>
           <RoomNameInput
             className={styles.RoomNameInput}
             value={inputValue}
             onChange={handleInputChange}
-            status={isValidationPending ? "pending" : status}
+            status={isValidationPending ? "pending" : inputstatus}
           ></RoomNameInput>
           <RandomGameName
             onNewGame={handleRandomName}
@@ -128,6 +131,9 @@ export const CreateNewGame: FC<{ className?: string }> = ({ className }) => {
                 Name must be at least 3 characters.
               </span>
             )}
+            {status === "empty" && (
+              <span className={styles.invalid}>Name can't be empty.</span>
+            )}
           </div>
         </div>
 
@@ -142,7 +148,7 @@ export const CreateNewGame: FC<{ className?: string }> = ({ className }) => {
           <AnchorIcon />
         </Button>
       </div>
-    </div>
+    </DecoratedContainer>
   );
 };
 
