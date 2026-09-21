@@ -3,6 +3,7 @@ import styles from "./PirateAvatar.module.css";
 import { CSSProperties, FC, useMemo } from "react";
 import { seedRandom } from "@repo/game-logic";
 import { classNames } from "../../utils/classNames";
+import { mapIndexToAtlas } from "./utils";
 
 export const PirateAvatar: FC<{
   x?: number;
@@ -28,20 +29,17 @@ export const PirateAvatar: FC<{
     </div>
   );
 };
-
+const ALL_ATLASES_SPRITES = 3 * 4 * 4;
 export const PlayerAvatar: FC<{ player: IPlayer; className?: string }> = ({
   player,
   className,
 }) => {
   const params = useMemo(() => {
     const random = seedRandom(player.seed);
-    console.log("Seed", player.seed);
-    console.log("Random", random);
-    return {
-      x: random.nextInt(0, 3),
-      y: random.nextInt(0, 3),
-      atlas: random.nextInt(1, 3),
-    };
+
+    const rnd = random.nextInt(0, ALL_ATLASES_SPRITES - 1);
+
+    return mapIndexToAtlas(rnd);
   }, [player.seed]);
 
   return <PirateAvatar {...params} className={className} />;
