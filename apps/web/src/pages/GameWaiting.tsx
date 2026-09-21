@@ -5,19 +5,27 @@ import { Ribbon } from "../components/Ribbon/Ribbon";
 import { useGameStore } from "../store/useGameStore";
 import { WaitingScreen } from "../components/WaitingScreen/WaitingScreen";
 import { classNames } from "../utils/classNames";
+import { LifeBuoy } from "../components/icons/LifeBuoy";
+import { EmitLeaveGameButton } from "../components/EmitLeaveGameButton/EmitLeaveGameButton";
 
 export const GameWaiting = () => {
   const { gameState } = useGameStore();
   return (
     <AppLayout className={styles.GameWaiting}>
       {gameState && (
-        <div className={styles.GameWaiting_container}>
-          <GameHeader />
-          <WaitingScreen
-            player={gameState.self}
-            className={styles.GameWaiting_message}
-          />
-        </div>
+        <>
+          <div className={styles.GameWaiting_container}>
+            <GameHeader />
+            <WaitingScreen
+              player={gameState.self}
+              className={styles.GameWaiting_message}
+            />
+          </div>
+          <EmitLeaveGameButton type="danger" className={styles.abandonGame}>
+            <LifeBuoy />
+            <span>Abandon game</span>
+          </EmitLeaveGameButton>
+        </>
       )}
     </AppLayout>
   );
