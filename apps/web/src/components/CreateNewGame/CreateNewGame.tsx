@@ -99,7 +99,7 @@ export const CreateNewGame: FC<{ className?: string }> = ({ className }) => {
   return (
     <DecoratedContainer
       className={classNames(styles.CreateNewGame, className)}
-      header={<span className={styles.shadow}>Create new game</span>}
+      header={<span className={"shadow"}>Create new game</span>}
     >
       <div className={styles.CreateNewGame_container}>
         <div className={styles.input_row}>

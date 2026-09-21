@@ -1,0 +1,58 @@
+:root {
+  --pirates-palette-1: #b5b3a3;
+  --pirates-palette-2: #f8df59;
+  --pirates-palette-3: #fcd02e;
+  --pirates-palette-4: #dd9a26;
+  --pirates-palette-5: #985e1d;
+  --pirates-palette-6: #993e18;
+  --pirates-palette-7: #6d451e;
+  --pirates-palette-8: #671005;
+  --pirates-palette-9: #5b230b;
+  --pirates-palette-10: #2d1508;
+  --pirates-palette-11: #8cad2d;
+  --pirates-palette-12: #042c40;
+  --pirates-palette-13: #292623;
+  --pirates-palette-14: #010101;
+  --pirates-palette-15: #14100d;
+  --pirates-palette-16: #292623;
+  --pirates-palette-17: #5d5e5e;
+  --pirates-palette-18: #7a7e81;
+  --pirates-palette-19: #d6d5cf;
+  --pirates-palette-20: #f6f6f2;
+  --pirates-palette-21: #f5e2a9;
+  --pirates-palette-22: #f3cd8b;
+  --pirates-palette-23: #308ecf;
+  --pirates-palette-24: #135fa9;
+  --pirates-palette-25: #024fa5;
+  --pirates-palette-26: #90cf0d;
+  --pirates-palette-27: #489902;
+  --pirates-palette-28: #278801;
+  --pirates-palette-29: #dc2807;
+  --pirates-palette-30: #a40e00;
+  --pirates-palette-31: #8b0b01;
+  --pirates-palette-32: #d05b0b;
+  --pirates-palette-33: hsl(212, 100%, 26%);
+  --pirates-palette-34: hsl(212, 100%, 20%);
+  --pirates-palette-35: hsl(4, 100%, 22%);
+  --pirates-palette-36: hsl(4, 100%, 19%);
+}
+
+:root {
+  /* THEME */
+  --pirates-background: var(--pirates-palette-16);
+  --pirates-foreground: var(--pirates-palette-20);
+  --pirates-accented: var(--pirates-palette-3);
+
+  --pirates-primary: var(--pirates-palette-27);
+  --pirates-secondary: var(--pirates-palette-3);
+  --pirates-info: var(--pirates-palette-24);
+  --pirates-danger: var(--pirates-palette-30);
+
+  /* Players */
+  --pirates-owner-main: var(--pirates-palette-24);
+  --pirates-enemy-main: var(--pirates-palette-30);
+}
+
+.shadow {
+  text-shadow: 2px 2px 3px var(--pirates-palette-10);
+}

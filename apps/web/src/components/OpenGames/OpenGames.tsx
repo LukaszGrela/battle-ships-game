@@ -13,7 +13,7 @@ export const OpenGames: FC<{ className?: string }> = ({ className }) => {
   return (
     <DecoratedContainer
       className={classNames(styles.OpenGames, className)}
-      header={<span className={styles.shadow}>Open games</span>}
+      header={<span className={"shadow"}>Open games</span>}
     >
       {openGames.length > 0 && (
         <ul className={styles.list}>
@@ -34,7 +34,7 @@ export const OpenGames: FC<{ className?: string }> = ({ className }) => {
       )}
       {!openGames.length && (
         <div className={styles.empty}>
-          No open games available. Create a Game.
+          No open games to join available. Create a new Game.
         </div>
       )}
     </DecoratedContainer>

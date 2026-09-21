@@ -11,7 +11,7 @@ export const StatsContainer: FC<{
   return (
     <DecoratedContainer
       className={classNames(styles.StatsContainer, className)}
-      header={<span className={styles.shadow}>Server stats</span>}
+      header={<span className={"shadow"}>Server stats</span>}
     >
       <span>Active games: {activeGames}</span>
       <span>Active players: {activePlayers}</span>
