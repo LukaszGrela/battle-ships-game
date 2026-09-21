@@ -5,7 +5,7 @@ import { BoardGridContainer } from "../Board/BoardGridContainer";
 import { classNames } from "../../utils/classNames";
 import { TShip } from "@repo/types";
 import { useShipImages } from "../../utils/ships/useShipImages";
-import { CANVAS_PX, CELL, PAD } from "../../utils/ships/constants";
+import { CELL, GRID_PAD, GRID_SIZE } from "../../utils/ships/constants";
 import { drawShip } from "./drawShip";
 import { isSunk } from "@repo/game-logic";
 
@@ -16,11 +16,21 @@ export const ShipsLayer: FC<{
   ships: TShip[];
   pad?: number;
   gridCellSize?: number;
-}> = ({ className, ships, rows, columns, gridCellSize, pad }) => {
+}> = ({
+  className,
+  ships,
+  rows = GRID_SIZE,
+  columns = GRID_SIZE,
+  gridCellSize = CELL,
+  pad = GRID_PAD,
+}) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const images = useShipImages(ships);
   console.log("[ShipsLayer]", images);
   console.log("[ShipsLayer]", ships);
+
+  const canvasPxW = columns * gridCellSize + 2 * pad;
+  const canvasPxH = rows * gridCellSize + 2 * pad;
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -30,13 +40,13 @@ export const ShipsLayer: FC<{
     if (ships.length === 0) return;
 
     const dpr = window.devicePixelRatio || 1;
-    canvas.width = CANVAS_PX * dpr;
-    canvas.height = CANVAS_PX * dpr;
+    canvas.width = canvasPxW * dpr;
+    canvas.height = canvasPxH * dpr;
 
     // reset + skala DPR + przesunięcie o margines:
     // od tego momentu rysujemy w WSPÓŁRZĘDNYCH PLANSZY (0..BOARD_PX)
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.translate(PAD, PAD);
+    ctx.translate(gridCellSize * pad, gridCellSize * pad);
 
     // czyścimy CAŁY canvas — w tym marginesy (translate dotyczy tylko rysowania)
     ctx.save();
@@ -64,15 +74,15 @@ export const ShipsLayer: FC<{
       if (!img) continue;
 
       if (!isSunk(ship)) {
-        drawShip(ctx, img, ship);
+        drawShip(ctx, img, ship, gridCellSize);
         if (ship.type === "placed") {
           ctx.fillStyle = "rgba(220, 38, 38, 0.85)";
           for (const { x, y } of ship.hits) {
             ctx.beginPath();
             ctx.arc(
-              x * CELL + CELL / 2,
-              y * CELL + CELL / 2,
-              CELL * 0.22,
+              x * gridCellSize + gridCellSize / 2,
+              y * gridCellSize + gridCellSize / 2,
+              gridCellSize * 0.22,
               0,
               Math.PI * 2,
             );
@@ -81,9 +91,9 @@ export const ShipsLayer: FC<{
             ctx.lineWidth = 3;
             ctx.beginPath();
             ctx.arc(
-              x * CELL + CELL / 2,
-              y * CELL + CELL / 2,
-              CELL * 0.32,
+              x * gridCellSize + gridCellSize / 2,
+              y * gridCellSize + gridCellSize / 2,
+              gridCellSize * 0.32,
               0,
               Math.PI * 2,
             );
@@ -91,10 +101,10 @@ export const ShipsLayer: FC<{
           }
         }
       } else {
-        drawShip(ctx, destroyedImg, ship);
+        drawShip(ctx, destroyedImg, ship, gridCellSize);
       }
     }
-  }, [ships, images]);
+  }, [ships, images, pad, gridCellSize, canvasPxW, canvasPxH]);
 
   return (
     <BoardGridContainer
@@ -110,8 +120,8 @@ export const ShipsLayer: FC<{
         ref={canvasRef}
         style={{
           position: "absolute",
-          width: CANVAS_PX,
-          height: CANVAS_PX,
+          width: canvasPxW,
+          height: canvasPxH,
           pointerEvents: "none",
         }}
       />

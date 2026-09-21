@@ -1,17 +1,16 @@
 import { TShip } from "@repo/types";
-import {
-  CELL,
-  SHIP_ATLAS_SCALE,
-  SHIP_ATLAS_CELL,
-} from "../../utils/ships/constants";
+import { CELL, SHIP_ATLAS_CELL } from "../../utils/ships/constants";
 
 export function drawShip(
   ctx: CanvasRenderingContext2D,
   img: HTMLImageElement,
   ship: TShip & { type: "placed" | "pending" },
+  cell = CELL,
+  atlasCell = SHIP_ATLAS_CELL,
 ) {
-  const px = (ship.coords?.x ?? 0) * CELL;
-  const py = (ship.coords?.y ?? 0) * CELL;
+  const atlasScale = cell / atlasCell;
+  const px = (ship.coords?.x ?? 0) * cell;
+  const py = (ship.coords?.y ?? 0) * cell;
   const len = ship.size;
 
   // ── skala arkusz → canvas ────────────────────────
@@ -22,17 +21,17 @@ export function drawShip(
   const src = {
     sx: 0,
     sy: 0,
-    sw: cols * SHIP_ATLAS_CELL, // 3 → 192
-    sh: len * SHIP_ATLAS_CELL, // len * 64 (np. 5 → 320)
+    sw: cols * atlasCell, // 3 → 192
+    sh: len * atlasCell, // len * 64 (np. 5 → 320)
   };
 
   // ── cel: ZAWSZE w pikselach canvasa ──────────────
-  const dw = src.sw * SHIP_ATLAS_SCALE; // = cols * CELL
-  const dh = src.sh * SHIP_ATLAS_SCALE; // = len * CELL
+  const dw = src.sw * atlasScale; // = cols * CELL
+  const dh = src.sh * atlasScale; // = len * CELL
 
   if (ship.orientation === "vertical") {
     // środkowa kolumna pasa ma wypaść na kolumnie statku
-    const dx = px - CELL;
+    const dx = px - cell;
     ctx.drawImage(img, src.sx, src.sy, src.sw, src.sh, dx, py, dw, dh);
     return;
   }
@@ -42,8 +41,8 @@ export function drawShip(
   ctx.translate(px, py);
   ctx.rotate(-Math.PI / 2);
 
-  // pas 3-kolumnowy: lx = -2*CELL
-  const lx = -((cols + 1) / 2) * CELL;
+  // pas 3-kolumnowy: lx = -2*cell
+  const lx = -((cols + 1) / 2) * cell;
   ctx.drawImage(img, src.sx, src.sy, src.sw, src.sh, lx, 0, dw, dh);
   ctx.restore();
 }
