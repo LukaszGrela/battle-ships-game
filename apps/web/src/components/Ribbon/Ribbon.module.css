@@ -38,19 +38,26 @@
   position: relative;
   isolation: isolate;
   width: max-content;
-
-  --margin-top: 0;
-  --margin-right: calc(
-    var(--ribbon-fold-right-width) - var(--ribbon-right-x-offset)
+  /* var(--ribbon-min-height) */
+  --margin-top: max(
+    abs(min(0px, var(--ribbon-right-y-offset, 0px))),
+    abs(min(0px, var(--ribbon-left-y-offset, 0px)))
   );
-  --margin-bottom: var(--ribbon-right-y-offset);
+  --margin-bottom: max(
+    max(0px, var(--ribbon-right-y-offset, 0px)),
+    max(0px, var(--ribbon-left-y-offset, 0px))
+  );
+
+  --margin-right: calc(
+    var(--ribbon-fold-right-width, 0px) - var(--ribbon-right-x-offset, 0px)
+  );
   --margin-left: calc(
-    var(--ribbon-fold-left-width) - var(--ribbon-left-x-offset)
+    var(--ribbon-fold-left-width, 0px) - var(--ribbon-left-x-offset, 0px)
   );
 
   /* Marginesy zapewniające miejsce na "wypustki" */
-  margin: var(--margin-top) var(--margin-right) var(--margin-bottom)
-    var(--margin-left);
+  margin: var(--margin-top, 0px) var(--margin-right, 0px)
+    var(--margin-bottom, 0px) var(--margin-left, 0px);
 }
 
 .ribbon {
@@ -62,40 +69,60 @@
 
   position: relative;
   background: var(--background);
-  min-width: var(--ribbon-min-width);
-  max-width: var(--ribbon-max-width);
-  min-height: var(--ribbon-min-height);
+  min-width: var(--ribbon-min-width, 0rem);
+  max-width: var(--ribbon-max-width, 0rem);
+  min-height: var(--ribbon-min-height, 0rem);
+
+  width: var(--ribbon-width, unset);
+
   padding: 0.5rem 1rem;
 
   transition: var(--transition);
   box-shadow: var(--ribbon-box-shadow);
 }
 
-/* Główne trójkątne zakończenia pod głównym panelem */
+/* Główne trójkątne zakończenia nad/pod głównym panelem */
 .ribbon::before,
 .ribbon::after {
   content: "";
   position: absolute;
   z-index: -1;
   transition: var(--transition);
+
+  /* Dekompozycja offsetu na część dodatnią i ujemną */
+  --pos: max(0px, var(--y));
+  --neg: min(0px, var(--y));
+
+  /* abs(offset) — wysokość ogonka */
+  height: calc(var(--pos) - var(--neg));
+
+  /* offset > 0 → 100% (wisi pod dolną krawędzią)
+     offset < 0 → var(--neg) (wystaje nad górną krawędzią) */
+  top: calc(var(--neg) + min(100%, calc(var(--pos) * 10000)));
 }
 
 .ribbon::before {
+  --y: var(--ribbon-left-y-offset, 0rem);
   left: 0;
-  bottom: calc(-1 * var(--ribbon-left-y-offset));
   width: var(--ribbon-left-x-offset);
-  height: var(--ribbon-left-y-offset);
-  clip-path: polygon(0 0, 100% 0, 100% 100%);
   background: var(--shadow-left, var(--shadow));
+  clip-path: polygon(
+    0 calc(-1 * var(--neg)),
+    100% calc(-1 * var(--neg)),
+    100% var(--pos)
+  );
 }
 
 .ribbon::after {
+  --y: var(--ribbon-right-y-offset, 0rem);
   right: 0;
-  bottom: calc(-1 * var(--ribbon-right-y-offset));
   width: var(--ribbon-right-x-offset);
-  height: var(--ribbon-right-y-offset);
-  clip-path: polygon(0 0, 100% 0, 0 100%);
   background: var(--shadow-right, var(--shadow));
+  clip-path: polygon(
+    0 calc(-1 * var(--neg)),
+    100% calc(-1 * var(--neg)),
+    0 var(--pos)
+  );
 }
 
 /* Wspólna baza dla "wstążek" bocznych */
@@ -103,16 +130,21 @@
   position: absolute;
   z-index: -2;
   transition: var(--transition);
+
+  height: var(--fold-h);
+  /* offset < 0 → trzyma się górnej krawędzi, offset > 0 → dolnej */
+  top: calc(
+    var(--y) + min(calc(100% - var(--fold-h)), max(0px, calc(var(--y) * 10000)))
+  );
 }
 
 .ribbon-fold-left {
-  height: var(--ribbon-fold-left-height);
+  --fold-h: var(--ribbon-fold-left-height);
+  --y: var(--ribbon-left-y-offset, 0rem);
+
   width: var(--ribbon-fold-left-width);
-  bottom: calc(-1 * var(--ribbon-left-y-offset));
   left: calc(-1 * var(--ribbon-fold-left-width) + var(--ribbon-left-x-offset));
-
   background: var(--background-left, var(--background));
-
   clip-path: polygon(
     0 0,
     var(--ribbon-fold-left-width) 0,
@@ -123,15 +155,14 @@
 }
 
 .ribbon-fold-right {
-  height: var(--ribbon-fold-right-height);
+  --fold-h: var(--ribbon-fold-right-height);
+  --y: var(--ribbon-right-y-offset, 0rem);
+
   width: var(--ribbon-fold-right-width);
-  bottom: calc(-1 * var(--ribbon-right-y-offset));
   right: calc(
     -1 * var(--ribbon-fold-right-width) + var(--ribbon-right-x-offset)
   );
-
   background: var(--background-right, var(--background));
-
   clip-path: polygon(
     0 0,
     var(--ribbon-fold-right-width) 0,
