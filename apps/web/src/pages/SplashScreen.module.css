@@ -3,12 +3,13 @@
   flex-direction: row;
   justify-content: center;
   align-items: center;
-  /* #root margin top and bottom 2rem + 
-           padding top and bottom 2rem +
-           border top and bottom 12px
-  */
-  height: calc(100vh - 2rem - 2rem - 12px);
-  width: calc(100vw - 2rem - 2rem - 12px);
+
+  --offset: calc(
+    calc(var(--root-border-width) * 2) + calc(var(--root-margin) * 2) +
+      calc(var(--root-padding) * 2)
+  );
+  height: calc(100vh - var(--offset));
+  width: calc(100vw - var(--offset));
 
   position: relative;
 }
@@ -28,9 +29,7 @@
 .connect {
   color: var(--pirates-palette-20);
   user-select: none;
-  text-shadow: 2px 2px 3px var(--pirates-palette-10);
 
-  paint-order: stroke fill;
   font-size: 1.25rem;
   word-wrap: normal;
   word-break: normal;
@@ -58,9 +57,15 @@
 }
 
 .goldButton {
+  --offset: 100vw -
+    calc(
+      calc(var(--root-border-width) * 2) + calc(var(--root-margin) * 2) +
+        calc(var(--root-padding) * 2)
+    );
+
   --ribbon-min-width: 0;
   --ribbon-max-width: calc(
-    calc(100vw - 2rem - 2rem - 12px) -
+    var(--offset) -
       (
         calc(var(--ribbon-fold-right-width) - var(--ribbon-right-x-offset)) +
           calc(var(--ribbon-fold-left-width) - var(--ribbon-left-x-offset))

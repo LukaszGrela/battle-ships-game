@@ -9,11 +9,12 @@ export const PlayerDetails: FC<{
   self: IPlayer;
   enemy?: boolean;
   phase: EGamePhase;
-}> = ({ self, enemy, phase }) => {
+  className?: string;
+}> = ({ self, enemy, phase, className }) => {
   const { name, owner, ready, active } = self;
   return (
     <div
-      className={styles.PlayerDetails}
+      className={classNames(styles.PlayerDetails, className)}
       data-enemy={enemy ? "" : undefined}
       data-enemy-ready={enemy && ready && active ? "" : undefined}
       data-enemy-inactive={!active && ready ? "" : undefined}

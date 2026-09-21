@@ -4,6 +4,8 @@ import { AppLayout } from "../components/AppLayout/AppLayout";
 import { DisconnetButton } from "../components/DisconnetButton/DisconnetButton";
 import { OpenGames } from "../components/OpenGames/OpenGames";
 import { CreateNewGame } from "../components/CreateNewGame/CreateNewGame";
+import { StatsContainer } from "../components/StatsContainer/StatsContainer";
+import { useSocketGameStats } from "../store/useGameStatsStore";
 
 export const Lobby: FC = () => {
   return (
@@ -27,10 +29,13 @@ const Header = () => {
 };
 
 const ConnectedLobby = () => {
+  useSocketGameStats();
+
   return (
     <section className={styles.Lobby_content}>
       <CreateNewGame className={styles.column1} />
       <OpenGames className={styles.column2} />
+      <StatsContainer className={styles.stats} />
     </section>
   );
 };

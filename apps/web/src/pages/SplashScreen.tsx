@@ -2,6 +2,7 @@ import styles from "./SplashScreen.module.css";
 import { Ribbon } from "../components/Ribbon/Ribbon";
 import { useSocket } from "../socket";
 import { Button } from "../components/Button/Button";
+import { classNames } from "../utils/classNames";
 
 export const SplashScreen = () => {
   const { connect } = useSocket();
@@ -13,7 +14,11 @@ export const SplashScreen = () => {
           src="./title.png"
           className={styles.logo}
         />
-        <Button type="custom" onClick={connect} className={styles.connect}>
+        <Button
+          type="custom"
+          onClick={connect}
+          className={classNames(styles.connect, "shadow")}
+        >
           <Ribbon className={styles.goldButton}>
             Connect to the Battleships Game server
           </Ribbon>

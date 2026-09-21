@@ -26,10 +26,10 @@
 
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 1.25rem;
-  padding: 1.5rem;
+  align-items: var(--waiting-screen-flex-align-items, center);;
+  justify-content: var(--waiting-screen-flex-justify-content, center);
+  gap: var(--waiting-screen-gap, 1.25rem);
+  padding: var(--waiting-screen-padding, 1.5rem);
   min-height: 320px;
   text-align: center;
   color: var(--text-soft);
@@ -41,7 +41,7 @@
 .screen::before {
   content: "";
   position: absolute;
-  inset: 0.5rem;
+  inset: var(--waiting-screen-border-inset, 0.5rem);
   border: 1px solid rgb(from var(--pirates-palette-4) r g b / 0.15);
   pointer-events: none;
 }
@@ -50,7 +50,7 @@
 .ship {
   font-size: 3.75rem;
   line-height: 1;
-  animation: bob var(--bob-duration) ease-in-out infinite;
+  animation: bob var(--bob-duration, 2s) ease-in-out infinite;
   transform-origin: center bottom;
   user-select: none;
   /* The anchor emoji is dark — lift it off the dark deck with a warm glow */

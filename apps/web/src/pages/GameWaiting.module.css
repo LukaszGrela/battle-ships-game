@@ -1,6 +1,14 @@
 .GameWaiting {
+  position: relative;
   display: flex;
-  height: calc(100vh - 2rem - 2rem - 12px);
+
+  height: calc(
+    100vh -
+      calc(
+        calc(var(--root-border-width) * 2) + calc(var(--root-margin) * 2) +
+          calc(var(--root-padding) * 2)
+      )
+  );
 }
 .GameWaiting_container {
   display: flex;
@@ -8,18 +16,35 @@
   justify-content: center;
   gap: 1rem;
   width: 100%;
+  @media screen and (orientation: landscape) {
+    align-content: center;
+  }
 }
 
 .GameWaiting_header {
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
 
   flex: 0 0 256px;
 }
 
 .GameWaiting_message {
-  flex: 1 1 400px;
+  flex: 1 1 310px;
+  @media screen and (max-width: 720px) {
+    --waiting-screen-padding: 0.5rem;
+    --waiting-screen-border-inset: 0;
+    --waiting-screen-gap: 0.5rem;
+
+    --waiting-screen-flex-justify-content: space-between;
+  }
+}
+
+.GameWaiting_avatar {
+  @media screen and (max-width: 720px) {
+    --avatar-size: 128px;
+  }
 }
 
 .GameWaiting_avatarName {
@@ -39,8 +64,13 @@
     0px 6px 10px 2px rgba(0, 0, 0, 0.25),
     inset 0px 0 2px 0px rgba(0, 0, 0, 0.25);
   --ribbon-min-width: 0;
+  --offset: 100vw -
+    calc(
+      calc(var(--root-border-width) * 2) + calc(var(--root-margin) * 2) +
+        calc(var(--root-padding) * 2)
+    );
   --ribbon-max-width: calc(
-    calc(100vw - 2rem - 2rem - 12px) -
+    var(--offset) -
       (
         calc(var(--ribbon-fold-right-width) - var(--ribbon-right-x-offset)) +
           calc(var(--ribbon-fold-left-width) - var(--ribbon-left-x-offset))
@@ -66,6 +96,17 @@
     var(--pirates-owner-main) 0%,
     var(--pirates-palette-23) 49%,
     var(--pirates-owner-main) 100%
-  );  
+  );
   --shadow: var(--pirates-palette-25);
+}
+
+.abandonGame {
+  position: absolute;
+  @media screen and (max-width: 500px) {
+    &[data-type]:not([data-type="custom"]) {
+      span {
+        display: none;
+      }
+    }
+  }
 }

@@ -6,12 +6,26 @@
   &[data-enemy]:not([data-enemy-ready]) {
     opacity: 0.5;
   }
+
+  @media screen and (max-width: 720px) {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
 }
 .Avatar {
   --avatar-size: 128px;
   [data-enemy] & {
     position: absolute;
     right: 0;
+
+    @media screen and (max-width: 720px) {
+      position: unset;
+    }
+  }
+  @media screen and (max-width: 720px) {
+    --avatar-size: 64px;
+    margin-bottom: -1rem;
   }
 }
 
@@ -21,6 +35,10 @@
   position: absolute;
   bottom: 4rem;
   right: 128px;
+
+  @media screen and (max-width: 720px) {
+    position: unset;
+  }
 }
 
 .Ribbon_shape {
@@ -35,9 +53,16 @@
   --ribbon-right-notch-size: 0.75rem;
   /* --background-left: var(--pirates-palette-29);
   --background-right: var(--pirates-palette-30); */
-  --ribbon-min-width: 8rem;
+  --ribbon-min-width: 0;
+
+  --offset: 100vw -
+    calc(
+      calc(var(--root-border-width) * 2) + calc(var(--root-margin) * 2) +
+        calc(var(--root-padding) * 2)
+    );
+
   --ribbon-max-width: calc(
-    calc(100vw - 2rem - 2rem - 12px) -
+    var(--offset) -
       (
         calc(var(--ribbon-fold-right-width) - var(--ribbon-right-x-offset)) +
           calc(var(--ribbon-fold-left-width) - var(--ribbon-left-x-offset))
@@ -55,19 +80,48 @@
     --ribbon-left-notch-size: 0.75rem;
 
     --ribbon-max-width: calc(
-      calc(100vw - 2rem - 2rem - 12px) -
+      var(--offset) -
         (
           calc(var(--ribbon-fold-right-width) - var(--ribbon-right-x-offset)) +
             calc(var(--ribbon-fold-left-width) - var(--ribbon-left-x-offset))
         )
     );
   }
+
+  @media screen and (max-width: 720px) {
+    /* font */
+    font-size: 0.75rem;
+    /* ribbon */
+    --ribbon-fold-left-width: 2rem;
+    --ribbon-fold-left-height: 1.5rem;
+    --ribbon-left-y-offset: -0.5rem;
+    --ribbon-fold-right-width: 2rem;
+    --ribbon-fold-right-height: 1.5rem;
+    --ribbon-right-y-offset: -0.5rem;
+
+    --ribbon-min-height: 2rem;
+
+    [data-enemy] & {
+      /* ribbon */
+      --ribbon-fold-left-width: 2rem;
+      --ribbon-fold-left-height: 1.5rem;
+      --ribbon-left-y-offset: -0.5rem;
+      --ribbon-fold-right-width: 2rem;
+      --ribbon-fold-right-height: 1.5rem;
+      --ribbon-right-y-offset: -0.5rem;
+    }
+  }
 }
 
 .Ribbon {
+  text-align: center;
   composes: Ribbon_shape;
 
   position: absolute;
+  @media screen and (max-width: 720px) {
+    position: unset;
+  }
+
   bottom: 0;
   z-index: -1;
 
