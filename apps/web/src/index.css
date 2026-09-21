@@ -43,7 +43,11 @@ ol {
 }
 
 #root {
-  border: 6px solid transparent;
+  --root-margin: 1rem;
+  --root-padding: 1rem;
+  --root-border-width: 6px;
+  --root-border-radius: 1rem;
+
   background:
     linear-gradient(var(--pirates-palette-15), var(--pirates-palette-15))
       padding-box,
@@ -55,9 +59,18 @@ ol {
         var(--pirates-palette-5)
       )
       border-box;
-  min-height: calc(100vh - 2rem);
+
+  margin: var(--root-margin, 1rem);
+  padding: var(--root-padding, 1rem);
+  border: var(--root-border-width, 6px) solid transparent;
+  border-radius: var(--root-border-radius, 1rem);
+
+  min-height: calc(100vh - calc(2 * var(--root-margin, 1rem)));
+  width: calc(100vw - calc(2 * var(--root-margin, 1rem)));
   box-sizing: border-box;
-  margin: 1rem;
-  border-radius: 1rem;
-  padding: 1rem;
+
+  @media screen and (max-width: 500px) {
+    --root-margin: 0.5rem;
+    --root-padding: 0.5rem;
+  }
 }
