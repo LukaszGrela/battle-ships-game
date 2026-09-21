@@ -53,21 +53,17 @@
   --ribbon-right-notch-size: 0.75rem;
   /* --background-left: var(--pirates-palette-29);
   --background-right: var(--pirates-palette-30); */
-  --ribbon-min-width: 0;
+  --ribbon-min-width: min-content;
 
-  --offset: 100vw -
-    calc(
-      calc(var(--root-border-width) * 2) + calc(var(--root-margin) * 2) +
-        calc(var(--root-padding) * 2)
-    );
+  --offset: 100%;
 
-  --ribbon-max-width: calc(
+  --ribbon-max-width: 100%; /*calc(
     var(--offset) -
       (
         calc(var(--ribbon-fold-right-width) - var(--ribbon-right-x-offset)) +
           calc(var(--ribbon-fold-left-width) - var(--ribbon-left-x-offset))
-      )
-  );
+      ) 
+  );*/
 
   [data-enemy] & {
     --ribbon-right-y-offset: 0.25rem;
@@ -79,13 +75,13 @@
     --ribbon-fold-left-width: 2rem;
     --ribbon-left-notch-size: 0.75rem;
 
-    --ribbon-max-width: calc(
+    --ribbon-max-width: 100%;/*calc(
       var(--offset) -
         (
           calc(var(--ribbon-fold-right-width) - var(--ribbon-right-x-offset)) +
             calc(var(--ribbon-fold-left-width) - var(--ribbon-left-x-offset))
         )
-    );
+    );*/
   }
 
   @media screen and (max-width: 720px) {

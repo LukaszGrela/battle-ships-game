@@ -5,7 +5,8 @@ import { BoardGrid } from "./BoardGrid";
 import { ShipsLayer } from "../ShipsLayer/ShipsLayer";
 import { TBoard, TPlacedShip } from "@repo/types";
 import { TInteractivityProps } from "./types";
-import { CELL, GRID_PAD } from "../../utils/ships/constants";
+import { CELL, CELL_MOBILE, GRID_PAD } from "../../utils/ships/constants";
+import { useMediaQuery } from "../../utils/screen/useMediaQuery";
 
 export const ShipsBoard: FC<
   {
@@ -16,11 +17,15 @@ export const ShipsBoard: FC<
     className?: string;
   } & TInteractivityProps
 > = ({ owner, board, ships, className, ...interactivity }) => {
+  const isMobile = useMediaQuery("(max-width: 500px");
+
+  const gridCellSize = isMobile ? CELL_MOBILE : CELL;
+
   return (
     <div className={classNames(styles.ShipsBoard_board_container, className)}>
       <BoardGrid
         pad={GRID_PAD}
-        gridCellSize={CELL}
+        gridCellSize={gridCellSize}
         className={classNames(
           owner ? styles.ShipsBoard_board_owner : styles.ShipsBoard_board_enemy,
           styles.ShipsBoard_board_game_layer,
@@ -34,7 +39,7 @@ export const ShipsBoard: FC<
         ships={ships}
 
         pad={GRID_PAD}
-        gridCellSize={CELL}
+        gridCellSize={gridCellSize}
 
         rows={board.length ?? 0}
         columns={board.at(0)?.length ?? 0}
