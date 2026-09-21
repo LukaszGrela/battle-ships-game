@@ -4,5 +4,20 @@
   width: 100%;
 }
 .Header_title {
-  height: 120px;
+  height: var(--header-logo-size, 120px);
+  flex: 0 0 var(--header-logo-size, 120px);
+
+  @media screen and (max-width: 720px) {
+    --header-logo-size: 60px;
+  }
+}
+
+.home {
+  /* left avatar */
+  flex: 1 1 auto;
+}
+
+.away {
+  /* right avatar */
+  flex: 1 1 auto;
 }

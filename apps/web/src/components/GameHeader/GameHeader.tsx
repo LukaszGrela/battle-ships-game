@@ -1,5 +1,5 @@
-import { FC } from "react";
 import styles from "./GameHeader.module.css";
+import { FC } from "react";
 import { EGamePhase, TGameState } from "@repo/types";
 import { PlayerDetails } from "../PlayerDetails/PlayerDetails";
 
@@ -12,7 +12,11 @@ export const GameHeader: FC<{
   return (
     <div className={styles.GameHeader}>
       {gameState && (
-        <PlayerDetails self={gameState.self} phase={gameState.phase} />
+        <PlayerDetails
+          self={gameState.self}
+          phase={gameState.phase}
+          className={styles.home}
+        />
       )}
       <img
         alt="Pirates - BattleShips"
@@ -20,7 +24,12 @@ export const GameHeader: FC<{
         className={styles.Header_title}
       />
       {gameState && (
-        <PlayerDetails self={gameState.enemy} enemy phase={gameState.phase} />
+        <PlayerDetails
+          className={styles.away}
+          self={gameState.enemy}
+          enemy
+          phase={gameState.phase}
+        />
       )}
     </div>
   );
