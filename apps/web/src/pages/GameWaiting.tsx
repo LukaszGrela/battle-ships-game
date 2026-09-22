@@ -50,6 +50,9 @@ const GameHeader = () => {
           >
             {gameState?.self.name}
           </Ribbon>
+          <span className={styles.GameWaiting_warRoomName}>
+            The {gameState?.name} war room.
+          </span>
         </div>
       )}
     </>

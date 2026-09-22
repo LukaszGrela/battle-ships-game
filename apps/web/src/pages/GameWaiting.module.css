@@ -46,6 +46,9 @@
     --avatar-size: 128px;
   }
 }
+.GameWaiting_warRoomName {
+  margin-top: 0.5rem;
+}
 
 .GameWaiting_avatarName {
   /* ribbon */
