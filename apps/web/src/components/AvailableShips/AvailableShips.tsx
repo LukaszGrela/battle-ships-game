@@ -42,7 +42,6 @@ export const AvailableShips: FC<{
 
   return (
     <div className={styles.AvailableShips}>
-      <h2>Dostępne statki</h2>
       <div className={styles.GridSlot}>
         {ships.map((ship) => {
           const { id, size, placed } = ship;
@@ -71,15 +70,15 @@ export const AvailableShips: FC<{
             checked={vertical}
             onChange={handleVerticalCheckbox}
           />
-          Orientacja pionowa
+          Vertical orientation
         </label>
       </div>
       <div>
         <Button type="secondary" onClick={onReset} disabled={disableReset}>
-          Zresetuj
+          Reset
         </Button>
         <Button onClick={onApply} disabled={disableApply}>
-          Gotowe
+          Ready
         </Button>
       </div>
     </div>
