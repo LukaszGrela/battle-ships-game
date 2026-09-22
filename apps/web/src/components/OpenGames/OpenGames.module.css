@@ -10,7 +10,7 @@
   color: var(--pirates-palette-14);
 
   display: grid;
-  grid-template-columns: 1fr 1fr minmax(74px, 100px);
+  grid-template-columns: 1fr 1fr minmax(44px, 1fr);
   align-items: center;
 
   gap: 0.5rem;
@@ -37,13 +37,28 @@
 .listItem_name {
   font-weight: bold;
 }
+
 /* .listItem_date {
 } */
-.listItem_action {
-  justify-self: flex-end;
+/* .listItem_action {
+} */
+
+.listItem_action_content {
+  container-type: inline-size;
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
 }
 
 .empty {
   padding: 1rem 0 1rem;
   color: var(--pirates-palette-10);
+}
+
+.joinGame {
+  @container (max-width: 146px) {
+    & > span {
+      display: none;
+    }
+  }
 }
