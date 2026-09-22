@@ -1,7 +1,7 @@
 import styles from "./Lobby.module.css";
 import { FC } from "react";
 import { AppLayout } from "../components/AppLayout/AppLayout";
-import { DisconnetButton } from "../components/DisconnetButton/DisconnetButton";
+import { DisconnectButton } from "../components/DisconnectButton/DisconnectButton";
 import { OpenGames } from "../components/OpenGames/OpenGames";
 import { CreateNewGame } from "../components/CreateNewGame/CreateNewGame";
 import { StatsContainer } from "../components/StatsContainer/StatsContainer";
@@ -23,7 +23,7 @@ const Header = () => {
         src="./title.png"
         className={styles.Header_title}
       />
-      <DisconnetButton className={styles.Header_disconnect} />
+      <DisconnectButton className={styles.Header_disconnect} />
     </>
   );
 };
