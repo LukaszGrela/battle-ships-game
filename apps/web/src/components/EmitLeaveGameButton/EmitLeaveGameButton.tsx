@@ -5,8 +5,8 @@ import { Button } from "../Button/Button";
 import { TButtonProps } from "../Button/types";
 
 export const EmitLeaveGameButton: FC<
-  PropsWithChildren<Pick<TButtonProps, "type" | "className">>
-> = ({ children = "Leave Game", type, className }) => {
+  PropsWithChildren<Pick<TButtonProps, "type" | "className" | "size">>
+> = ({ children = "Leave Game", type, className, size }) => {
   const { selfId, gameState, setGameState, setSelfId, setError } =
     useGameStore();
   const gameFinished = gameState?.phase === "finished";
@@ -25,6 +25,7 @@ export const EmitLeaveGameButton: FC<
       onClick={leaveGame}
       disabled={!!selfId === false}
       type={type}
+      size={size}
     >
       {children}
     </Button>
