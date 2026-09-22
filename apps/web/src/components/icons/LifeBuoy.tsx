@@ -10,7 +10,7 @@ export const LifeBuoy = () => {
       strokeWidth="2"
       strokeLinecap="round"
       strokeLinejoin="round"
-      className="lucide lucide-life-buoy preview-icon"
+      className="lucide lucide-life-buoy"
     >
       <circle cx="12" cy="12" r="10" />
       <path d="m4.93 4.93 4.24 4.24" />
