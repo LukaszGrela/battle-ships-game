@@ -29,8 +29,8 @@ export const ShipsLayer: FC<{
   console.log("[ShipsLayer]", images);
   console.log("[ShipsLayer]", ships);
 
-  const canvasPxW = columns * gridCellSize + 2 * pad;
-  const canvasPxH = rows * gridCellSize + 2 * pad;
+  const canvasPxW = columns * gridCellSize + 2 * gridCellSize;
+  const canvasPxH = rows * gridCellSize + 2 * gridCellSize;
 
   useEffect(() => {
     const canvas = canvasRef.current;
