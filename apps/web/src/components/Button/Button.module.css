@@ -1,29 +1,31 @@
 .Button {
-  --outline-width: 2px;
-  --padding: 0.5rem;
-
   cursor: pointer;
 
   &[data-type]:not([data-type="custom"]) {
-    padding: var(--padding);
-    border-radius: 6px;
+    height: var(--height, auto);
+    padding: var(--padding, 0.5rem);
+    border-radius: var(--border-radius, 6px);
     /* outline: 2px solid red; */
     border-style: solid;
-    border-width: 2px;
+    border-width: var(--border-width, 2px);
+
+    -webkit-text-stroke: var(--text-stroke, 3px) var(--pirates-palette-16);
+    paint-order: stroke fill;
 
     text-transform: uppercase;
-    -webkit-text-stroke: 3px var(--pirates-palette-16);
-    paint-order: stroke fill;
     font-weight: bold;
+    font-size: var(--font-size, var(--font-size-normal));
+
     box-shadow:
       /* outline */
-      0 0 0 var(--outline-width) var(--pirates-palette-14),
+      0 0 0 var(--outline-width, 2px) var(--pirates-palette-14),
       /* shadow */ 0 0 0 0 rgba(0, 0, 0, 0.1);
-    margin: var(--outline-width);
+    margin: var(--outline-width, 2px);
 
     & svg {
       stroke: var(--pirates-palette-20);
       filter: drop-shadow(1px 1px 1px rgba(0, 0, 0, 0.5));
+      height: var(--svg-size, 100%);
     }
 
     display: inline-flex;
@@ -130,6 +132,25 @@
         var(--pirates-palette-31)
       );
     }
+  }
+
+  &[data-size="sm"] {
+    --height: 1.75rem;
+    --border-radius: 3px;
+    --padding: 0.125rem 0.5rem;
+    --font-size: var(--font-size-small);
+  }
+  &[data-size="md"] {
+    --height: 2.25rem;
+    --border-radius: 4px;
+    --padding: 0.25rem 0.5rem;
+    --font-size: var(--font-size-normal);
+  }
+  &[data-size="lg"] {
+    --height: 2.75rem;
+    --border-radius: 6px;
+    --padding: 0.5rem 0.75rem;
+    --font-size: var(--font-size-large);
   }
 
   &:disabled {

@@ -9,5 +9,6 @@ export type TButtonProps = {
   children?: ReactNode;
   className?: string;
   type?: "primary" | "secondary" | "info" | "danger" | "custom";
+  size?: "sm" | "md" | "lg" | "custom";
   onClick?: () => void;
 } & TDataProps;

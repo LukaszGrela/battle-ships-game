@@ -9,6 +9,7 @@ export const Button: FC<TButtonProps> = ({
   type = "primary",
   disabled,
   onClick,
+  size = "md",
   ...rest
 }) => {
   return (
@@ -17,6 +18,7 @@ export const Button: FC<TButtonProps> = ({
       disabled={disabled}
       onClick={onClick}
       data-type={type}
+      data-size={size}
       {...rest}
     >
       {children}
