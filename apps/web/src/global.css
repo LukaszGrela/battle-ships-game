@@ -51,6 +51,14 @@
   /* Players */
   --pirates-owner-main: var(--pirates-palette-24);
   --pirates-enemy-main: var(--pirates-palette-30);
+
+  /* Fonts */
+  --font-size-xlarge: 2rem;
+  --font-size-large: 1.5rem;
+  --font-size-medium: 1.25rem;
+  --font-size-normal: 1rem;
+  --font-size-small: 0.75rem;
+  --font-size-xsmall: 0.5rem;
 }
 
 .shadow {

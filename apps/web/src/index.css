@@ -5,6 +5,7 @@
 }
 
 html {
+  scrollbar-gutter: stable;
   background-color: var(--pirates-background);
   color: var(--pirates-foreground);
   font-family: "Gill Sans", "Gill Sans MT", Calibri, "Trebuchet MS", sans-serif;
@@ -22,6 +23,7 @@ html {
     "Helvetica Neue",
     sans-serif;
   font-family: Verdana, Geneva, Tahoma, sans-serif;
+  font-size: var(--font-size-normal);
 }
 
 body {
