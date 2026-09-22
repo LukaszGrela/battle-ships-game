@@ -216,7 +216,10 @@ export const GamePlacement: FC = () => {
       header={
         <>
           {gameState && (
-            <GameHeader gameState={gameState as TGameHeaderAllowedState} />
+            <GameHeader
+              gameState={gameState as TGameHeaderAllowedState}
+              showAbandon
+            />
           )}
           <h2>Place your ships</h2>
         </>
