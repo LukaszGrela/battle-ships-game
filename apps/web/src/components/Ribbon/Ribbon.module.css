@@ -37,6 +37,7 @@
 .Ribbon {
   position: relative;
   isolation: isolate;
+  text-align: center;
 
   --margin-top: max(
     abs(min(0px, var(--ribbon-right-y-offset, 0px))),
