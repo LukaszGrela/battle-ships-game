@@ -209,6 +209,7 @@ export const GamePlacement: FC = () => {
   }, [availableShips]);
 
   console.log("availableShips", availableShips);
+  console.log(gameState);
 
   return (
     <AppLayout
@@ -221,7 +222,8 @@ export const GamePlacement: FC = () => {
               showAbandon
             />
           )}
-          <h2>Place your ships</h2>
+          {!gameState?.self.ready && <h2>Place your ships</h2>}
+          {gameState?.self.ready && <h2>Waiting for opponent</h2>}
         </>
       }
     >
@@ -236,7 +238,7 @@ export const GamePlacement: FC = () => {
             {...placementInteractivity}
           />
         </div>
-        {gameState?.phase === "placement" && (
+        {gameState?.phase === "placement" && !gameState?.self.ready && (
           <AvailableShips
             selected={shipSelected}
             onSelection={onShipSelected}

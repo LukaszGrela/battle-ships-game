@@ -59,6 +59,14 @@
   --font-size-normal: 1rem;
   --font-size-small: 0.75rem;
   --font-size-xsmall: 0.5rem;
+
+  /* Gaps */
+  --gap-xlarge: 3rem;
+  --gap-large: 1.5rem;
+  --gap-medium: 0.75rem;
+  --gap-normal: 0.5rem;
+  --gap-small: 0.25rem;
+  --gap-xsmall: 0.125rem;
 }
 
 .shadow {

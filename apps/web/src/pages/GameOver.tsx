@@ -1,6 +1,6 @@
 import styles from "./Game.module.css";
 
-import { FC } from "react";
+import { FC, useState } from "react";
 import { AppLayout } from "../components/AppLayout/AppLayout";
 import { useGameStore } from "../store/useGameStore";
 import { Button } from "../components/Button/Button";
@@ -11,12 +11,15 @@ import {
   TGameHeaderAllowedState,
 } from "../components/GameHeader/GameHeader";
 import { EmitLeaveGameButton } from "../components/EmitLeaveGameButton/EmitLeaveGameButton";
+import { GameResultsModal } from "../components/GameResultsModal";
 
 export const GameOver: FC = () => {
   const { gameState } = useGameStore();
-  const state =
-    gameState && gameState.phase === "finished" ? gameState : undefined;
-  const myResults = state?.result[state.self.id];
+
+  const [open, setOpen] = useState(true);
+  const closeModal = () => {
+    setOpen(false);
+  };
 
   return (
     <AppLayout
@@ -26,10 +29,6 @@ export const GameOver: FC = () => {
         )
       }
     >
-      <h2>Game Over</h2>
-      {myResults && (
-        <section>{myResults === "win" ? "Wygrałeś!" : "Przegrałeś!"}</section>
-      )}
       <section className={styles.Game_layout}>
         {gameState &&
           (gameState.phase === "playing" || gameState.phase === "finished") && (
@@ -52,10 +51,17 @@ export const GameOver: FC = () => {
       <section>
         <Button>Zaproponuj rewanż</Button>
 
-        <EmitLeaveGameButton type="secondary">
+        <EmitLeaveGameButton type="secondary" skipConfirmation={false}>
           Exit to Lobby
         </EmitLeaveGameButton>
       </section>
+      {gameState && (
+        <GameResultsModal
+          gameState={gameState}
+          open={open}
+          onClose={closeModal}
+        />
+      )}
     </AppLayout>
   );
 };

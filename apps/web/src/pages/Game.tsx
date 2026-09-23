@@ -10,6 +10,7 @@ import {
   GameHeader,
   TGameHeaderAllowedState,
 } from "../components/GameHeader/GameHeader";
+import { OpponentTurnModal } from "../components/OpponentTurnModal";
 
 export const Game: FC = () => {
   const { gameState, selfId } = useGameStore();
@@ -36,7 +37,10 @@ export const Game: FC = () => {
     <AppLayout
       header={
         gameState && (
-          <GameHeader gameState={gameState as TGameHeaderAllowedState} />
+          <GameHeader
+            gameState={gameState as TGameHeaderAllowedState}
+            showForfait
+          />
         )
       }
     >
@@ -66,6 +70,11 @@ export const Game: FC = () => {
           </>
         )}
       </section>
+
+      <OpponentTurnModal
+        open={!myTurn}
+        player={(gameState as TGameHeaderAllowedState).enemy}
+      />
     </AppLayout>
   );
 };
