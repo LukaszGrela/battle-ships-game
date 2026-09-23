@@ -113,3 +113,10 @@
   justify-content: flex-end;
   gap: 0.5rem;
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .Modal::backdrop,
+  .Modal_dialog {
+    animation: none;
+  }
+}
