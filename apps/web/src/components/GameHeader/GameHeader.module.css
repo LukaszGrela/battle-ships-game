@@ -1,5 +1,22 @@
 .GameHeader {
   display: flex;
+  flex-direction: column;
+}
+.GameHeader_toolbar {
+  display: flex;
+}
+.responsiveIconButton {
+  @media screen and (max-width: 500px) {
+    &[data-type]:not([data-type="custom"]) {
+      span {
+        display: none;
+      }
+    }
+  }
+}
+
+.GameHeader_content {
+  display: flex;
   justify-content: space-between;
   width: 100%;
 }
