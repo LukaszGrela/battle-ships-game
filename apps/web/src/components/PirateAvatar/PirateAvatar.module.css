@@ -11,12 +11,18 @@
   width: var(--avatar-size, 256px);
   height: var(--avatar-size, 256px);
 
-  background-image: url("./avatars-1.png");
-  &[data-atlas="2"] { background-image: url("./avatars-2.png"); }
-  &[data-atlas="3"] { background-image: url("./avatars-3.png"); }
+  background-image: url("./avatars/avatars-1.png");
+  &[data-atlas="2"] {
+    background-image: url("./avatars/avatars-2.png");
+  }
+  &[data-atlas="3"] {
+    background-image: url("./avatars/avatars-3.png");
+  }
 
   /* scale WHOLE atlas file proportionallyto display size */
-  background-size: calc(var(--sprite-step) * 4 * (var(--avatar-size, 256px) / var(--sprite-step)));
+  background-size: calc(
+    var(--sprite-step) * 4 * (var(--avatar-size, 256px) / var(--sprite-step))
+  );
   /* = 4 * avatar-size */
 
   background-position-x: calc(var(--avatar-x) * var(--avatar-size, 256px));
