@@ -4,6 +4,8 @@ import { IPlayer } from "@repo/types";
 import { seedRandom } from "@repo/game-logic";
 import { socket } from "../../socket";
 import { classNames } from "../../utils/classNames";
+import { DotLoader } from "../DotLoader";
+import { Waves } from "../Waves";
 
 interface WaitingScreenProps {
   className?: string;
@@ -79,15 +81,8 @@ export function WaitingScreen({
       <p className={styles.message}>{message}</p>
 
       <div className={styles.waves} aria-hidden="true" />
-
-      <div className={styles.loader} role="status" aria-live="polite">
-        {loaderMessage}
-        <span className={styles.dots} aria-hidden="true">
-          <span className={styles.dot} />
-          <span className={styles.dot} />
-          <span className={styles.dot} />
-        </span>
-      </div>
+      <Waves className={styles.wave} direction="right"/>
+      <DotLoader className={styles.loader} label={loaderMessage} />
     </div>
   );
 }
