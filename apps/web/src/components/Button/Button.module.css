@@ -1,4 +1,6 @@
 .Button {
+  color: inherit;
+  
   cursor: pointer;
 
   &[data-type]:not([data-type="custom"]) {
