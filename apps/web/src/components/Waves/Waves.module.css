@@ -1,0 +1,46 @@
+/* ─── Waves divider ──────────────────────────────────────── */
+.Waves {
+  --wave-default-animation: drift 6s linear infinite;
+
+  width: 100%;
+  max-width: 22rem;
+  height: 18px;
+  overflow: hidden; /* Hides the sliding overflow */
+
+}
+
+.Waves_svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  stroke: var(--waves-stroke, var(--pirates-palette-23, #308ecf));
+  stroke-width: var(--waves-stroke-width, 2px);
+}
+
+.Waves_path {
+  animation: var(--wave-animation, var(--wave-default-animation));
+  animation-delay: var(--wave-animation-delay, 0);
+}
+
+[data-direction="right"] .Waves_path {
+  animation-direction: reverse;
+}
+
+@keyframes drift {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    /* ONE period = 120 user units.
+       Content is 480 wide in a 360 viewBox,
+       so the right edge is never starved. */
+    transform: translateX(-120px);
+  }
+}
+
+/* ─── Accessibility ──────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .Waves_path {
+    animation: none;
+  }
+}
