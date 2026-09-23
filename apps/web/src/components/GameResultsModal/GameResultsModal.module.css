@@ -1,0 +1,10 @@
+.GameResultsModal_panel {
+  width: min(26rem, 100vw);
+}
+
+.GameResultsModal_body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
