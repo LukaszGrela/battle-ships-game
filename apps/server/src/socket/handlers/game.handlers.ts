@@ -45,6 +45,7 @@ export const registerGameHandlers = (
     if (room) {
       // console.log("Room", room.name, room.phase);
       if (room.phase !== "placement") {
+        console.error("Wrong phase", room.phase, room);
         socket.emit("error", "Can't place ships now");
         return;
       }
@@ -146,6 +147,7 @@ export const registerGameHandlers = (
 
     // 1. Validation logic
     if (!room || room.turn !== socket.id || room.phase !== "playing") {
+      console.error("Not your turn", room?.turn, room?.phase, room);
       socket.emit("error", "Not your turn or game not active");
       return;
     }
