@@ -1,3 +1,4 @@
+import styles from "./EmitForfeitGameButton.module.css";
 import { FC, useCallback, useState } from "react";
 import { socket } from "../../socket";
 import { useGameStore } from "../../store/useGameStore";
@@ -19,7 +20,7 @@ export const EmitForfeitGameButton: FC<
   };
 
   const modalFooterRenderer = useCallback(
-    (_:boolean, onClose: () => void) => {
+    (_: boolean, onClose: () => void) => {
       const confirm = () => {
         onClose();
 
@@ -64,6 +65,10 @@ export const EmitForfeitGameButton: FC<
 
         backdrop={false}
         keyboard={false}
+
+        className={styles.Modal}
+        bodyClassName={styles.Modal_body}
+        dialogClassName={styles.Modal_dialog}
       >
         <p>Are you sure you want to surrender?</p>
       </Modal>
