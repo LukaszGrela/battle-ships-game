@@ -1,3 +1,4 @@
+import { TDataProps } from "@repo/types";
 import type { ReactNode } from "react";
 
 type TConfirmModal = {
@@ -23,7 +24,7 @@ type TTitleProps = {
 
 type THeaderProps = { hideHeader: true } | (THeaderRenderProps | TTitleProps);
 
-export type TProps = {
+export type TProps = TDataProps & {
   open: boolean;
   onClose?: () => void;
   children: React.ReactNode;
@@ -49,6 +50,13 @@ export type TProps = {
    * Class name applied on the content body wrapper of the modal
    */
   bodyClassName?: string;
+
+  /**
+   * Class name applied on the header UI of the modal
+   */
+  headerClassName?: string;
+
   "aria-labelledby"?: string;
+  "aria-describedby"?: string;
 } & (TConfirmModal | TCustomDialog) &
   THeaderProps;

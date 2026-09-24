@@ -1,9 +1,10 @@
 import styles from "./Modal.module.css";
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { Button } from "../Button/Button";
 import { Close } from "../icons";
 import { TProps } from "./types";
 import { classNames } from "../../utils/classNames";
+import { TDataProps } from "@repo/types";
 
 export function Modal({
   open,
@@ -13,8 +14,11 @@ export function Modal({
   className,
   dialogClassName,
   bodyClassName,
+  headerClassName,
   backdrop = true,
   keyboard = true,
+  "aria-describedby": ariaDescribedBy,
+  "aria-labelledby": ariaLabelledBy = "Modal-header-title",
   ...conditionalProps
 }: TProps) {
   const ref = useRef<HTMLDialogElement>(null);
@@ -60,6 +64,14 @@ export function Modal({
       [onClose, backdrop],
     );
 
+  const dataProps = useMemo(() => {
+    return Object.entries(conditionalProps)
+      .filter(([prop]) => prop.startsWith("data-"))
+      .reduce((acc, [prop, value]) => {
+        return { ...acc, [prop]: value };
+      }, {} as TDataProps);
+  }, [conditionalProps]);
+
   return (
     <dialog
       className={classNames(styles.Modal, className)}
@@ -67,16 +79,21 @@ export function Modal({
       onKeyDown={handleCancel}
       onClick={handleBackdropClick}
       onClose={onClose}
+      aria-labelledby={ariaLabelledBy}
+      aria-describedby={ariaDescribedBy}
     >
-      <div className={classNames(styles.Modal_dialog, dialogClassName)}>
+      <div
+        className={classNames(styles.Modal_dialog, dialogClassName)}
+        {...dataProps}
+      >
         {!conditionalProps.hideHeader && (
-          <div className={styles.Modal_header}>
+          <div className={classNames(styles.Modal_header, headerClassName)}>
             {!conditionalProps.title &&
               conditionalProps.header &&
               conditionalProps.header(open, onCloseHandler)}
             {!conditionalProps.header && (
               <>
-                <h2>{conditionalProps.title}</h2>
+                <h2 id={ariaLabelledBy}>{conditionalProps.title}</h2>
                 <Button
                   type="custom"
                   onClick={onClose}

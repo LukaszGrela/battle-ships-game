@@ -1,24 +1,27 @@
 .Modal {
+  margin: var(--modal-margin, auto);
   padding: 0;
   border: none;
   background: transparent;
   overflow: visible;
+
+  max-width: var(--modal-max-width, 90vw);
+  max-height: var(--modal-max-height, 90vh);
 }
 
 .Modal_dialog {
   /* ── Palette aliases ── */
   --bg: var(--pirates-palette-16, #292623);
-  --text-strong: var(--pirates-palette-2, #f8df59);
   --text-soft: var(--pirates-palette-21, #f5e2a9);
-  --text-muted: var(--pirates-palette-1, #b5b3a3);
+  --text-strong: var(--pirates-palette-2, #f8df59);
+
   --accent: var(--pirates-palette-4, #dd9a26);
   --accent-dark: var(--pirates-palette-5, #993e18);
-  --accent-bright: var(--pirates-palette-3, #fcd02e);
-  --glow: rgba(252, 208, 46, 0.22);
 
   position: relative;
-  width: min(26rem, 100%);
-  padding: 1rem;
+  width: var(--modal-dialog-width, min(26rem, 90%));
+  height: var(--modal-dialog-height, auto);
+  padding: var(--modal-dialog-padding, 1rem);
   text-align: center;
   overflow: hidden;
 
@@ -35,11 +38,16 @@
     cover,
     200px 200px;
 
-  border: 1px solid rgba(221, 154, 38, 0.35); /* palette 4 */
-  border-radius: 0.75rem;
-  box-shadow:
+  border: var(
+    --modal-dialog-border,
+    1px solid rgba(221, 154, 38, 0.35)
+  ); /* palette 4 */
+  border-radius: var(--modal-dialog-radius, 0.75rem);
+  box-shadow: var(
+    --modal-dialog-box-shadow,
     0 18px 40px rgba(0, 0, 0, 0.6),
-    inset 0 0 0 1px rgba(252, 208, 46, 0.06);
+    inset 0 0 0 1px rgba(252, 208, 46, 0.06)
+  );
 
   color: var(--text-soft);
   animation: rise 333ms ease-out;
@@ -88,6 +96,8 @@
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
+
+  color: var(--text-strong);
 
   & h2 {
     margin: 0;
