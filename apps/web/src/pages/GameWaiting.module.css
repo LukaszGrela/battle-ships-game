@@ -2,7 +2,7 @@
   position: relative;
   display: flex;
 
-  height: calc(
+  min-height: calc(
     100vh -
       calc(
         calc(var(--root-border-width) * 2) + calc(var(--root-margin) * 2) +

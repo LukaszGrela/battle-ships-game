@@ -3,18 +3,21 @@ import styles from "./Game.module.css";
 import { FC, useState } from "react";
 import { AppLayout } from "../components/AppLayout/AppLayout";
 import { useGameStore } from "../store/useGameStore";
-import { Button } from "../components/Button/Button";
 import { ShipsBoard } from "../components/Board/ShipsBoard";
 import { TPlacedShip } from "@repo/types";
 import {
   GameHeader,
   TGameHeaderAllowedState,
 } from "../components/GameHeader/GameHeader";
-import { EmitLeaveGameButton } from "../components/EmitLeaveGameButton/EmitLeaveGameButton";
 import { GameResultsModal } from "../components/GameResultsModal";
 
 export const GameOver: FC = () => {
   const { gameState } = useGameStore();
+
+  const state =
+    gameState && gameState.phase === "finished" ? gameState : undefined;
+  const myResults = state?.result[state.self.id];
+  const winner = myResults === "win";
 
   const [open, setOpen] = useState(true);
   const closeModal = () => {
@@ -25,7 +28,11 @@ export const GameOver: FC = () => {
     <AppLayout
       header={
         gameState && (
-          <GameHeader gameState={gameState as TGameHeaderAllowedState} />
+          <GameHeader
+            gameState={gameState as TGameHeaderAllowedState}
+            showRevenge={!winner}
+            showLeave
+          />
         )
       }
     >
@@ -47,13 +54,6 @@ export const GameOver: FC = () => {
             />
           </>
         )}
-      </section>
-      <section>
-        <Button>Zaproponuj rewanż</Button>
-
-        <EmitLeaveGameButton type="secondary" skipConfirmation={false}>
-          Exit to Lobby
-        </EmitLeaveGameButton>
       </section>
       {gameState && (
         <GameResultsModal
