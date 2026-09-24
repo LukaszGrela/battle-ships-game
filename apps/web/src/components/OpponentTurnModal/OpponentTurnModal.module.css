@@ -1,4 +1,7 @@
 /* ─── Panel ──────────────────────────────────────────────── */
+.panel {
+  --modal-dialog-width: 100%;
+}
 .panel_body {
   display: flex;
   flex-direction: column;
