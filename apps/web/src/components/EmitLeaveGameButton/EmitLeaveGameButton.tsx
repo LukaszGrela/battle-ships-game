@@ -1,3 +1,4 @@
+import styles from "./EmitLeaveGameButton.module.css";
 import { useCallback, useState, type FC } from "react";
 import { useGameStore } from "../../store/useGameStore";
 import { socket } from "../../socket";
@@ -81,6 +82,10 @@ export const EmitLeaveGameButton: FC<
 
         backdrop={false}
         keyboard={false}
+
+        className={styles.Modal}
+        bodyClassName={styles.Modal_body}
+        dialogClassName={styles.Modal_dialog}
       >
         <p>Are you sure you want to leave game?</p>
       </Modal>
