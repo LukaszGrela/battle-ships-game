@@ -72,7 +72,7 @@ class RoomService implements IRoomService {
   findRoomBySocketId(playerId: string): TRoomState | undefined {
     this.log("findRoomBySocketId");
     const room = Array.from(this.rooms.values()).find(
-      (r) => r.players[playerId],
+      (r) => r.players[playerId] && r.players[playerId].active,
     );
     if (room) {
       return structuredClone(room);
