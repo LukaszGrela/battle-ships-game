@@ -6,6 +6,7 @@ import { EmitLeaveGameButton } from "../EmitLeaveGameButton/EmitLeaveGameButton"
 import { LifeBuoy } from "../icons/LifeBuoy";
 import { Flag } from "../icons/Flag";
 import { EmitForfeitGameButton } from "../EmitForfaitGameButton/EmitForfaitGameButton";
+import { Button } from "../Button";
 
 export type TGameHeaderAllowedState = TGameState & {
   phase: EGamePhase.Placement | EGamePhase.Playing | EGamePhase.Finished;
@@ -14,7 +15,9 @@ export const GameHeader: FC<{
   gameState: TGameHeaderAllowedState;
   showForfait?: boolean;
   showAbandon?: boolean;
-}> = ({ gameState, showAbandon, showForfait }) => {
+  showRevenge?: boolean;
+  showLeave?: boolean;
+}> = ({ gameState, showAbandon, showForfait, showLeave, showRevenge }) => {
   return (
     <div className={styles.GameHeader}>
       <div className={styles.GameHeader_toolbar}>
@@ -37,6 +40,16 @@ export const GameHeader: FC<{
             <Flag />
             <span>Forfait</span>
           </EmitForfeitGameButton>
+        )}
+        {showRevenge && <Button size="sm">Give me revenge</Button>}
+        {showLeave && (
+          <EmitLeaveGameButton
+            size="sm"
+            type="secondary"
+            skipConfirmation={true}
+          >
+            Sail Away
+          </EmitLeaveGameButton>
         )}
       </div>
       <div className={styles.GameHeader_content}>
