@@ -1,7 +1,17 @@
 import styles from "./GameResultsModal.module.css";
-import { FC } from "react";
+import { FC, useState } from "react";
 import { TProps as TModalProps, Modal } from "../Modal";
 import { TGameState } from "@repo/types";
+import { Button } from "../Button";
+import { EmitLeaveGameButton } from "../EmitLeaveGameButton/EmitLeaveGameButton";
+import { classNames } from "../../utils/classNames";
+import { getSpriteStyle } from "../../assets/getSpriteStyle";
+import {
+  DECOR_SPRITES,
+  DEFEAT_SPRITES,
+  TDecorSprite,
+  VICTORY_SPRITES,
+} from "../../assets/decorations";
 
 type TProps = {
   gameState: TGameState;
@@ -33,25 +43,63 @@ const DEFEAT_MESSAGES = [
   "Live to patch the hull and fight another day.",
 ] as const;
 
+function pick<T>(arr: readonly T[]): T {
+  return arr[Math.floor(Math.random() * arr.length)] as T;
+}
+
 export const GameResultsModal: FC<TProps> = ({ open, onClose, gameState }) => {
   const state =
     gameState && gameState.phase === "finished" ? gameState : undefined;
   const myResults = state?.result[state.self.id];
+  const winner = myResults === "win";
+
+  const [message] = useState(() => {
+    const list = winner ? VICTORY_MESSAGES : DEFEAT_MESSAGES;
+
+    return pick(list);
+  });
+
+  const [decor] = useState<TDecorSprite>(() =>
+    pick(winner ? VICTORY_SPRITES : DEFEAT_SPRITES),
+  );
+
+  const sprite = DECOR_SPRITES[decor];
 
   return (
-    <Modal
-      open={open}
-      onClose={onClose}
-      header={() => {
-        <h2>Game Over</h2>;
-      }}
+    <>
+      <Modal
+        open={open}
+        onClose={onClose}
 
-      dialogClassName={styles.GameResultsModal_panel}
-      bodyClassName={styles.GameResultsModal_body}
-    >
-      {myResults && (
-        <section>{myResults === "win" ? "Wygrałeś!" : "Przegrałeś!"}</section>
-      )}
-    </Modal>
+        title={winner ? "Victory!" : "Game Over"}
+        className={styles.GameResultsModal}
+        dialogClassName={styles.GameResultsModal_panel}
+        headerClassName={styles.GameResultsModal_header}
+        bodyClassName={classNames(styles.GameResultsModal_body, styles.body)}
+
+        aria-labelledby={"results-modal-title"}
+        data-outcome={myResults}
+
+        footer={() => (
+          <>
+            {!winner && <Button>Give me revenge</Button>}
+
+            <EmitLeaveGameButton type="secondary" skipConfirmation={true}>
+              Sail Away
+            </EmitLeaveGameButton>
+          </>
+        )}
+      >
+        <div
+          className={styles.decor}
+          aria-hidden={true}
+          style={getSpriteStyle(sprite, 128)}
+        />
+
+        <p className={styles.message} aria-live="polite">
+          {message}
+        </p>
+      </Modal>
+    </>
   );
 };
