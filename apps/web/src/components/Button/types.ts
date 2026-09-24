@@ -1,8 +1,5 @@
+import { TDataProps } from "@repo/types";
 import { ReactNode } from "react";
-
-type TDataProps = {
-  [key: `data-${string}`]: string | boolean | number | undefined;
-};
 
 export type TButtonProps = {
   disabled?: boolean;

@@ -206,3 +206,7 @@ export type TStats = {
  */
 export type TPartialPick<T, K extends keyof T> = Partial<Pick<T, K>> &
   Omit<T, K>;
+
+export type TDataProps = {
+  [key: `data-${string}`]: string | boolean | number | undefined;
+};
