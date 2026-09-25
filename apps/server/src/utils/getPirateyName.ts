@@ -1,3 +1,5 @@
+import { SeededRandom, seedRandom } from "@repo/game-logic";
+
 // ─── Data Pools ───────────────────────────────────────────────────────────────
 const TITLES = [
   "Captain",
@@ -259,13 +261,13 @@ const INSULTS = [
 ] as const;
 
 // ─── Generators ───────────────────────────────────────────────────────────────
-
-function pick<T extends readonly unknown[]>(arr: T): T[number] {
-  return arr[Math.floor(Math.random() * arr.length)];
-}
-
-function capitalize(s: string): string {
-  return s.charAt(0).toUpperCase() + s.slice(1);
+const defaultSeed = seedRandom(1979);
+function pick<T extends readonly unknown[]>(
+  arr: T,
+  seedRandom: SeededRandom = defaultSeed,
+): T[number] {
+  // return arr[Math.floor(Math.random() * arr.length)];
+  return arr[seedRandom.nextInt(0, arr.length - 1)];
 }
 
 /**
@@ -280,54 +282,58 @@ function capitalize(s: string): string {
  * - `"Scurvy Jack the Barnacle-Breath"`  (Adjective + Name + the + Insult-Noun)
  * - `"Revenge"`                          (Ship part / Single word)
  */
-export function getPirateyName(): string {
-  const roll = Math.random();
+export function getPirateyName(seed?: number): string {
+  let random = seed ? seedRandom(seed) : undefined;
+
+  const roll = random ? random.nextFloat() : Math.random();
 
   // 20% — Full classic pirate name: "Captain Jack Sparrow"
   if (roll < 0.2) {
-    const title = pick(TITLES);
-    const name = pick(NAMES);
-    const noun = pick(NOUNS);
+    const title = pick(TITLES, random);
+    const name = pick(NAMES, random);
+    const noun = pick(NOUNS, random);
     return `${title} ${name} ${noun}`;
   }
 
   // 15% — Adjective + Noun compound: "Blackbeard", "Red Shark"
   if (roll < 0.35) {
-    const adj = pick(ADJECTIVES);
-    const noun = pick(NOUNS);
+    const adj = pick(ADJECTIVES, random);
+    const noun = pick(NOUNS, random);
     return `${adj}${noun}`;
   }
 
   // 12% — "The [Adjective] [Noun]": "The Rotten Barnacle"
   if (roll < 0.47) {
-    return `The ${pick(ADJECTIVES)} ${pick(NOUNS)}`;
+    return `The ${pick(ADJECTIVES, random)} ${pick(NOUNS, random)}`;
   }
 
   // 10% — "Dread Pirate [Surname]": "Dread Pirate Silver"
   if (roll < 0.57) {
-    return `Dread Pirate ${pick(NAMES)}`;
+    return `Dread Pirate ${pick(NAMES, random)}`;
   }
 
   // 10% — "Adjective + Insult": "Salty Dog", "Rotten Rat"
   if (roll < 0.67) {
-    return `${pick(ADJECTIVES)} ${pick(INSULTS)}`;
+    return `${pick(ADJECTIVES, random)} ${pick(INSULTS, random)}`;
   }
 
   // 10% — "Adjective Name the [Insult]-[Noun]": "Scurvy Jack the Barnacle-Breath"
   if (roll < 0.77) {
-    const adj = pick(ADJECTIVES);
-    const name = pick(NAMES);
-    const insult = pick(INSULTS);
-    const noun = pick(NOUNS);
+    const adj = pick(ADJECTIVES, random);
+    const name = pick(NAMES, random);
+    const insult = pick(INSULTS, random);
+    const noun = pick(NOUNS, random);
     return `${adj} ${name} the ${insult}-${noun}`;
   }
 
   // 10% — Ship name / single dramatic word: "Revenge", "Sea Serpent"
   if (roll < 0.87) {
-    const part1 = pick(SHIP_PARTS);
-    const part2 = pick(NOUNS);
+    const part1 = pick(SHIP_PARTS, random);
+    const part2 = pick(NOUNS, random);
+    const chance = random ? random.nextFloat() : Math.random();
+
     // 50% chance of two words
-    if (Math.random() < 0.5) {
+    if (chance < 0.5) {
       return `${part1} ${part2}`;
     }
     return String(part1);
@@ -335,34 +341,36 @@ export function getPirateyName(): string {
 
   // 8% — "Title the [Adjective]": "Captain the Fearsome"
   if (roll < 0.95) {
-    return `${pick(TITLES)} the ${pick(ADJECTIVES)}`;
+    return `${pick(TITLES, random)} the ${pick(ADJECTIVES, random)}`;
   }
 
   // 5% — Full colourful: "Old Peg the Sea Dog"
-  const title = pick(TITLES);
-  const name = pick(NAMES);
-  const insult = pick(INSULTS);
-  const noun = pick(NOUNS);
+  const title = pick(TITLES, random);
+  const name = pick(NAMES, random);
+  const insult = pick(INSULTS, random);
+  const noun = pick(NOUNS, random);
   return `${title} ${name} the ${insult} ${noun}`;
 }
 
 // ─── Convenience Exports ──────────────────────────────────────────────────────
 
 /** Generates a simple, short pirate name (1-3 words, no long epithets). */
-export function getShortPirateName(): string {
+export function getShortPirateName(seed?: number): string {
+  let random = seed ? seedRandom(seed) : undefined;
+
   const formats = [
-    () => `${pick(ADJECTIVES)} ${pick(INSULTS)}`, // "Salty Dog"
-    () => `${pick(NAMES)} the ${pick(NOUNS)}`, // "Jack the Shark"
-    () => `${pick(TITLES)} ${pick(NAMES)}`, // "Captain Jack"
-    () => pick(SHIP_PARTS) as string, // "Revenge"
-    () => `${pick(ADJECTIVES)} ${pick(NAMES)}`, // "Black Jack"
+    () => `${pick(ADJECTIVES, random)} ${pick(INSULTS, random)}`, // "Salty Dog"
+    () => `${pick(NAMES, random)} the ${pick(NOUNS, random)}`, // "Jack the Shark"
+    () => `${pick(TITLES, random)} ${pick(NAMES, random)}`, // "Captain Jack"
+    () => pick(SHIP_PARTS, random) as string, // "Revenge"
+    () => `${pick(ADJECTIVES, random)} ${pick(NAMES, random)}`, // "Black Jack"
   ];
-  return pick(formats)();
+  return pick(formats, random)();
 }
 
 /** Works well for room names: replaces spaces with hyphens, lowercased. */
-export function getPirateyRoomName(): string {
-  return getPirateyName()
+export function getPirateyRoomName(seed?: number): string {
+  return getPirateyName(seed)
     .toLowerCase()
     .replace(/\s+/g, "-")
     .replace(/[^a-z0-9-]/g, ""); // strip punctuation like quotes/apostrophes
