@@ -8,7 +8,7 @@ import { singleUser } from "../../../utils/singleUser";
 import { setWaiting } from "../../../utils/setWaiting";
 import { toGameState } from "../../../utils/toGameState";
 
-export type TDisconnectHandler = (reason: DisconnectReason) => void;
+type TDisconnectHandler = (reason: DisconnectReason) => void;
 
 export const factoryDisconnectHandler =
   (
