@@ -155,6 +155,11 @@ export interface IClientToServerEvents {
   ) => void;
 
   get_rooms: (callback: (rooms: TRoomIdentity[]) => void) => void;
+
+  /**
+   * User intentionally want's to disconnect. It means abandoning any running games.
+   */
+  disconnect_from_server: () => void;
 }
 
 export interface IServerToClientEvents {

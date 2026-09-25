@@ -8,12 +8,12 @@ export const DisconnectButton: FC<Pick<TButtonProps, "className" | "size">> = ({
   className,
   size,
 }) => {
-  const { disconnect } = useSocket();
+  const { disconnectFromServer } = useSocket();
   return (
     <Button
       className={className}
       type="danger"
-      onClick={disconnect}
+      onClick={disconnectFromServer}
       size={size}
     >
       <span>Disconnect</span>

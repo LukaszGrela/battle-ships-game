@@ -32,7 +32,11 @@ export const useSocket = () => {
     socket.disconnect();
   }, []);
 
-  return { connect, disconnect };
+  const disconnectFromServer = useCallback(() => {
+    socket.emit("disconnect_from_server");
+  }, []);
+
+  return { connect, disconnect, disconnectFromServer };
 };
 
 document.addEventListener("visibilitychange", () => {
