@@ -10,7 +10,7 @@ import { getOtherPlayer } from "./getOtherPlayer";
 import { isSunk } from "@repo/game-logic";
 
 export function toGameState(playerId: string, state: TRoomState): TGameState {
-  // console.log("toGameState", playerId, state);
+  // console.log("toGameState", playerId, state.id, state.name);
   const player = getPlayerById(playerId, state.players)!;
   // console.log("player", player);
   if (state.phase === EGamePhase.Waiting) {
