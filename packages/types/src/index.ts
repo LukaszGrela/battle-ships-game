@@ -135,6 +135,10 @@ export interface IClientToServerEvents {
    */
   join_game: (roomId: string | Pick<TRoomIdentity, "id" | "name">) => void;
   leave_game: () => void;
+  /**
+   * When client restored session and session contains war room id, this event is emited.
+   */
+  rejoin_game: () => void;
 
   place_ships: (ships: (TShip & { type: "pending" })[]) => void;
 
@@ -191,6 +195,18 @@ export interface IServerToClientEvents {
    * @returns
    */
   server_stats: (stats: TStats) => void;
+
+  /**
+   * Emited when known user connects and session object exists
+   * @param session client session object
+   * @returns
+   */
+  session_restored: (session: IClientSession) => void;
+  /**
+   * Emited when new user connects or session object does not exists
+   * @returns
+   */
+  session_created: () => void;
 }
 
 export type TStats = {
@@ -198,6 +214,25 @@ export type TStats = {
   playedGames: number;
   activePlayers: number;
 };
+
+export interface IClientSession {
+  /**
+   * Client ID
+   */
+  id: string;
+  /**
+   * Current socket id
+   */
+  socketId: string;
+
+  /**
+   * Current active game id
+   */
+  gameId?: string;
+
+  name: string;
+  seed: number;
+}
 
 // -----
 /**
