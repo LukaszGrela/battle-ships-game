@@ -24,11 +24,11 @@ export interface IRoomService {
   deleteRoom: (id: string) => boolean;
 
   /**
-   * Searches room where given player id is in it
+   * Searches room where given player id is in it and phase is not finished
    * @param playerId The player identifier
    * @returns clone of the room object
    */
-  findRoomByPlayerId: (playerId: string) => TRoomState | undefined;
+  findActiveRoomByPlayerId: (playerId: string) => TRoomState | undefined;
 
   getOpenGames: () => TRoomIdentity[];
 
@@ -67,10 +67,10 @@ export class RoomService implements IRoomService {
     return this.rooms.delete(id);
   }
 
-  findRoomByPlayerId(playerId: string): TRoomState | undefined {
-    this.log("findRoomBySocketId");
+  findActiveRoomByPlayerId(playerId: string): TRoomState | undefined {
+    this.log("findActiveRoomByPlayerId");
     const room = Array.from(this.rooms.values()).find(
-      (r) => r.players[playerId] && r.players[playerId].active,
+      (r) => r.players[playerId] && r.phase !== EGamePhase.Finished,
     );
     if (room) {
       return structuredClone(room);
@@ -108,7 +108,7 @@ export class RoomService implements IRoomService {
 
   setWaiting(playerId: string): void {
     this.log("setWaiting", playerId);
-    const room = this.findRoomByPlayerId(playerId);
+    const room = this.findActiveRoomByPlayerId(playerId);
     if (!room) return;
 
     room.phase = EGamePhase.Waiting;

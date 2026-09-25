@@ -77,13 +77,19 @@ describe("services", () => {
 
     it("finds only active rooms for a player", () => {
       const roomService = createRoomService();
-      const room = createRoom("find-room");
-      room.players.opponent!.active = false;
-      roomService.saveRoom(room);
+      const finishedRoom = createRoom("finished-room", EGamePhase.Finished);
+      const activeRoom = createRoom("active-room", EGamePhase.Placement);
+      roomService.saveRoom(finishedRoom);
+      roomService.saveRoom(activeRoom);
 
-      expect(roomService.findRoomByPlayerId("owner")?.id).toBe(room.id);
-      expect(roomService.findRoomByPlayerId("opponent")).toBeUndefined();
-      expect(roomService.findRoomByPlayerId("missing")).toBeUndefined();
+      expect(roomService.findActiveRoomByPlayerId("owner")?.id).toBe(
+        activeRoom.id,
+      );
+
+      expect(roomService.findActiveRoomByPlayerId("opponent")?.id).toBe(
+        activeRoom.id,
+      );
+      expect(roomService.findActiveRoomByPlayerId("missing")).toBeUndefined();
     });
 
     it("lists rooms and returns only waiting rooms as open games", () => {
