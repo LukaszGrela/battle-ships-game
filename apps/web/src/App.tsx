@@ -19,7 +19,7 @@ function App() {
 
   const { connected } = useConnectionStatus();
   const { gameState, selfId } = useGameStore();
-  console.log(gameState);
+  console.log("[App]", gameState);
 
   const page = useMemo(() => {
     if (connected) {

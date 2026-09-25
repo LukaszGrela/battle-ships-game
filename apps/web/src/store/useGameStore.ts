@@ -46,6 +46,8 @@ export const useSocketGameState = () => {
   const { setGameState, setError, setSelfId, setEnemyReady } = useGameStore();
   useEffect(() => {
     function onUpdate(state: TGameState | null) {
+      console.log("[useGameStore.onUpdate]", state);
+
       setGameState(state);
       if (state === null) {
         setSelfId(null);
@@ -58,6 +60,7 @@ export const useSocketGameState = () => {
     }
 
     function onError(message: string | null) {
+      console.error("[useGameStore.onError]", message);
       setError(message);
     }
     const playerReadyCallback = (
