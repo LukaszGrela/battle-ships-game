@@ -6,3 +6,4 @@ export * from "./board/isValidPlacement";
 export * from "./board/placeShip";
 export * from "./board/resolveAttack";
 export * from "./utils/seedRandom";
+export * from "./utils/stableHash";
