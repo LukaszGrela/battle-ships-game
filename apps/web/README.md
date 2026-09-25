@@ -1,55 +1,135 @@
-# Battleships - frontend
+# Battleship Web App
 
-To ensure a smooth user experience, the Battleship game flow is designed to be synchronous, where the server acts as the "referee" at every stage.
+The frontend for the Battleship game. It is a React 19 application built with Vite and communicates with the game server through Socket.IO.
 
-Here is the step-by-step flow from the user's perspective:
+## Requirements
 
-### 1. Initialization
-*   **Opening:** The user opens `apps/web`. 
-*   **Connection:** The client automatically establishes a Socket.io connection and creates a local instance of the `IGameState` (initially `null` or a loading screen).
-*   **Lobby:** The user enters a `Room ID` or clicks "Join Random Game." The client emits `join_game`.
+- Node.js 24 or newer
+- pnpm 11
 
-### 2. The Setup Phase (`EGamePhase.Placement`)
-*   **Board Setup:** Once two players are in the room, both see their empty 10x10 grids.
-*   **Placing Ships:** 
-    *   The user clicks cells on their board to place ships.
-    *   The client holds this state locally until the user clicks "Ready."
-    *   The client emits `place_ships(TCoordinate[])`.
-*   **Validation:** The server receives the ship coordinates, validates that they don't overlap or go out of bounds, and updates the `IGameState`.
-*   **Status Update:** Both clients receive `game_updated` with the phase set to `EGamePhase.Playing`.
+Install dependencies from the repository root:
 
-### 3. The Combat Phase (`EGamePhase.Playing`)
-*   **Turn Indicator:** The UI displays "Your Turn" or "Waiting for Opponent" based on whether `room.turn === socket.id`.
-*   **Firing:**
-    *   The active player clicks a coordinate on the **"Fog of War"** (opponent's) grid.
-    *   The client emits `attack_coordinate(TCoordinate)`.
-    *   The client temporarily disables clicks to prevent double-firing while waiting for server confirmation.
-*   **Result Processing:**
-    *   The server calculates if it's a hit or miss.
-    *   The server flips the `turn` variable to the other player.
-    *   The server broadcasts the updated `IGameState` to both clients.
-*   **UI Feedback:** 
-    *   The boards re-render. 
-    *   The player sees the target cell update to `ECellStatus.Hit` or `ECellStatus.Miss`.
+```sh
+pnpm install
+```
 
-### 4. Game Over (`EGamePhase.Finished`)
-*   **Detection:** After every attack, the server checks if all `Ship` cells in a board are marked `Hit`.
-*   **Resolution:** 
-    *   The server updates the phase to `EGamePhase.Finished`.
-    *   The server broadcasts the final state, including a "Winner" declaration.
-*   **Post-Game:** The UI displays a "Game Over" overlay with a "Play Again" button, which clears the local state and returns the player to the Lobby.
+## Development
 
----
+From the repository root, start both the web app and game server:
 
-### Summary of State Transitions
+```sh
+pnpm dev
+```
 
-| User Action | Event Emitted | Server Action |
-| :--- | :--- | :--- |
-| Enter Room ID | `join_game` | Assigns player to room, waits for 2nd player |
-| Place Ships | `place_ships` | Saves ship positions in secret state |
-| Click Opponent Grid | `attack_coordinate` | Checks coordinates, updates state, toggles turn |
-| Detect All Ships Sunk | (Server-side check) | Sets state to `Finished` |
+The development URLs are:
 
-### Edge Case Handling (From the User's Perspective)
-*   **The "Hanging" User:** If the opponent stops responding, the UI shows a "Waiting for opponent..." indicator. If the server detects a `disconnect`, it broadcasts a "Opponent left" message and sets the state to `Finished`, awarding the remaining player the win.
-*   **Simultaneous Clicks:** Because the server is the "Source of Truth," if two players click at the exact same time, the server processes them in arrival order and ignores the second request (because the `room.turn` was already toggled by the first). The client UI simply refreshes to the latest server state, keeping the boards in sync.
+- Web app: <http://localhost:3000>
+- Socket.IO server: <http://localhost:3001>
+
+The web app connects to port `3001` in development. No frontend environment variables are required.
+
+To run only this app:
+
+```sh
+pnpm --filter @repo/web dev
+```
+
+The server must be running separately when using this command:
+
+```sh
+pnpm --filter @repo/server dev
+```
+
+## Scripts
+
+Run these commands from `apps/web` or use the equivalent `pnpm --filter @repo/web <script>` command from the repository root.
+
+| Command | Description |
+| --- | --- |
+| `pnpm dev` | Start the Vite development server on port 3000 |
+| `pnpm build` | Type-check and build the production frontend |
+| `pnpm preview` | Preview the production build locally |
+| `pnpm test` | Run frontend Vitest tests |
+| `pnpm lint` | Run ESLint |
+
+Repository-wide equivalents are available from the root:
+
+```sh
+pnpm build
+pnpm test
+pnpm lint
+pnpm check-types
+```
+
+## Client-server flow
+
+The client stores a persistent client ID in browser storage and sends it as Socket.IO authentication data. The server uses it to restore the client session and associate the player with a game.
+
+The main client-to-server events are:
+
+- `join_game`: create or join a room
+- `leave_game`: leave the current room
+- `place_ships`: submit ship placement
+- `attack_coordinate`: attack a board coordinate
+- `get_rooms`: request the current room list
+- `get_war_room_name`: request or validate a room name
+
+The main server-to-client events are:
+
+- `game_updated`: receive the current `TGameState`, or `null` when no game is active
+- `open_games`: receive rooms waiting for an opponent
+- `welcome`: receive the current client ID after joining
+- `opponent_connected`: opponent joined the room
+- `player_ready`: opponent finished ship placement
+- `server_stats`: receive lobby statistics
+- `session_restored` / `session_created`: session lifecycle notifications
+
+The server is authoritative for room state, ship placement validation, turns, attacks, and game results. The frontend renders the state received from `game_updated` and keeps the opponent's ship positions hidden during the playing phase.
+
+## Communication event flow
+
+```mermaid
+sequenceDiagram
+	participant Browser as Web browser
+	participant Server as Socket.IO server
+	participant Room as RoomService
+
+	Browser->>Server: connect(auth.clientId)
+	Server->>Server: Restore or create client session
+	Server-->>Browser: session_restored or session_created
+	Server-->>Browser: open_games
+	Server-->>Browser: game_updated(null)
+
+	Browser->>Server: join_game(room name or room identity)
+	Server->>Room: Create or join room
+	Server-->>Browser: welcome(clientId)
+	Server-->>Browser: game_updated(waiting or placement state)
+	Server-->>Browser: opponent_connected
+	Server-->>Browser: open_games
+
+	Browser->>Server: place_ships(ships)
+	Server->>Room: Validate and save placement
+	Server-->>Browser: player_ready
+	Server-->>Browser: game_updated(placement or playing state)
+
+	loop While both players are playing
+		Browser->>Server: attack_coordinate(coordinate)
+		Server->>Room: Validate turn and resolve attack
+		Server-->>Browser: game_updated(updated board and turn)
+	end
+
+	Server->>Room: Detect winner or player disconnect
+	Server-->>Browser: game_updated(finished state)
+```
+
+## Application structure
+
+- `src/App.tsx`: selects the lobby, waiting, placement, game, and game-over views
+- `src/pages`: page-level game views
+- `src/components`: reusable UI components
+- `src/store`: Zustand stores and Socket.IO event subscriptions
+- `src/socket`: Socket.IO client setup
+- `src/assets`: sprite and decoration helpers
+- `src/test`: test setup
+
+Production builds are generated in `apps/web/dist` by `pnpm build`. The production Socket.IO URL is same-origin, so deployment must serve the frontend and Socket.IO server behind the same origin or provide the appropriate hosting/proxy arrangement.
