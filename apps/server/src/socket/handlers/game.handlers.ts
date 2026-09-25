@@ -20,14 +20,27 @@ import { getOtherPlayer } from "../../utils/getOtherPlayer";
 import { setWaiting } from "../../utils/setWaiting";
 import { warRoomNames } from "../../services/WarRoomName.service";
 import { emitStats } from "../../utils/emitStats";
+import ClientSessionServiceSingleton from "../../services/client-session.service";
 
 function dataTampered(
   io: Server<IClientToServerEvents, IServerToClientEvents>,
   socket: Socket<IClientToServerEvents, IServerToClientEvents>,
 ) {
+  const session = ClientSessionServiceSingleton.getInstance();
+
+  const clientId = socket.handshake.auth.clientId;
+  const clientSession = session.readSession(clientId);
+
+  console.group("[dataTampered]");
+  console.error("clientId", clientId);
+  console.error("clientSession", clientSession);
+  console.groupEnd();
+
   socket.emit("error", "Internal server error");
   // kick out (ab)user
   socket.emit("game_updated", null);
+
+  session.deleteSession(clientId);
 
   // change game state
   setWaiting(io, socket);
@@ -37,11 +50,20 @@ export const registerGameHandlers = (
   io: Server<IClientToServerEvents, IServerToClientEvents>,
   socket: Socket<IClientToServerEvents, IServerToClientEvents>,
 ) => {
+  const session = ClientSessionServiceSingleton.getInstance();
+  const clientId = socket.handshake.auth.clientId;
+
   socket.on("place_ships", (ships) => {
     const roomService = RoomService.getInstance();
     // console.log("Place ships");
+    const clientSession = session.readSession(clientId);
+    if (!clientSession || !clientSession.gameId) {
+      dataTampered(io, socket);
+
+      return;
+    }
     // room data
-    const room = roomService.findRoomBySocketId(socket.id);
+    const room = roomService.getRoom(clientSession.gameId);
     if (room) {
       // console.log("Room", room.name, room.phase);
       if (room.phase !== "placement") {
@@ -50,8 +72,8 @@ export const registerGameHandlers = (
         return;
       }
       // Update board and ships list
-      const board = room.boards[socket.id];
-      const expectedShips = room.ships[socket.id];
+      const board = room.boards[clientId];
+      const expectedShips = room.ships[clientId];
       if (!board || !expectedShips) {
         console.error("No board or ships");
         dataTampered(io, socket);
@@ -93,11 +115,11 @@ export const registerGameHandlers = (
           dataTampered(io, socket);
           return;
         } else {
-          const self = room.players[socket.id]!;
-          room.ships[socket.id] = placedShips;
+          const self = room.players[clientId]!;
+          room.ships[clientId] = placedShips;
           self.ready = true;
           // is other player ready?
-          const opponentId = getOtherPlayer(socket.id, room.players)?.id;
+          const opponentId = getOtherPlayer(clientId, room.players)?.id;
 
           // console.log("Opponent id", opponentId);
 
@@ -112,12 +134,15 @@ export const registerGameHandlers = (
             } else {
               // console.log("Opponnent not ready, notify him.");
               // notify other user
-              io.to(opponentId).emit("player_ready", {
-                name: self.name,
-                seed: self.seed,
-                owner: self.owner,
-                ready: self.ready,
-              });
+              const opponentSession = session.readSession(opponentId);
+              if (opponentSession) {
+                io.to(opponentSession.socketId).emit("player_ready", {
+                  name: self.name,
+                  seed: self.seed,
+                  owner: self.owner,
+                  ready: self.ready,
+                });
+              }
             }
           }
         }
@@ -125,11 +150,17 @@ export const registerGameHandlers = (
         roomService.saveRoom(room);
         // console.log("room.phase", room.phase);
         if (room.phase === "placement") {
-          socket.emit("game_updated", toGameState(socket.id, room));
+          socket.emit("game_updated", toGameState(clientId, room));
         } else {
           // switched to playing, notify all parties
           Object.keys(room.players).forEach((playerId) => {
-            io.to(playerId).emit("game_updated", toGameState(playerId, room));
+            const playerSession = session.readSession(playerId);
+            if (playerSession) {
+              io.to(playerSession.socketId).emit(
+                "game_updated",
+                toGameState(playerId, room),
+              );
+            }
           });
         }
       }
@@ -142,18 +173,24 @@ export const registerGameHandlers = (
   });
 
   socket.on("attack_coordinate", (coord) => {
+    const clientSession = session.readSession(clientId);
+    if (!clientSession || !clientSession.gameId) {
+      dataTampered(io, socket);
+
+      return;
+    }
     const roomService = RoomService.getInstance();
-    const room = roomService.findRoomBySocketId(socket.id);
+    const room = roomService.getRoom(clientSession.gameId);
 
     // 1. Validation logic
-    if (!room || room.turn !== socket.id || room.phase !== "playing") {
+    if (!room || room.turn !== clientId || room.phase !== "playing") {
       console.error("Not your turn", room?.turn, room?.phase, room);
       socket.emit("error", "Not your turn or game not active");
       return;
     }
 
     // Race condition prevention: Atomic check
-    const opponentId = getOtherPlayer(socket.id, room.players)?.id;
+    const opponentId = getOtherPlayer(clientId, room.players)?.id;
 
     if (!opponentId) return;
 
@@ -198,7 +235,7 @@ export const registerGameHandlers = (
       coords: coord,
       isSunk: false,
       result: attackResult,
-      turn: socket.id,
+      turn: clientId,
     };
 
     if (room.history.length === 0) {
@@ -232,10 +269,10 @@ export const registerGameHandlers = (
     if (!enemyHasShips) {
       // enemy fleet defeated
       historyEntry.finish = true;
-      historyEntry.whoWon = socket.id;
+      historyEntry.whoWon = clientId;
       room.phase = "finished";
       room.result = {
-        [socket.id]: "win",
+        [clientId]: "win",
         [opponentId]: "lost",
       };
       room.game_finished = new Date().toISOString();
@@ -260,7 +297,13 @@ export const registerGameHandlers = (
 
     // per player emit
     Object.keys(players).forEach((playerId) => {
-      io.to(playerId).emit("game_updated", toGameState(playerId, freshRoom));
+      const playerSession = session.readSession(playerId);
+      if (playerSession) {
+        io.to(playerSession.socketId).emit(
+          "game_updated",
+          toGameState(playerId, freshRoom),
+        );
+      }
     });
   });
 };

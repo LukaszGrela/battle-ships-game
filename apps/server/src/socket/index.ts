@@ -10,32 +10,45 @@ import {
 } from "@repo/types";
 import { toGameState } from "../utils/toGameState";
 import { setWaiting } from "../utils/setWaiting";
-import { getOtherPlayer } from "../utils/getOtherPlayer";
 import { warRoomNames } from "../services/WarRoomName.service";
-import RoomServiceSingleton from "../services/room.service";
 import { emitStats } from "../utils/emitStats";
 import ActiveUsersServiceSingleton from "../services/users.service";
+import ClientSessionServiceSingleton from "../services/client-session.service";
 
 export const registerSocketHandlers = (
   io: Server<IClientToServerEvents, IServerToClientEvents>,
   socket: Socket<IClientToServerEvents, IServerToClientEvents>,
 ) => {
+  const clientId = socket.handshake.auth.clientId;
+
+  if (!clientId || typeof clientId !== "string") {
+    // invalid connection
+    socket.disconnect();
+    return;
+  }
+  const sessions = ClientSessionServiceSingleton.getInstance();
+
+  const existing = sessions.readSession(clientId);
+  if (existing) {
+    existing.socketId = socket.id; // podmieniamy na nowy socket
+    sessions.updateSession(clientId, existing);
+    socket.emit("session_restored", existing);
+  } else {
+    sessions.createSession(clientId, socket.id);
+
+    socket.emit("session_created");
+  }
+
   ActiveUsersServiceSingleton.getInstance().setUser(socket.id);
 
   registerRoomHandlers(io, socket);
   registerGameHandlers(io, socket);
+
   const roomService = RoomService.getInstance();
 
   const rooms = roomService.listRooms();
-  console.log("[registerSocketHandlers]", "User connected", socket.id);
-  console.log(
-    "Rooms",
-    rooms.length,
-    Array.from(rooms.values()).map((n) => n.phase),
-  );
 
   const openGames = roomService.getOpenGames();
-  console.log("[registerSocketHandlers]", "openGames", openGames.length);
 
   // in the lobby - send open games
   io.emit("open_games", openGames);
@@ -43,7 +56,9 @@ export const registerSocketHandlers = (
   // send null game_updated for stale state
   socket.emit("game_updated", null);
 
-  socket.on("error", console.error);
+  socket.on("error", (error) =>
+    console.error("[registerSocketHandlers.onError]", error),
+  );
 
   socket.on("get_rooms", function getWarRooms(callback) {
     callback?.(roomService.listRooms());
@@ -78,15 +93,22 @@ export const registerSocketHandlers = (
   socket.on("disconnect", (reason: DisconnectReason) => {
     // Logic: If player leaves, broadcast game_over or handle session
     console.log("Player disconnected", socket.id, "due to", reason);
+
     ActiveUsersServiceSingleton.getInstance().removeUser(socket.id);
-    const room = roomService.findRoomBySocketId(socket.id);
+    const clientSession = sessions.readSession(clientId);
+    if (!clientSession || !clientSession.gameId) {
+      emitStats(io);
+      return;
+    }
+
+    const room = roomService.getRoom(clientSession.gameId);
     if (room) {
       if (room.phase === "playing") {
         // player abandoned game, finish it
         room.phase = "finished";
         // leave room
-        if (room.players[socket.id]) {
-          room.players[socket.id]!.active = false;
+        if (room.players[clientId]) {
+          room.players[clientId]!.active = false;
         }
       } else if (room.phase === "placement") {
         // if last user left kill the room
@@ -114,10 +136,13 @@ export const registerSocketHandlers = (
       // notify other party
       // per player emit
       Object.keys(players).forEach((playerId) => {
-        io.to(playerId).emit(
-          "game_updated",
-          toGameState(playerId, roomService.getRoom(room.id)!),
-        );
+        const playerSession = sessions.readSession(playerId);
+        if (playerSession) {
+          io.to(playerSession.socketId).emit(
+            "game_updated",
+            toGameState(playerId, roomService.getRoom(room.id)!),
+          );
+        }
       });
     }
     emitStats(io);
