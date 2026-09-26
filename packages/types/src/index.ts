@@ -58,16 +58,24 @@ export type TShip = {
 
 export type TPlacedShip = TShip & { type: "placed" };
 
-export interface IHistoryEntry {
-  init?: boolean;
-  finish?: boolean;
-  whoWon?: string;
+type TInitHistory = {
+  init: true;
+};
 
-  turn: TUserId;
-  coords: TCoordinate;
-  result: ECellStatus.Hit | ECellStatus.Miss;
-  isSunk: boolean;
-}
+type TFinishHistory = {
+  finish: true;
+  whoWon: string;
+};
+
+export type THistoryEntry =
+  | {
+      turn: TUserId;
+      coords: TCoordinate;
+      result: ECellStatus.Hit | ECellStatus.Miss;
+      isSunk: boolean;
+    }
+  | TInitHistory
+  | TFinishHistory;
 
 export type TRoomIdentity = {
   id: TRoomId;
@@ -87,7 +95,7 @@ export type TRoomState = TRoomIdentity & {
   phase: TStringifiedEnum<EGamePhase>;
   result: Record<TUserId, "win" | "lost">;
 
-  history: IHistoryEntry[];
+  history: THistoryEntry[];
 };
 
 type TStringifiedEnum<E extends string> = E | `${E}`;
@@ -189,10 +197,12 @@ export interface IServerToClientEvents {
 
   /**
    * Emited when user entered war room and `waiting` is finished.
-   * @param oponnetName
+   * @param opponent
    * @returns
    */
-  opponent_connected: (oponnetName: string) => void;
+  opponent_connected: (
+    opponent: Pick<IPlayer, "name" | "seed" | "owner" | "ready">,
+  ) => void;
 
   /**
    *
@@ -209,9 +219,10 @@ export interface IServerToClientEvents {
   session_restored: (session: IClientSession) => void;
   /**
    * Emited when new user connects or session object does not exists
+   * @param newSession client session object
    * @returns
    */
-  session_created: () => void;
+  session_created: (newSession: IClientSession) => void;
 }
 
 export type TStats = {
