@@ -10,6 +10,8 @@ export interface IRoomService {
    * @returns clone of the room object
    */
   getRoom: (id: string) => TRoomState | undefined;
+  hasRoom: (id: string) => boolean;
+  isRoomActive: (id: string) => boolean;
   /**
    * Save or update room data
    * @param room Room data
@@ -54,6 +56,14 @@ export class RoomService implements IRoomService {
     if (room) return structuredClone(room);
 
     return undefined;
+  }
+  hasRoom(id: string): boolean {
+    return this.rooms.has(id);
+  }
+  isRoomActive(id: string): boolean {
+    if (!this.hasRoom(id)) return false;
+
+    return this.rooms.get(id)?.phase !== EGamePhase.Finished;
   }
 
   saveRoom(room: TRoomState): void {
@@ -109,7 +119,9 @@ export class RoomService implements IRoomService {
   setWaiting(playerId: string): void {
     this.log("setWaiting", playerId);
     const room = this.findActiveRoomByPlayerId(playerId);
+
     if (!room) return;
+    if (room.phase === "finished" || room.phase === "playing") return;
 
     room.phase = EGamePhase.Waiting;
     const other = getOtherPlayer(playerId, room.players)!;
