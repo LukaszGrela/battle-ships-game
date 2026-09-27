@@ -59,7 +59,7 @@ export const factoryPlaceShipsHandler = (
             } as TShip;
           }
         })
-        .filter(Boolean) as TShip[];
+        .filter(Boolean) as (TShip & { type: "placed" })[];
 
       if (expectedShips?.length !== placedShips.length) {
         console.error("Some ships are not placed.");

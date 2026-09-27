@@ -161,6 +161,61 @@ describe("place_ships handler", () => {
     );
   });
 
+  it("writes each placed ship onto the board at its coordinates", () => {
+    const ownerSession = sessionService.createSession("owner", "owner-socket");
+    ownerSession.name = "Captain Black";
+    sessionService.updateSession("owner", ownerSession);
+    const opponentSession = sessionService.createSession(
+      "opponent",
+      "opponent-socket",
+    );
+    opponentSession.name = "Captain Red";
+    sessionService.updateSession("opponent", opponentSession);
+
+    const room = createWarRoom(
+      { id: "place-room-board-check", name: "Board Check Room" },
+      "owner",
+    );
+    expect(room).toBeDefined();
+
+    const io = createIo();
+    const socket = createSocket("owner");
+    const handler = factoryPlaceShipsHandler(io, socket);
+
+    const roomWithOpponent = roomService.getRoom(room!.id)!;
+    roomWithOpponent.players.opponent = {
+      id: "opponent",
+      name: "Captain Red",
+      seed: 42,
+      active: true,
+      ready: false,
+      owner: false,
+    };
+    roomWithOpponent.boards.opponent = createBoardWithOpenCells();
+    roomWithOpponent.boards.owner = createBoardWithOpenCells();
+    roomWithOpponent.phase = EGamePhase.Placement;
+    roomWithOpponent.ships.owner = [{ id: 0, size: 2, type: "pending", placed: false }];
+    roomWithOpponent.ships.opponent = [{ id: 0, size: 2, type: "pending", placed: false }];
+    roomService.saveRoom(roomWithOpponent);
+
+    handler([
+      {
+        id: 0,
+        size: 2,
+        type: "pending",
+        placed: false,
+        coords: { x: 1, y: 1 },
+        orientation: "vertical",
+      },
+    ]);
+
+    const updatedRoom = roomService.getRoom(room!.id)!;
+    expect(updatedRoom.boards?.owner?.[1]?.[1]).toBe(0);
+    expect(updatedRoom.boards?.owner?.[2]?.[1]).toBe(0);
+    expect(updatedRoom.boards?.owner?.[1]?.[1]).not.toBe(ECellStatus.Empty);
+    expect(updatedRoom.boards?.owner?.[2]?.[1]).not.toBe(ECellStatus.Empty);
+  });
+
   it("transitions to playing when both players are already ready and broadcasts the game state to both sockets", () => {
     const ownerSession = sessionService.createSession("owner", "owner-socket");
     ownerSession.name = "Captain Black";
