@@ -16,6 +16,7 @@ import {
   transitionToWaiting,
   updateRoomWithNewTurnData,
 } from "./gameLifeCycle";
+import { getCell, placeShip, setCell } from "@repo/game-logic";
 
 const roomService = RoomServiceSingleton.getInstance();
 const sessionService = ClientSessionServiceSingleton.getInstance();
@@ -119,12 +120,18 @@ describe("game lifecycle", () => {
     const roomId = "war-room-reject-active";
     const otherRoomId = "other-active-room";
     saveSessions("owner");
-    saveRoom(createRoom(otherRoomId, EGamePhase.Placement, [createPlayer("owner", true)]));
+    saveRoom(
+      createRoom(otherRoomId, EGamePhase.Placement, [
+        createPlayer("owner", true),
+      ]),
+    );
     const session = sessionService.readSession("owner")!;
     session.gameId = otherRoomId;
     sessionService.updateSession("owner", session);
 
-    expect(createWarRoom({ id: roomId, name: "Pirate Room" }, "owner")).toBeUndefined();
+    expect(
+      createWarRoom({ id: roomId, name: "Pirate Room" }, "owner"),
+    ).toBeUndefined();
 
     cleanup(roomId, otherRoomId);
   });
@@ -132,9 +139,13 @@ describe("game lifecycle", () => {
   it("rejects creating a room when the room id is already taken", () => {
     const roomId = "war-room-duplicate";
     saveSessions("owner");
-    saveRoom(createRoom(roomId, EGamePhase.Waiting, [createPlayer("existing", true)]));
+    saveRoom(
+      createRoom(roomId, EGamePhase.Waiting, [createPlayer("existing", true)]),
+    );
 
-    expect(createWarRoom({ id: roomId, name: "Pirate Room" }, "owner")).toBeUndefined();
+    expect(
+      createWarRoom({ id: roomId, name: "Pirate Room" }, "owner"),
+    ).toBeUndefined();
 
     cleanup(roomId);
   });
@@ -260,7 +271,9 @@ describe("game lifecycle", () => {
     opponentSession.gameId = roomId;
     sessionService.updateSession("opponent", opponentSession);
 
-    const ships = [createPlacedShip(1), createPlacedShip(2)];
+    const ships = [createPlacedShip(1), createPlacedShip(2)] as (TShip & {
+      type: "placed";
+    })[];
     const result = applyShipsAndMarkReady(roomId, "owner", ships);
 
     expect(result?.phase).toBe(EGamePhase.Placement);
@@ -287,7 +300,9 @@ describe("game lifecycle", () => {
     sessionService.updateSession("opponent", opponentSession);
 
     expect(
-      transitionToPlaying(roomId, "owner", [createPlacedShip(1)]),
+      transitionToPlaying(roomId, "owner", [createPlacedShip(1)] as (TShip & {
+        type: "placed";
+      })[]),
     ).toBeUndefined();
     expect(roomService.getRoom(roomId)?.phase).toBe(EGamePhase.Placement);
 
@@ -309,7 +324,7 @@ describe("game lifecycle", () => {
     opponentSession.gameId = roomId;
     sessionService.updateSession("opponent", opponentSession);
 
-    const ships = [createPlacedShip(1)];
+    const ships = [createPlacedShip(1)] as (TShip & { type: "placed" })[];
 
     const result = transitionToPlaying(roomId, "owner", ships);
 
@@ -333,8 +348,14 @@ describe("game lifecycle", () => {
     room.turn = "owner";
     room.boards.owner = createEmptyBoard();
     room.boards.opponent = createEmptyBoard();
-    room.boards.opponent[3][2] = 7;
-    room.boards.opponent[3][3] = 7;
+
+    placeShip(
+      room.boards.opponent,
+      { x: 2, y: 3 },
+      createPlacedShip(7),
+      "horizontal",
+    );
+
     room.ships.opponent = [
       {
         id: 7,
@@ -357,7 +378,7 @@ describe("game lifecycle", () => {
     const result = updateRoomWithNewTurnData(roomId, "owner", { x: 2, y: 3 });
 
     expect(result?.turn).toBe("opponent");
-    expect(result?.boards.opponent[3][2]).toBe(ECellStatus.Hit);
+    expect(result?.boards.opponent?.[3]?.[2]).toBe(ECellStatus.Hit);
     expect(result?.history.at(-1)).toMatchObject({
       turn: "owner",
       result: ECellStatus.Hit,
@@ -377,7 +398,9 @@ describe("game lifecycle", () => {
     room.turn = "owner";
     room.boards.owner = createEmptyBoard();
     room.boards.opponent = createEmptyBoard();
-    room.boards.opponent[1][1] = ECellStatus.Miss;
+
+    setCell(room.boards.opponent, 1, 1, ECellStatus.Miss);
+
     roomService.saveRoom(room);
 
     const ownerSession = sessionService.readSession("owner")!;
@@ -391,7 +414,9 @@ describe("game lifecycle", () => {
 
     expect(result).toBeUndefined();
     expect(roomService.getRoom(roomId)?.turn).toBe("owner");
-    expect(roomService.getRoom(roomId)?.boards.opponent[1][1]).toBe(ECellStatus.Miss);
+    expect(getCell(roomService.getRoom(roomId)?.boards.opponent!, 1, 1)).toBe(
+      ECellStatus.Miss,
+    );
     expect(roomService.getRoom(roomId)?.history).toEqual([]);
 
     cleanup(roomId);
@@ -485,7 +510,9 @@ describe("game lifecycle", () => {
     expect(transitionToPlacement(roomId, "third")).toBeUndefined();
     expect(transitionToWaiting(roomId, "winner")).toBeUndefined();
     expect(
-      transitionToPlaying(roomId, "winner", [createPlacedShip(1)]),
+      transitionToPlaying(roomId, "winner", [createPlacedShip(1)] as (TShip & {
+        type: "placed";
+      })[]),
     ).toBeUndefined();
     expect(transitionToFinished(roomId, "winner")).toBeUndefined();
 
