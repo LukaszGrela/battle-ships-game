@@ -10,6 +10,7 @@ import ClientSessionServiceSingleton from "../services/client-session.service";
 import {
   applyShipsAndMarkReady,
   createWarRoom,
+  destroyWarRoom,
   transitionToPlacement,
   transitionToPlaying,
   transitionToFinished,
@@ -112,6 +113,28 @@ describe("game lifecycle", () => {
     expect(result?.turn).toBe("owner");
     expect(sessionService.readSession("owner")?.gameId).toBe(roomId);
     expect(roomService.getRoom(roomId)?.phase).toBe(EGamePhase.Waiting);
+
+    cleanup(roomId);
+  });
+
+  it("removes a room and clears the owner session when destroyWarRoom is called", () => {
+    const roomId = "war-room-destroyed";
+    const roomName = "Abandoned Ship";
+    saveSessions("owner");
+    const session = sessionService.readSession("owner")!;
+    session.name = "Captain Black";
+    session.seed = 42;
+    sessionService.updateSession("owner", session);
+
+    const room = createWarRoom({ id: roomId, name: roomName }, "owner");
+    expect(room).toBeDefined();
+    expect(sessionService.readSession("owner")?.gameId).toBe(roomId);
+
+    destroyWarRoom("owner");
+
+    expect(roomService.getRoom(roomId)).toBeUndefined();
+    expect(roomService.hasRoom(roomId)).toBe(false);
+    expect(sessionService.readSession("owner")?.gameId).toBeUndefined();
 
     cleanup(roomId);
   });

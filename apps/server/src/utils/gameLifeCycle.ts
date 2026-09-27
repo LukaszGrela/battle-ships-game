@@ -68,6 +68,28 @@ export function createWarRoom(
   return room;
 }
 
+export function destroyWarRoom( leavingPlayerId: string ) {
+  const roomService = RoomServiceSingleton.getInstance();
+  const session = ClientSessionServiceSingleton.getInstance();
+
+  const clientSession = session.readSession(leavingPlayerId);
+  if (!clientSession || !clientSession.gameId) {
+    return;
+  }
+
+  const room = roomService.getRoom(clientSession.gameId);
+  if (!room) {
+    return;
+  }
+
+  roomService.deleteRoom(room.id);
+
+  warRoomNames.releaseRoom(room.name);
+
+  clientSession.gameId = undefined;
+  session.updateSession(leavingPlayerId, clientSession);
+}
+
 /**
  * Transition room to phase `placement`, requires opponent it to join.
  * Returns modified room state, or `undefined` when it failed to transition.
