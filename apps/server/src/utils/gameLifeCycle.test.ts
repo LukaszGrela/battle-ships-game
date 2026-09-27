@@ -14,6 +14,7 @@ import {
   transitionToPlaying,
   transitionToFinished,
   transitionToWaiting,
+  updateRoomWithNewTurnData,
 } from "./gameLifeCycle";
 
 const roomService = RoomServiceSingleton.getInstance();
@@ -57,6 +58,11 @@ const createPlacedShip = (id: number): TShip => ({
   orientation: "horizontal",
   hits: [],
 });
+
+const createEmptyBoard = () =>
+  Array.from({ length: 10 }, () =>
+    Array.from({ length: 10 }, () => ECellStatus.Empty),
+  );
 
 const saveSessions = (...ids: string[]) => {
   ids.forEach((id) => sessionService.createSession(id, `${id}-socket`));
@@ -312,6 +318,81 @@ describe("game lifecycle", () => {
     expect(result?.players.opponent?.ready).toBe(true);
     expect(result?.ships.owner).toEqual(ships);
     expect(result?.game_started).not.toBeNull();
+
+    cleanup(roomId);
+  });
+
+  it("updates turn data during play when a ship is hit", () => {
+    const roomId = "lifecycle-turn-hit";
+    const owner = createPlayer("owner", true);
+    const opponent = createPlayer("opponent");
+    saveRoom(createRoom(roomId, EGamePhase.Playing, [owner, opponent]));
+    saveSessions("owner", "opponent");
+
+    const room = roomService.getRoom(roomId)!;
+    room.turn = "owner";
+    room.boards.owner = createEmptyBoard();
+    room.boards.opponent = createEmptyBoard();
+    room.boards.opponent[3][2] = 7;
+    room.boards.opponent[3][3] = 7;
+    room.ships.opponent = [
+      {
+        id: 7,
+        size: 2,
+        type: "placed",
+        coords: { x: 2, y: 3 },
+        orientation: "horizontal",
+        hits: [],
+      },
+    ];
+    roomService.saveRoom(room);
+
+    const ownerSession = sessionService.readSession("owner")!;
+    ownerSession.gameId = roomId;
+    sessionService.updateSession("owner", ownerSession);
+    const opponentSession = sessionService.readSession("opponent")!;
+    opponentSession.gameId = roomId;
+    sessionService.updateSession("opponent", opponentSession);
+
+    const result = updateRoomWithNewTurnData(roomId, "owner", { x: 2, y: 3 });
+
+    expect(result?.turn).toBe("opponent");
+    expect(result?.boards.opponent[3][2]).toBe(ECellStatus.Hit);
+    expect(result?.history.at(-1)).toMatchObject({
+      turn: "owner",
+      result: ECellStatus.Hit,
+    });
+
+    cleanup(roomId);
+  });
+
+  it("ignores a repeated attack on the same coordinate during play", () => {
+    const roomId = "lifecycle-turn-repeat";
+    const owner = createPlayer("owner", true);
+    const opponent = createPlayer("opponent");
+    saveRoom(createRoom(roomId, EGamePhase.Playing, [owner, opponent]));
+    saveSessions("owner", "opponent");
+
+    const room = roomService.getRoom(roomId)!;
+    room.turn = "owner";
+    room.boards.owner = createEmptyBoard();
+    room.boards.opponent = createEmptyBoard();
+    room.boards.opponent[1][1] = ECellStatus.Miss;
+    roomService.saveRoom(room);
+
+    const ownerSession = sessionService.readSession("owner")!;
+    ownerSession.gameId = roomId;
+    sessionService.updateSession("owner", ownerSession);
+    const opponentSession = sessionService.readSession("opponent")!;
+    opponentSession.gameId = roomId;
+    sessionService.updateSession("opponent", opponentSession);
+
+    const result = updateRoomWithNewTurnData(roomId, "owner", { x: 1, y: 1 });
+
+    expect(result).toBeUndefined();
+    expect(roomService.getRoom(roomId)?.turn).toBe("owner");
+    expect(roomService.getRoom(roomId)?.boards.opponent[1][1]).toBe(ECellStatus.Miss);
+    expect(roomService.getRoom(roomId)?.history).toEqual([]);
 
     cleanup(roomId);
   });
