@@ -29,8 +29,9 @@ export const EmitLeaveGameButton: FC<
       setGameState(null);
       setSelfId(null);
       setError(null);
+    } else {
+      socket.emit("leave_game");
     }
-    socket.emit("leave_game");
   }, [gameFinished, setError, setGameState, setSelfId]);
 
   const askQuestion = useCallback(() => {
