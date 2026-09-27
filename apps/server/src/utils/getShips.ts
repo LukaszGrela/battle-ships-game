@@ -2,7 +2,7 @@ import { TShip } from "@repo/types";
 
 export function getShips(
   playerIds: string[],
-  shipSizes: number[],
+  shipSizes: readonly number[],
 ): Record<string, TShip[]> {
   return playerIds.reduce(
     (acc, id) => {
