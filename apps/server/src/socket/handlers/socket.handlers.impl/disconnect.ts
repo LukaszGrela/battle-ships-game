@@ -5,8 +5,12 @@ import ClientSessionServiceSingleton from "../../../services/client-session.serv
 import { emitStats } from "../../../utils/emitStats";
 import RoomServiceSingleton from "../../../services/room.service";
 import { singleUser } from "../../../utils/singleUser";
-import { setWaiting } from "../../../utils/setWaiting";
-import { toGameState } from "../../../utils/toGameState";
+import { emitRoomStateToPlayers } from "../../../utils/emitRoomStateToPlayers";
+import {
+  destroyWarRoom,
+  transitionToWaiting,
+} from "../../../utils/gameLifeCycle";
+import { finishRoomByForfeit } from "../../../utils/finishRoomByForfeit";
 
 type TDisconnectHandler = (reason: DisconnectReason) => void;
 
@@ -23,14 +27,19 @@ export const factoryDisconnectHandler =
 
     // Logic: If player leaves, broadcast game_over or handle session
     console.log(
-      "[registerSocketHandlers]",
+      "[factoryDisconnectHandler]",
       "Player disconnected",
       socket.id,
       "due to",
       reason,
     );
 
-    ActiveUsersServiceSingleton.getInstance().removeUser(socket.id);
+    if (clientSession?.socketId !== socket.id) {
+      // stale-socket guard
+      ActiveUsersServiceSingleton.getInstance().removeUser(socket.id);
+      emitStats(io);
+      return;
+    }
 
     if (!clientId || !clientSession || !clientSession.gameId) {
       emitStats(io);
@@ -42,12 +51,7 @@ export const factoryDisconnectHandler =
     const room = roomService.getRoom(clientSession.gameId);
     if (room) {
       if (room.phase === "playing") {
-        // player abandoned game, finish it
-        room.phase = "finished";
-        // leave room
-        if (room.players[clientId]) {
-          room.players[clientId]!.active = false;
-        }
+        finishRoomByForfeit(room.id, clientId);
       } else if (room.phase === "placement") {
         // if last user left kill the room
         if (singleUser(room)) {
@@ -55,13 +59,14 @@ export const factoryDisconnectHandler =
             "[on disconnect] placement, single user, delete",
             room.id,
           );
-
-          roomService.deleteRoom(room.id);
+          destroyWarRoom(clientId);
           io.emit("open_games", roomService.getOpenGames());
+          emitStats(io);
+
           return;
         } else {
           //
-          setWaiting(io, socket);
+          transitionToWaiting(room.id, clientId);
         }
       } else if (room.phase === "waiting") {
         // there should only be one user anyway
@@ -73,15 +78,7 @@ export const factoryDisconnectHandler =
       const players = roomService.getRoom(room.id)!.players;
       // notify other party
       // per player emit
-      Object.keys(players).forEach((playerId) => {
-        const playerSession = sessions.readSession(playerId);
-        if (playerSession) {
-          io.to(playerSession.socketId).emit(
-            "game_updated",
-            toGameState(playerId, roomService.getRoom(room.id)!),
-          );
-        }
-      });
+      emitRoomStateToPlayers(io, room);
     }
     emitStats(io);
   };

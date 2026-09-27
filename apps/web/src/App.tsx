@@ -17,7 +17,8 @@ function App() {
   useSocketGameState();
   useOpenGamesStatus();
 
-  const { connected } = useConnectionStatus();
+  const { connected, clientSession } = useConnectionStatus();
+  console.log("clientSession", clientSession);
   const { gameState, selfId } = useGameStore();
   console.log("[App]", gameState);
 
