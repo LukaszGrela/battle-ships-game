@@ -8,11 +8,11 @@ import { Server, Socket } from "socket.io";
 import RoomService from "../../../services/room.service";
 import ClientSessionServiceSingleton from "../../../services/client-session.service";
 import { emitStats } from "../../../utils/emitStats";
-import { toGameState } from "../../../utils/toGameState";
 import {
   createWarRoom,
   transitionToPlacement,
 } from "../../../utils/gameLifeCycle";
+import { emitRoomStateToPlayers } from "../../../utils/emitRoomStateToPlayers";
 
 type TJoinGameHandler = IClientToServerEvents["join_game"];
 
@@ -28,7 +28,7 @@ export const factoryJoinGameHandler = (
       typeof roomIdentifier === "string"
         ? { name: roomIdentifier, id: nanoid() }
         : roomIdentifier;
-    const clientSession = session.readSession(clientId);
+    let clientSession = session.readSession(clientId);
 
     if (!clientSession) {
       socket.emit("error", "Invalid session");
@@ -45,6 +45,7 @@ export const factoryJoinGameHandler = (
       if (!room) {
         socket.emit("error", "Failed to create room");
       }
+      console.log("[join_game] created room", room?.ships);
       io.emit("open_games", roomService.getOpenGames());
       emitStats(io);
     } else if (Object.keys(room.players).length < 2) {
@@ -52,19 +53,35 @@ export const factoryJoinGameHandler = (
       if (!room) {
         socket.emit("error", "Failed to transition room to placement phase");
       } else {
-        Object.values(room.players).forEach((player) => {
-          if (player.id !== clientId) {
-            const otherSession = session.readSession(player.id);
-            if (otherSession && clientSession) {
-              io.to(otherSession.socketId).emit("opponent_connected", {
-                name: clientSession.name,
-                seed: clientSession.seed,
-                owner: player.owner,
-                ready: player.ready,
-              });
-            }
+        console.log("[join_game] joined room, advance to placement");
+        // notify other player about opponent joining
+        // client id is the new player
+        // opponent is the existing player to be notified
+        const userToNotifyId = Object.keys(room.players).find(
+          (id) => id !== clientId,
+        );
+        const player = Object.values(room.players).find(
+          (needle) => needle.id === clientId,
+        );
+
+        clientSession = session.readSession(clientId);
+        if (userToNotifyId && player && clientSession) {
+          const userToNotifySession = session.readSession(userToNotifyId);
+          if (userToNotifySession) {
+            io.to(userToNotifySession.socketId).emit("opponent_connected", {
+              name: clientSession.name,
+              seed: clientSession.seed,
+              owner: player.owner,
+              ready: player.ready,
+            });
           }
-        });
+        } else {
+          console.error("[join_game] opponent not found, invalid state", {
+            room,
+            clientId,
+          });
+          socket.emit("error", "Internal server error");
+        }
       }
 
       io.emit("open_games", roomService.getOpenGames());
@@ -79,15 +96,7 @@ export const factoryJoinGameHandler = (
     if (room) {
       socket.join(roomId.id);
       socket.emit("welcome", clientId);
-      Object.keys(room.players).forEach((playerId) => {
-        const playerSession = session.readSession(playerId);
-        if (playerSession) {
-          io.to(playerSession.socketId).emit(
-            "game_updated",
-            toGameState(playerId, room!),
-          );
-        }
-      });
+      emitRoomStateToPlayers(io, room);
     }
   };
 };

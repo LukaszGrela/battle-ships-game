@@ -130,9 +130,9 @@ describe("join_game handler", () => {
     );
     expect(io._toSpy).toHaveBeenCalledWith("opponent_connected", {
       name: "Captain Red",
-      owner: true,
-      ready: false,
+      owner: undefined,
       seed: 1136367460,
+      ready: false,
     });
     expect(io._toSpy).toHaveBeenCalledWith(
       "game_updated",
