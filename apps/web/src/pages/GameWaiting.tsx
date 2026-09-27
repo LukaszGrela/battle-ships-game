@@ -19,6 +19,9 @@ export const GameWaiting = () => {
             <WaitingScreen
               player={gameState.self}
               className={styles.GameWaiting_message}
+              onOpponentFound={(player) => {
+                console.log("Opponent joined", player);
+              }}
             />
           </div>
           <EmitLeaveGameButton type="danger" className={styles.abandonGame}>

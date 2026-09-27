@@ -10,7 +10,9 @@ import { Waves } from "../Waves";
 interface WaitingScreenProps {
   className?: string;
   player: IPlayer;
-  onOpponentFound?: () => void;
+  onOpponentFound?: (
+    player: Pick<IPlayer, "name" | "seed" | "owner" | "ready">,
+  ) => void;
 }
 
 const getPirateMessages = (name: string): string[] => [
@@ -57,11 +59,13 @@ export function WaitingScreen({
   useEffect(() => {
     bellSound.current = new Audio("/sounds/ship_bell.mp3");
 
-    const handleOpponentConnected = () => {
+    const handleOpponentConnected = (
+      player: Pick<IPlayer, "name" | "seed" | "owner" | "ready">,
+    ) => {
       bellSound.current?.play().catch((err) => {
         console.warn("Audio play blocked by browser:", err);
       });
-      onOpponentFound?.();
+      onOpponentFound?.(player);
     };
 
     socket.on("opponent_connected", handleOpponentConnected);
@@ -81,7 +85,7 @@ export function WaitingScreen({
       <p className={styles.message}>{message}</p>
 
       <div className={styles.waves} aria-hidden="true" />
-      <Waves className={styles.wave} direction="right"/>
+      <Waves className={styles.wave} direction="right" />
       <DotLoader className={styles.loader} label={loaderMessage} />
     </div>
   );
