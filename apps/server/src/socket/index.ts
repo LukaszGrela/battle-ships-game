@@ -15,12 +15,10 @@ export const factoryConnectHandler =
     const sessions = ClientSessionServiceSingleton.getInstance();
     const clientId = socket.handshake.auth.clientId;
 
+    console.log("[factoryConnectHandler]", clientId, sessions);
+
     // check valid connection
-    if (
-      !clientId ||
-      typeof clientId !== "string" ||
-      sessions.readSession(clientId) === null
-    ) {
+    if (!clientId || typeof clientId !== "string") {
       socket.disconnect(true);
       return;
     }
@@ -49,8 +47,10 @@ export const factoryConnectHandler =
       sessions.updateSession(clientId, existing);
       socket.emit("session_restored", existing);
     } else {
-      sessions.createSession(clientId, socket.id);
-      socket.emit("session_created");
+      socket.emit(
+        "session_created",
+        sessions.createSession(clientId, socket.id),
+      );
     }
 
     ActiveUsersServiceSingleton.getInstance().setUser(socket.id);
