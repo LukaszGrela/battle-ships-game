@@ -107,12 +107,13 @@ export function transitionToPlacement(
     id: opponentId,
     active: true,
     ready: false,
-
+    
     name: clientSession.name,
     seed: clientSession.seed,
   };
   room.players[opponentId] = opponent;
 
+  // assign ships for both players
   room.ships = getShips(Object.keys(room.players), AVAILABLE_SHIPS);
 
   // set session's game id
@@ -182,6 +183,49 @@ export function transitionToWaiting(
   // Clear the departing session’s gameId
   clientSession.gameId = undefined;
   sessions.updateSession(leavingPlayerId, clientSession);
+
+  // Save the room
+  RoomServiceSingleton.getInstance().saveRoom(room);
+
+  // Return the updated room
+  return room;
+}
+
+export function applyShipsAndMarkReady(
+  roomId: string,
+  playerId: string,
+  placedShips: TShip[],
+): TRoomState | undefined {
+  // Find the room
+  const roomService = RoomServiceSingleton.getInstance();
+  const room = roomService.getRoom(roomId);
+  // Confirm it is placement
+  if (!room || room.phase !== EGamePhase.Placement) {
+    return;
+  }
+
+  if (countPlayers(room.players) !== 2) {
+    // invalid number of players
+    return;
+  }
+
+  // required user exists
+  const sessions = ClientSessionServiceSingleton.getInstance();
+
+  const clientSession = sessions.readSession(playerId);
+  if (!clientSession || clientSession.gameId !== room.id) {
+    return;
+  }
+
+  const player = room.players[playerId];
+  if (!player || player.ready) {
+    // still invalid
+    return;
+  }
+
+  // Change ready state and store ships
+  player.ready = true;
+  room.ships[playerId] = placedShips;
 
   // Save the room
   RoomServiceSingleton.getInstance().saveRoom(room);

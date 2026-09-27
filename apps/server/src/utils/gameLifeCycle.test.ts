@@ -8,6 +8,7 @@ import {
 import RoomServiceSingleton from "../services/room.service";
 import ClientSessionServiceSingleton from "../services/client-session.service";
 import {
+  applyShipsAndMarkReady,
   createWarRoom,
   transitionToPlacement,
   transitionToPlaying,
@@ -235,6 +236,32 @@ describe("game lifecycle", () => {
     sessionService.updateSession("unknown", session);
 
     expect(transitionToWaiting(roomId, "unknown")).toBeUndefined();
+
+    cleanup(roomId);
+  });
+
+  it("marks a player ready during placement without advancing the room to playing", () => {
+    const roomId = "lifecycle-ready-placement";
+    const owner = createPlayer("owner", true);
+    const opponent = createPlayer("opponent");
+    saveRoom(createRoom(roomId, EGamePhase.Placement, [owner, opponent]));
+    saveSessions("owner", "opponent");
+
+    const ownerSession = sessionService.readSession("owner")!;
+    ownerSession.gameId = roomId;
+    sessionService.updateSession("owner", ownerSession);
+    const opponentSession = sessionService.readSession("opponent")!;
+    opponentSession.gameId = roomId;
+    sessionService.updateSession("opponent", opponentSession);
+
+    const ships = [createPlacedShip(1), createPlacedShip(2)];
+    const result = applyShipsAndMarkReady(roomId, "owner", ships);
+
+    expect(result?.phase).toBe(EGamePhase.Placement);
+    expect(result?.players.owner?.ready).toBe(true);
+    expect(result?.players.opponent?.ready).toBe(false);
+    expect(result?.ships.owner).toEqual(ships);
+    expect(roomService.getRoom(roomId)?.phase).toBe(EGamePhase.Placement);
 
     cleanup(roomId);
   });
