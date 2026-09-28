@@ -6,7 +6,6 @@ import { OpenGames } from "../components/OpenGames/OpenGames";
 import { CreateNewGame } from "../components/CreateNewGame/CreateNewGame";
 import { StatsContainer } from "../components/StatsContainer/StatsContainer";
 import { useSocketGameStats } from "../store/useGameStatsStore";
-import { PlayerDetails } from "../components/PlayerDetails/PlayerDetails";
 import { useConnectionStatus } from "../store/useConnectionStatus";
 import { PlayerAvatar } from "../components/PirateAvatar/PirateAvatar";
 import { Ribbon } from "../components/Ribbon/Ribbon";
