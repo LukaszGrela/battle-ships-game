@@ -6,6 +6,10 @@ import { OpenGames } from "../components/OpenGames/OpenGames";
 import { CreateNewGame } from "../components/CreateNewGame/CreateNewGame";
 import { StatsContainer } from "../components/StatsContainer/StatsContainer";
 import { useSocketGameStats } from "../store/useGameStatsStore";
+import { PlayerDetails } from "../components/PlayerDetails/PlayerDetails";
+import { useConnectionStatus } from "../store/useConnectionStatus";
+import { PlayerAvatar } from "../components/PirateAvatar/PirateAvatar";
+import { Ribbon } from "../components/Ribbon/Ribbon";
 
 export const Lobby: FC = () => {
   return (
@@ -16,14 +20,26 @@ export const Lobby: FC = () => {
 };
 
 const Header = () => {
+  const { clientSession } = useConnectionStatus();
   return (
     <>
+      <DisconnectButton className={styles.Header_disconnect} />
       <img
         alt="Pirates - BattleShips"
         src="./title.png"
         className={styles.Header_title}
       />
-      <DisconnectButton className={styles.Header_disconnect} />
+
+      {clientSession && (
+        <div className={styles.self}>
+          <div className={styles.Avatar}>
+            <PlayerAvatar player={clientSession} />
+          </div>
+          <Ribbon className={styles.Ribbon}>
+            <span>{clientSession.name}</span>
+          </Ribbon>
+        </div>
+      )}
     </>
   );
 };

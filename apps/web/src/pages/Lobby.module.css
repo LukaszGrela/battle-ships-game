@@ -1,20 +1,102 @@
 .Lobby_header {
-  height: 120px;
-  /* 
+  display: grid;
+  width: 100%;
+  margin-bottom: 1rem;
+  grid-template-columns: minmax(0, 1fr) var(--header-logo-size, 120px) minmax(
+      0,
+      1fr
+    );
+}
+
+.self {
+  isolation: isolate;
+  /* pirate avatar */
   display: flex;
-  justify-content: space-between;
-  */
+  flex-direction: column;
+  min-width: 0;
+  justify-self: end;
+  align-items: flex-end;
+
+  @media screen and (max-width: 720px) {
+    align-items: center;
+  }
+
+  --avatar-size: 128px;
+  --player-details-width: auto;
+}
+.Avatar {
+  margin-bottom: -3rem;
+
+  @media screen and (max-width: 720px) {
+    margin-bottom: -0.75rem;
+  }
+  z-index: 1;
+}
+.Ribbon {
+  --ribbon-right-y-offset: 0.75rem;
+  --ribbon-fold-right-height: 2.5rem;
+  --ribbon-fold-right-width: 128px;
+  --ribbon-right-notch-size: 0.75rem;
+  --ribbon-left-y-offset: 0.75rem;
+  --ribbon-fold-left-height: 2.5rem;
+  --ribbon-fold-left-width: 2rem;
+  --ribbon-left-notch-size: 0.75rem;
+  --ribbon-min-width: min-content;
+
+  --offset: 100%;
+  --ribbon-max-width: 100%;
+
+  @media screen and (max-width: 720px) {
+    --ribbon-fold-left-width: 2rem;
+    --ribbon-fold-left-height: 1.5rem;
+    --ribbon-left-y-offset: -0.5rem;
+    --ribbon-fold-right-width: 2rem;
+    --ribbon-fold-right-height: 1.5rem;
+    --ribbon-right-y-offset: -0.5rem;
+  }
+
+  --background: linear-gradient(
+    to bottom,
+    var(--pirates-palette-4) 0%,
+    var(--pirates-palette-3) 50%,
+    var(--pirates-palette-4) 100%
+  );
+
+  --background-right: linear-gradient(
+    to bottom,
+    hsl(38, 73%, 41%) 0%,
+    hsl(47, 79%, 44%) 50%,
+    hsl(38, 73%, 41%) 100%
+  );
+
+  --shadow: var(--pirates-palette-9);
+  --background-left: var(--pirates-palette-7);
+
+  --ribbon-box-shadow:
+    0px 6px 10px 2px rgba(0, 0, 0, 0.25),
+    inset 0px 0 2px 0px rgba(0, 0, 0, 0.25);
+
+  font-weight: bold;
+  -webkit-text-stroke: 3px var(--pirates-palette-16);
+  paint-order: stroke fill;
 }
 
 .Header_title {
-  height: 120px;
+  height: var(--header-logo-size, 120px);
+}
 
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
+.Header_disconnect {
+  min-width: 0;
+  justify-self: start;
 }
 
 @media screen and (max-width: 500px) {
+  .Lobby_header {
+    grid-template-columns: minmax(0, 2fr) var(--header-logo-size, 120px) minmax(
+        0,
+        7fr
+      );
+  }
   .Header_disconnect {
     &[data-type]:not([data-type="custom"]) {
       span {

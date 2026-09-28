@@ -118,20 +118,20 @@ export const CreateNewGame: FC<{ className?: string }> = ({ className }) => {
             {isValidationPending && (
               <span className={styles.pending}>Checking availability...</span>
             )}
-            {status === "valid" && (
+            {!isValidationPending && status === "valid" && (
               <span className={styles.valid}>Name is available!</span>
             )}
-            {status === "taken" && (
+            {!isValidationPending && status === "taken" && (
               <span className={styles.taken}>
                 This war room name is already in use.
               </span>
             )}
-            {status === "invalid" && (
+            {!isValidationPending && status === "invalid" && (
               <span className={styles.invalid}>
                 Name must be at least 3 characters.
               </span>
             )}
-            {status === "empty" && (
+            {!isValidationPending && status === "empty" && (
               <span className={styles.invalid}>Name can't be empty.</span>
             )}
           </div>

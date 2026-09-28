@@ -2,7 +2,7 @@
   position: relative;
   isolation: isolate;
   margin-bottom: 1rem;
-  width: 100%;
+  width: var(--player-details-width, 100%);
   &[data-enemy]:not([data-enemy-ready]) {
     opacity: 0.5;
   }
@@ -75,7 +75,7 @@
     --ribbon-fold-left-width: 2rem;
     --ribbon-left-notch-size: 0.75rem;
 
-    --ribbon-max-width: 100%;/*calc(
+    --ribbon-max-width: 100%; /*calc(
       var(--offset) -
         (
           calc(var(--ribbon-fold-right-width) - var(--ribbon-right-x-offset)) +

@@ -30,10 +30,10 @@ export const PirateAvatar: FC<{
   );
 };
 const ALL_ATLASES_SPRITES = 3 * 4 * 4;
-export const PlayerAvatar: FC<{ player: IPlayer; className?: string }> = ({
-  player,
-  className,
-}) => {
+export const PlayerAvatar: FC<{
+  player: Pick<IPlayer, "seed">;
+  className?: string;
+}> = ({ player, className }) => {
   const params = useMemo(() => {
     const random = seedRandom(player.seed);
 

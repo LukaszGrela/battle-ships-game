@@ -128,28 +128,31 @@ export const GamePlacement: FC = () => {
           }
           return;
         }
-        console.log("updatePlacementBoard", JSON.stringify(draft, null, 2));
+        let shipToPlace = { ...shipSelected, orientation } as TShip;
+        console.log("updatePlacementBoard", shipToPlace);
 
         const row = draft[coords.y];
 
         console.log("GET CELL", getCell(draft, coords.x, coords.y));
+        shipToPlace = handleEdgePlacement(coords, shipToPlace, draft);
+
         const validationResult = isValidPlacement(
           draft,
           coords,
-          shipSelected,
-          orientation,
+          shipToPlace,
+          shipToPlace.orientation!,
         );
         if (validationResult === 1) {
-          placeShip(draft, coords, shipSelected, orientation);
+          placeShip(draft, coords, shipToPlace, shipToPlace.orientation!);
           setAvailableShips((draftShips) => {
             // mark as selected
             const ship = draftShips.find(
-              (needle) => needle.id === shipSelected.id,
+              (needle) => needle.id === shipToPlace.id,
             );
             if (ship && ship.type === "pending") {
               ship.placed = true;
               ship.coords = coords;
-              ship.orientation = orientation;
+              ship.orientation = shipToPlace.orientation!;
             }
           });
           // deselect
@@ -254,4 +257,29 @@ export const GamePlacement: FC = () => {
       </section>
     </AppLayout>
   );
+};
+
+const handleEdgePlacement = <T,>(
+  coords: TCoordinate,
+  ship: TShip,
+  board: TBoard<T>,
+): TShip => {
+  if (ship.orientation === "horizontal") {
+    if (
+      coords.x === board.at(0)!.length - 1 &&
+      coords.y + ship.size <= board.length
+    ) {
+      return { ...ship, orientation: "vertical" } as TShip;
+    }
+  } else {
+    if (
+      coords.y === board.length - 1 &&
+      coords.x + ship.size <= board.at(0)!.length
+    ) {
+      console.log("Ship is at the bottom edge of the board");
+      return { ...ship, orientation: "horizontal" } as TShip;
+    }
+  }
+
+  return ship;
 };

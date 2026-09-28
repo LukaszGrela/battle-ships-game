@@ -8,7 +8,7 @@ import { classNames } from "../../utils/classNames";
 export const PlayerDetails: FC<{
   self: IPlayer;
   enemy?: boolean;
-  phase: EGamePhase;
+  phase?: EGamePhase;
   className?: string;
 }> = ({ self, enemy, phase, className }) => {
   const { name, owner, ready, active } = self;

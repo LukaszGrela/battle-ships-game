@@ -14,6 +14,7 @@
     --modal-dialog-radius: 0;
   }
   .GameResultsModal_panel {
+    --modal-dialog-width: max(26rem, 100vw);
     display: grid;
     grid-template-rows: 44px 1fr 44px;
   }
