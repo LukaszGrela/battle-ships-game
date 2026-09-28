@@ -68,7 +68,7 @@ export function createWarRoom(
   return room;
 }
 
-export function destroyWarRoom( leavingPlayerId: string ) {
+export function destroyWarRoom(leavingPlayerId: string) {
   const roomService = RoomServiceSingleton.getInstance();
   const session = ClientSessionServiceSingleton.getInstance();
 
@@ -356,13 +356,16 @@ export function transitionToPlaying(
 export function updateRoomWithNewTurnData(
   roomId: string,
   playerId: string,
-  coord: TCoordinate,
+  coord?: TCoordinate,
 ) {
   console.log("[updateRoomWithNewTurnData]", roomId, playerId, coord);
   // Find the room
   const room = RoomServiceSingleton.getInstance().getRoom(roomId);
   // Confirm it is playing phase
   if (!room || room.phase !== EGamePhase.Playing) {
+    return;
+  }
+  if (!coord) {
     return;
   }
 

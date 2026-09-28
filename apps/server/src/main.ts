@@ -2,7 +2,10 @@ import { Server } from "socket.io";
 import { createServer } from "node:http";
 import { IClientToServerEvents, IServerToClientEvents } from "@repo/types";
 import { factoryConnectHandler } from "./socket";
-import { expireDisconnectedPlayers, getReconnectTimeoutMs } from "./utils/reconnectGrace";
+import {
+  expireDisconnectedPlayers,
+  getReconnectTimeoutMs,
+} from "./utils/reconnectGrace";
 
 const PORT = 3001;
 const httpServer = createServer();
