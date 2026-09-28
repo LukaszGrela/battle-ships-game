@@ -51,8 +51,15 @@ export const factoryConnectHandler =
       sessions.updateSession(clientId, existing);
       socket.emit("session_restored", existing);
       if (existing.gameId) {
-        socket.emit("welcome", clientId);
-        emitRoomStateToPlayers(io, roomService.getRoom(existing.gameId)!);
+        const room = roomService.getRoom(existing.gameId);
+        if (room) {
+          // activate user
+          room.players[clientId]!.active = true;
+          roomService.saveRoom(room);
+
+          socket.emit("welcome", clientId);
+          emitRoomStateToPlayers(io, room);
+        }
       }
     } else {
       socket.emit(

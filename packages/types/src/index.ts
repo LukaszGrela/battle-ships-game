@@ -143,10 +143,6 @@ export interface IClientToServerEvents {
    */
   join_game: (roomId: string | Pick<TRoomIdentity, "id" | "name">) => void;
   leave_game: () => void;
-  /**
-   * When client restored session and session contains war room id, this event is emited.
-   */
-  rejoin_game: () => void;
 
   place_ships: (ships: (TShip & { type: "pending" })[]) => void;
 

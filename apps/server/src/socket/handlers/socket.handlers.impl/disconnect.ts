@@ -34,20 +34,19 @@ export const factoryDisconnectHandler =
       reason,
     );
 
-    if (clientSession?.socketId !== socket.id) {
-      // stale-socket guard
-      ActiveUsersServiceSingleton.getInstance().removeUser(socket.id);
-      emitStats(io);
-      return;
-    }
+    ActiveUsersServiceSingleton.getInstance().removeUser(socket.id);
 
     if (!clientId || !clientSession || !clientSession.gameId) {
-      ActiveUsersServiceSingleton.getInstance().removeUser(socket.id);
       emitStats(io);
       return;
     }
 
-    ActiveUsersServiceSingleton.getInstance().removeUser(socket.id);
+    if (clientSession?.socketId !== socket.id) {
+      // stale-socket guard
+      emitStats(io);
+      return;
+    }
+
     const roomService = RoomServiceSingleton.getInstance();
 
     const room = roomService.getRoom(clientSession.gameId);
@@ -55,8 +54,10 @@ export const factoryDisconnectHandler =
       if (room.phase === "playing") {
         clientSession.disconnectedAt = Date.now();
         sessions.updateSession(clientId, clientSession);
-        emitStats(io);
-        return;
+
+        room.players[clientId]!.active = false;
+        roomService.saveRoom(room);
+
       } else if (room.phase === "placement") {
         if (singleUser(room)) {
           console.log(
@@ -78,8 +79,11 @@ export const factoryDisconnectHandler =
         emitStats(io);
         return;
       }
-
-      emitRoomStateToPlayers(io, room);
+      const freshRoom = roomService.getRoom(clientSession.gameId);
+      if (freshRoom) {
+        emitRoomStateToPlayers(io, freshRoom);
+      }
     }
+    io.emit("open_games", roomService.getOpenGames());
     emitStats(io);
   };
