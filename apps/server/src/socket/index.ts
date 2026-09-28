@@ -8,6 +8,7 @@ import { emitStats } from "../utils/emitStats";
 import ActiveUsersServiceSingleton from "../services/users.service";
 import ClientSessionServiceSingleton from "../services/client-session.service";
 import { registerServerHandlers } from "./handlers/server.handlers";
+import { emitRoomStateToPlayers } from "../utils/emitRoomStateToPlayers";
 
 export const factoryConnectHandler =
   (io: Server<IClientToServerEvents, IServerToClientEvents>) =>
@@ -43,9 +44,16 @@ export const factoryConnectHandler =
         }
       }
 
+      existing.socketId = socket.id;
+      existing.disconnectedAt = undefined;
+
       // store changes
       sessions.updateSession(clientId, existing);
       socket.emit("session_restored", existing);
+      if (existing.gameId) {
+        socket.emit("welcome", clientId);
+        emitRoomStateToPlayers(io, roomService.getRoom(existing.gameId)!);
+      }
     } else {
       socket.emit(
         "session_created",

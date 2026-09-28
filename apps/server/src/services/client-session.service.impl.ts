@@ -11,6 +11,7 @@ export interface IClientSessionService {
   readSession: (id: string) => IClientSession | null;
   updateSession: (id: string, session: IClientSession) => boolean;
   deleteSession: (id: string) => boolean;
+  listSessions: () => IClientSession[];
 
   clearSessionGame: (id: string) => boolean;
 }
@@ -35,7 +36,7 @@ export class ClientSessionService implements IClientSessionService {
 
     this.sessions.set(id, session);
 
-    return structuredClone(session);
+    return this.sessions.get(id)!;
   }
 
   readSession(id: string): IClientSession | null {
@@ -57,12 +58,20 @@ export class ClientSessionService implements IClientSessionService {
     return this.sessions.delete(id);
   }
 
+  listSessions(): IClientSession[] {
+    return Array.from(this.sessions.values()).map((session) =>
+      structuredClone(session),
+    );
+  }
+
   clearSessionGame(id: string): boolean {
     if (!this.sessions.has(id)) {
       return false;
     }
 
-    this.sessions.get(id)!.gameId = undefined;
+    const session = this.sessions.get(id)!;
+    session.gameId = undefined;
+    session.disconnectedAt = undefined;
 
     return true;
   }

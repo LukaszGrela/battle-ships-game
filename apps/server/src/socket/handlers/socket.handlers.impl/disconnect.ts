@@ -42,18 +42,22 @@ export const factoryDisconnectHandler =
     }
 
     if (!clientId || !clientSession || !clientSession.gameId) {
+      ActiveUsersServiceSingleton.getInstance().removeUser(socket.id);
       emitStats(io);
       return;
     }
+
+    ActiveUsersServiceSingleton.getInstance().removeUser(socket.id);
     const roomService = RoomServiceSingleton.getInstance();
 
-    // TODO: we have session to handle, so do not remove user hastly
     const room = roomService.getRoom(clientSession.gameId);
     if (room) {
       if (room.phase === "playing") {
-        finishRoomByForfeit(room.id, clientId);
+        clientSession.disconnectedAt = Date.now();
+        sessions.updateSession(clientId, clientSession);
+        emitStats(io);
+        return;
       } else if (room.phase === "placement") {
-        // if last user left kill the room
         if (singleUser(room)) {
           console.log(
             "[on disconnect] placement, single user, delete",
@@ -64,20 +68,17 @@ export const factoryDisconnectHandler =
           emitStats(io);
 
           return;
-        } else {
-          //
-          transitionToWaiting(room.id, clientId);
         }
+
+        transitionToWaiting(room.id, clientId);
       } else if (room.phase === "waiting") {
-        // there should only be one user anyway
         console.log("[on disconnect] waiting, delete", room.id);
-        roomService.deleteRoom(room.id);
+        destroyWarRoom(clientId);
         io.emit("open_games", roomService.getOpenGames());
+        emitStats(io);
         return;
       }
-      const players = roomService.getRoom(room.id)!.players;
-      // notify other party
-      // per player emit
+
       emitRoomStateToPlayers(io, room);
     }
     emitStats(io);

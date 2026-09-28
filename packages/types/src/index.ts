@@ -246,6 +246,12 @@ export interface IClientSession {
    */
   gameId?: string;
 
+  /**
+   * Timestamp when the client disconnected from the active room.
+   * Cleared on reconnect so reconnect grace can be resumed.
+   */
+  disconnectedAt?: number;
+
   name: string;
   seed: number;
 }

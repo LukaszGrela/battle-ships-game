@@ -66,6 +66,18 @@ describe("services", () => {
       );
     });
 
+    it("tracks disconnect timestamps and clears them when the game ends", () => {
+      const sessionService = createSessionService();
+      const session = sessionService.createSession("client-id", "socket-id");
+      session.disconnectedAt = 1234;
+      sessionService.updateSession("client-id", session);
+
+      expect(sessionService.readSession("client-id")?.disconnectedAt).toBe(1234);
+      expect(sessionService.clearSessionGame("client-id")).toBe(true);
+      expect(sessionService.readSession("client-id")?.gameId).toBeUndefined();
+      expect(sessionService.readSession("client-id")?.disconnectedAt).toBeUndefined();
+    });
+
     it("deletes an existing session", () => {
       const sessionService = createSessionService();
       sessionService.createSession("client-id", "socket-id");
