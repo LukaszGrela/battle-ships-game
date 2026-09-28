@@ -86,6 +86,11 @@ export type TRoomIdentity = {
 
   phase: TStringifiedEnum<EGamePhase>;
 };
+export type TRematchRequest = {
+  requestorId: TUserId;
+  status: "pending" | "accepted" | "rejected";
+};
+
 export type TRoomState = TRoomIdentity & {
   players: Record<TUserId, IPlayer>;
   boards: Record<TUserId, TBoard>;
@@ -96,6 +101,7 @@ export type TRoomState = TRoomIdentity & {
   result: Record<TUserId, "win" | "lost">;
 
   history: THistoryEntry[];
+  rematchRequest?: TRematchRequest;
 };
 
 type TStringifiedEnum<E extends string> = E | `${E}`;
@@ -147,6 +153,9 @@ export interface IClientToServerEvents {
   place_ships: (ships: (TShip & { type: "pending" })[]) => void;
 
   attack_coordinate: (coord: TCoordinate) => void;
+  request_rematch: () => void;
+  accept_rematch: () => void;
+  reject_rematch: () => void;
   /**
    * Get new random war room game (name=null), or propose custom war room game name (name!=null).
    * If proposed name already exists callback returns new proposition, if custom name is unique the same name is returned.
@@ -207,6 +216,20 @@ export interface IServerToClientEvents {
    */
   server_stats: (stats: TStats) => void;
 
+  rematch_requested: (payload: {
+    roomId: string;
+    requestorId: string;
+    status: "pending";
+  }) => void;
+  rematch_accepted: (payload: {
+    roomId: string;
+    status: "accepted";
+  }) => void;
+  rematch_rejected: (payload: {
+    roomId: string;
+    requestorId: string;
+    status: "rejected";
+  }) => void;
   /**
    * Emited when known user connects and session object exists
    * @param session client session object

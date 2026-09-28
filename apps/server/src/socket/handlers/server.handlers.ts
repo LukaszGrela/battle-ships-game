@@ -4,6 +4,11 @@ import { factoryDisconnectHandler } from "./socket.handlers.impl/disconnect";
 import { factoryGetDisconnectFromServerHandler } from "./socket.handlers.impl/disconnect_from_server";
 import { getRoomsHandler } from "./socket.handlers.impl/get_rooms";
 import { getWarRoomNameHandler } from "./socket.handlers.impl/get_war_room_name";
+import {
+  factoryAcceptRematchHandler,
+  factoryRejectRematchHandler,
+  factoryRequestRematchHandler,
+} from "./socket.handlers.impl/rematch";
 
 export const registerServerHandlers = (
   io: Server<IClientToServerEvents, IServerToClientEvents>,
@@ -21,4 +26,8 @@ export const registerServerHandlers = (
 
   // user has disonnected for some other reason
   socket.on("disconnect", factoryDisconnectHandler(io, socket));
+
+  socket.on("request_rematch", factoryRequestRematchHandler(io, socket));
+  socket.on("accept_rematch", factoryAcceptRematchHandler(io, socket));
+  socket.on("reject_rematch", factoryRejectRematchHandler(io, socket));
 };

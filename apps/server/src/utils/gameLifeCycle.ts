@@ -461,6 +461,109 @@ export function updateRoomWithNewTurnData(
   return room;
 }
 
+export function requestRematch(roomId: string, playerId: string) {
+  const room = RoomServiceSingleton.getInstance().getRoom(roomId);
+  if (!room || room.phase !== EGamePhase.Finished) {
+    return;
+  }
+
+  if (!containsPlayer(playerId, room.players)) {
+    return;
+  }
+
+  if (room.rematchRequest?.status === "pending") {
+    return;
+  }
+
+  if (room.rematchRequest?.status === "rejected") {
+    return;
+  }
+
+  room.rematchRequest = {
+    requestorId: playerId,
+    status: "pending",
+  };
+
+  RoomServiceSingleton.getInstance().saveRoom(room);
+  return room;
+}
+
+export function rejectRematch(roomId: string, winnerId: string) {
+  const room = RoomServiceSingleton.getInstance().getRoom(roomId);
+  if (!room || room.phase !== EGamePhase.Finished) {
+    return;
+  }
+
+  if (!containsPlayer(winnerId, room.players)) {
+    return;
+  }
+
+  if (!room.rematchRequest || room.rematchRequest.status !== "pending") {
+    return;
+  }
+
+  if (room.rematchRequest.requestorId === winnerId) {
+    return;
+  }
+
+  room.rematchRequest = {
+    requestorId: room.rematchRequest.requestorId,
+    status: "rejected",
+  };
+
+  RoomServiceSingleton.getInstance().saveRoom(room);
+  return room;
+}
+
+export function acceptRematch(roomId: string, winnerId: string) {
+  const room = RoomServiceSingleton.getInstance().getRoom(roomId);
+  if (!room || room.phase !== EGamePhase.Finished) {
+    return;
+  }
+
+  if (!containsPlayer(winnerId, room.players)) {
+    return;
+  }
+
+  const requestorId = room.rematchRequest?.requestorId;
+  if (!requestorId || requestorId === winnerId) {
+    return;
+  }
+
+  if (room.rematchRequest?.status !== "pending") {
+    return;
+  }
+
+  const requester = room.players[requestorId];
+  if (!requester) {
+    return;
+  }
+
+  room.phase = EGamePhase.Placement;
+  room.game_started = null;
+  room.game_finished = null;
+  room.turn = winnerId;
+  room.history = [];
+  room.result = {};
+  room.rematchRequest = {
+    requestorId,
+    status: "accepted",
+  };
+
+  Object.values(room.players).forEach((player) => {
+    player.ready = false;
+    player.active = true;
+    player.owner = player.id === winnerId;
+  });
+
+  room.boards = Object.fromEntries(
+    Object.keys(room.players).map((playerId) => [playerId, createEmptyBoard()]),
+  );
+  room.ships = getShips(Object.keys(room.players), AVAILABLE_SHIPS);
+
+  RoomServiceSingleton.getInstance().saveRoom(room);
+  return room;
+}
 /**
  * Transition room to phase `finished` (from `playing`), requires the winner id
  * @param roomId room identifier to transition

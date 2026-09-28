@@ -8,9 +8,12 @@ import {
 import RoomServiceSingleton from "../services/room.service";
 import ClientSessionServiceSingleton from "../services/client-session.service";
 import {
+  acceptRematch,
   applyShipsAndMarkReady,
   createWarRoom,
   destroyWarRoom,
+  rejectRematch,
+  requestRematch,
   transitionToPlacement,
   transitionToPlaying,
   transitionToFinished,
@@ -233,6 +236,87 @@ describe("game lifecycle", () => {
     expect(transitionToPlacement(roomId, "opponent")).toBeUndefined();
 
     cleanup(roomId, otherRoomId);
+  });
+
+  it("requests, accepts, and resets a finished room into placement for a rematch", () => {
+    const roomId = "lifecycle-rematch-ready";
+    saveRoom(
+      createRoom(roomId, EGamePhase.Finished, [
+        createPlayer("winner", true),
+        createPlayer("loser"),
+      ]),
+    );
+    const room = roomService.getRoom(roomId)!;
+    room.result = { winner: "win", loser: "lost" };
+    room.history = [
+      { init: true },
+      { finish: true, whoWon: "winner" },
+    ] as any;
+    room.game_finished = "2026-09-25T00:02:00.000Z";
+    room.turn = "winner";
+    roomService.saveRoom(room);
+    saveSessions("winner", "loser");
+
+    const requested = requestRematch(roomId, "loser");
+    expect(requested).toBeDefined();
+    expect(requested?.rematchRequest).toMatchObject({
+      requestorId: "loser",
+      status: "pending",
+    });
+
+    const accepted = acceptRematch(roomId, "winner");
+    expect(accepted).toBeDefined();
+    expect(accepted?.phase).toBe(EGamePhase.Placement);
+    expect(accepted?.game_finished).toBeNull();
+    expect(accepted?.result).toEqual({});
+    expect(accepted?.history).toEqual([]);
+    expect(accepted?.turn).toBe("winner");
+    expect(accepted?.players.winner).toMatchObject({
+      ready: false,
+      owner: true,
+    });
+    expect(accepted?.players.loser).toMatchObject({
+      ready: false,
+      owner: false,
+    });
+    expect(accepted?.boards.winner).toEqual(
+      expect.arrayContaining([expect.arrayContaining([ECellStatus.Empty])]),
+    );
+    expect(accepted?.boards.loser).toEqual(
+      expect.arrayContaining([expect.arrayContaining([ECellStatus.Empty])]),
+    );
+    expect(accepted?.ships.winner).toHaveLength(5);
+    expect(accepted?.ships.loser).toHaveLength(5);
+
+    cleanup(roomId);
+  });
+
+  it("rejects a rematch request and blocks a second request from the same loser", () => {
+    const roomId = "lifecycle-rematch-rejected";
+    saveRoom(
+      createRoom(roomId, EGamePhase.Finished, [
+        createPlayer("winner", true),
+        createPlayer("loser"),
+      ]),
+    );
+    const room = roomService.getRoom(roomId)!;
+    room.result = { winner: "win", loser: "lost" };
+    roomService.saveRoom(room);
+
+    saveSessions("winner", "loser");
+    const started = requestRematch(roomId, "loser");
+    expect(started).toBeDefined();
+
+    const rejected = rejectRematch(roomId, "winner");
+    expect(rejected).toBeDefined();
+    expect(rejected?.rematchRequest).toMatchObject({
+      requestorId: "loser",
+      status: "rejected",
+    });
+
+    expect(requestRematch(roomId, "loser")).toBeUndefined();
+
+    cleanup(roomId);
   });
 
   it("transitions placement to waiting and removes only the leaving player", () => {
