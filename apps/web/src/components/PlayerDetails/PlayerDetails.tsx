@@ -28,9 +28,11 @@ export const PlayerDetails: FC<{
       {enemy && ready && phase === EGamePhase.Placement && (
         <span className={styles.playerReady}>Player Ready!</span>
       )}
-      {enemy && !active && phase === EGamePhase.Finished && (
-        <span className={styles.playerReady}>Player left the game!</span>
-      )}
+      {enemy &&
+        !active &&
+        (phase === EGamePhase.Playing || phase === EGamePhase.Finished) && (
+          <span className={styles.playerReady}>Player left the game!</span>
+        )}
     </div>
   );
 };
