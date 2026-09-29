@@ -24,6 +24,15 @@ export const socket: Socket<IServerToClientEvents, IClientToServerEvents> = io(
   },
 );
 
+if (import.meta.env.MODE === "development") {
+  socket.onAny((event, ...args) => {
+    console.groupCollapsed(`[WEB SOCKET]`);
+    console.log(`Event: ${event}`, args);
+    console.log("", "did you remember to handle this event?");
+    console.groupEnd();
+  });
+}
+
 export const useSocket = () => {
   const connect = useCallback(() => {
     socket.connect();
