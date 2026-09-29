@@ -66,6 +66,7 @@ export function toGameState(
         myBoard: state.boards[player.id] ?? [],
         enemyBoard: state.boards[enemy.id] ?? [],
         enemyDestroyedShips: enemyShips,
+        rematchRequest: state.rematchRequest,
       };
     } else {
       return {

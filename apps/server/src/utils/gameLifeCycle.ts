@@ -482,6 +482,9 @@ export function requestRematch(roomId: string, playerId: string) {
   room.rematchRequest = {
     requestorId: playerId,
     status: "pending",
+
+    name: room.players[playerId]?.name ?? "",
+    seed: room.players[playerId]?.seed ?? 0,
   };
 
   RoomServiceSingleton.getInstance().saveRoom(room);
@@ -507,7 +510,7 @@ export function rejectRematch(roomId: string, winnerId: string) {
   }
 
   room.rematchRequest = {
-    requestorId: room.rematchRequest.requestorId,
+    ...room.rematchRequest,
     status: "rejected",
   };
 
@@ -545,8 +548,9 @@ export function acceptRematch(roomId: string, winnerId: string) {
   room.turn = winnerId;
   room.history = [];
   room.result = {};
+
   room.rematchRequest = {
-    requestorId,
+    ...room.rematchRequest,
     status: "accepted",
   };
 
