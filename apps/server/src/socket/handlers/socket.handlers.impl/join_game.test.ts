@@ -7,6 +7,7 @@ import {
   transitionToPlacement,
 } from "../../../utils/gameLifeCycle";
 import { factoryJoinGameHandler } from "./join_game";
+import { createIo, createSocket } from "./__tests/utils";
 
 const roomService = RoomServiceSingleton.getInstance();
 const sessionService = ClientSessionServiceSingleton.getInstance();
@@ -16,29 +17,6 @@ const cleanup = (...roomIds: string[]) => {
   ["owner", "opponent", "third", "missing", "new-owner"].forEach((id) =>
     sessionService.deleteSession(id),
   );
-};
-
-const createSocket = (clientId: string) => {
-  const socket = {
-    handshake: {
-      auth: { clientId },
-    },
-    join: vi.fn(),
-    emit: vi.fn(),
-  } as any;
-
-  return socket;
-};
-
-const createIo = () => {
-  const toSpy = vi.fn();
-  const io = {
-    emit: vi.fn(),
-    to: vi.fn().mockImplementation(() => ({ emit: toSpy })),
-    _toSpy: toSpy,
-  } as any;
-
-  return io;
 };
 
 describe("join_game handler", () => {

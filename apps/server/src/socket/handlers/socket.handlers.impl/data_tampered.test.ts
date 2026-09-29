@@ -1,27 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import ClientSessionServiceSingleton from "../../../services/client-session.service";
 import { dataTampered } from "./data_tampered";
+import { createIo, createSocket } from "./__tests/utils";
 
 const sessionService = ClientSessionServiceSingleton.getInstance();
-
-const createSocket = (clientId: string) => {
-  const socket = {
-    handshake: { auth: { clientId } },
-    id: `${clientId}-socket`,
-    emit: vi.fn(),
-    disconnect: vi.fn(),
-  } as any;
-
-  return socket;
-};
-
-const createIo = () => {
-  const io = {
-    emit: vi.fn(),
-  } as any;
-
-  return io;
-};
 
 describe("dataTampered", () => {
   afterEach(() => {

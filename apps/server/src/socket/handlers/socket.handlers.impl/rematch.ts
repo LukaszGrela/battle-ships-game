@@ -1,7 +1,4 @@
-import {
-  IClientToServerEvents,
-  IServerToClientEvents,
-} from "@repo/types";
+import { IClientToServerEvents, IServerToClientEvents } from "@repo/types";
 import { Server, Socket } from "socket.io";
 import RoomService from "../../../services/room.service";
 import ClientSessionServiceSingleton from "../../../services/client-session.service";
@@ -11,6 +8,7 @@ import {
   rejectRematch,
   requestRematch,
 } from "../../../utils/gameLifeCycle";
+import { toGameState } from "../../../utils/toGameState";
 
 type TRequestRematchHandler = IClientToServerEvents["request_rematch"];
 type TAcceptRematchHandler = IClientToServerEvents["accept_rematch"];
@@ -48,9 +46,13 @@ export const factoryRequestRematchHandler = (
     if (!room) {
       socket.emit("error", "Rematch request rejected");
       return;
+    } else {
+      socket.emit("game_updated", toGameState(clientId, room));
     }
 
-    const otherPlayerId = Object.keys(room.players).find((id) => id !== clientId);
+    const otherPlayerId = Object.keys(room.players).find(
+      (id) => id !== clientId,
+    );
     if (!otherPlayerId) {
       return;
     }
@@ -59,9 +61,10 @@ export const factoryRequestRematchHandler = (
     const otherPlayerSession = sessionService.readSession(otherPlayerId);
     if (otherPlayerSession) {
       io.to(otherPlayerSession.socketId).emit("rematch_requested", {
-        roomId: room.id,
         requestorId: clientId,
         status: "pending",
+        name: room.players[clientId]?.name ?? "",
+        seed: room.players[clientId]?.seed ?? 0,
       });
     }
   };
@@ -132,9 +135,8 @@ export const factoryRejectRematchHandler = (
     }
 
     const requestorId = room.rematchRequest?.requestorId ?? clientId;
-    const requestorSession = ClientSessionServiceSingleton.getInstance().readSession(
-      requestorId,
-    );
+    const requestorSession =
+      ClientSessionServiceSingleton.getInstance().readSession(requestorId);
     if (requestorSession) {
       io.to(requestorSession.socketId).emit("rematch_rejected", {
         roomId: room.id,
@@ -142,5 +144,7 @@ export const factoryRejectRematchHandler = (
         status: "rejected",
       });
     }
+
+    emitRoomStateToPlayers(io, room);
   };
 };

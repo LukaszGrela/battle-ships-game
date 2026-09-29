@@ -4,31 +4,10 @@ import RoomServiceSingleton from "../../../services/room.service";
 import ClientSessionServiceSingleton from "../../../services/client-session.service";
 import { createWarRoom } from "../../../utils/gameLifeCycle";
 import { factoryPlaceShipsHandler } from "./place_ships";
+import { createIo, createSocket } from "./__tests/utils";
 
 const roomService = RoomServiceSingleton.getInstance();
 const sessionService = ClientSessionServiceSingleton.getInstance();
-
-const createSocket = (clientId: string) => {
-  const socket = {
-    handshake: { auth: { clientId } },
-    emit: vi.fn(),
-    disconnect: vi.fn(),
-    id: `${clientId}-socket`,
-  } as any;
-
-  return socket;
-};
-
-const createIo = () => {
-  const toSpy = vi.fn();
-  const io = {
-    emit: vi.fn(),
-    to: vi.fn().mockImplementation(() => ({ emit: toSpy })),
-    _toSpy: toSpy,
-  } as any;
-
-  return io;
-};
 
 const createValidShips = (): (TShip & { type: "pending" })[] => [
   {
@@ -194,8 +173,12 @@ describe("place_ships handler", () => {
     roomWithOpponent.boards.opponent = createBoardWithOpenCells();
     roomWithOpponent.boards.owner = createBoardWithOpenCells();
     roomWithOpponent.phase = EGamePhase.Placement;
-    roomWithOpponent.ships.owner = [{ id: 0, size: 2, type: "pending", placed: false }];
-    roomWithOpponent.ships.opponent = [{ id: 0, size: 2, type: "pending", placed: false }];
+    roomWithOpponent.ships.owner = [
+      { id: 0, size: 2, type: "pending", placed: false },
+    ];
+    roomWithOpponent.ships.opponent = [
+      { id: 0, size: 2, type: "pending", placed: false },
+    ];
     roomService.saveRoom(roomWithOpponent);
 
     handler([

@@ -9,29 +9,10 @@ import {
   transitionToPlaying,
 } from "../../../utils/gameLifeCycle";
 import { factoryLeaveGameHandler } from "./leave_game";
+import { createIo, createSocket } from "./__tests/utils";
 
 const roomService = RoomServiceSingleton.getInstance();
 const sessionService = ClientSessionServiceSingleton.getInstance();
-
-const createSocket = (clientId: string) => {
-  const socket = {
-    handshake: { auth: { clientId } },
-    emit: vi.fn(),
-  } as any;
-
-  return socket;
-};
-
-const createIo = () => {
-  const toSpy = vi.fn();
-  const io = {
-    emit: vi.fn(),
-    to: vi.fn().mockImplementation(() => ({ emit: toSpy })),
-    _toSpy: toSpy,
-  } as any;
-
-  return io;
-};
 
 const cleanup = (...roomIds: string[]) => {
   roomIds.forEach((roomId) => roomService.deleteRoom(roomId));

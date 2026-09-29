@@ -8,27 +8,10 @@ import {
   transitionToPlaying,
 } from "../../../utils/gameLifeCycle";
 import { factoryDisconnectHandler } from "./disconnect";
+import { createIo, createSocket } from "./__tests/utils";
 
 const sessionService = ClientSessionServiceSingleton.getInstance();
 const roomService = RoomServiceSingleton.getInstance();
-
-const createSocket = (clientId: string, socketId: string) => {
-  const socket = {
-    id: socketId,
-    handshake: { auth: { clientId } },
-  } as any;
-
-  return socket;
-};
-
-const createIo = () => {
-  const io = {
-    emit: vi.fn(),
-    to: vi.fn().mockImplementation(() => ({ emit: vi.fn() })),
-  } as any;
-
-  return io;
-};
 
 describe("disconnect handler", () => {
   afterEach(() => {
@@ -179,7 +162,7 @@ describe("disconnect handler", () => {
     expect(sessionService.readSession("owner")?.gameId).toBeUndefined();
     expect(updatedRoom.players.opponent).toBeDefined();
     expect(io.emit).toHaveBeenCalledWith("server_stats", expect.any(Object));
-    
+
     expect(toSpy).toHaveBeenCalledWith("opponent-socket");
     expect(socketEmitter.emit).toHaveBeenCalledWith(
       "game_updated",
