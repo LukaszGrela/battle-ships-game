@@ -88,6 +88,10 @@ export type TRoomIdentity = {
 };
 export type TRematchRequest = {
   requestorId: TUserId;
+
+  name: string;
+  seed: number;
+
   status: "pending" | "accepted" | "rejected";
 };
 
@@ -139,6 +143,7 @@ export type TGameState = Omit<
         enemy: IPlayer;
         enemyBoard: TBoard;
         enemyDestroyedShips: TShip[];
+        rematchRequest?: TRematchRequest;
       }
   );
 
@@ -173,6 +178,8 @@ export interface IClientToServerEvents {
    * User intentionally want's to disconnect. It means abandoning any running games.
    */
   disconnect_from_server: () => void;
+
+  request_stats: () => void;
 }
 
 export interface IServerToClientEvents {
@@ -216,15 +223,8 @@ export interface IServerToClientEvents {
    */
   server_stats: (stats: TStats) => void;
 
-  rematch_requested: (payload: {
-    roomId: string;
-    requestorId: string;
-    status: "pending";
-  }) => void;
-  rematch_accepted: (payload: {
-    roomId: string;
-    status: "accepted";
-  }) => void;
+  rematch_requested: (payload: TRematchRequest) => void;
+  rematch_accepted: (payload: { roomId: string; status: "accepted" }) => void;
   rematch_rejected: (payload: {
     roomId: string;
     requestorId: string;

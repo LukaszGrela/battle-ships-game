@@ -9,6 +9,7 @@ import {
   factoryRejectRematchHandler,
   factoryRequestRematchHandler,
 } from "./socket.handlers.impl/rematch";
+import { getStatsHandler } from "./socket.handlers.impl/get_stats";
 
 export const registerServerHandlers = (
   io: Server<IClientToServerEvents, IServerToClientEvents>,
@@ -30,4 +31,6 @@ export const registerServerHandlers = (
   socket.on("request_rematch", factoryRequestRematchHandler(io, socket));
   socket.on("accept_rematch", factoryAcceptRematchHandler(io, socket));
   socket.on("reject_rematch", factoryRejectRematchHandler(io, socket));
+
+  socket.on("get_stats", getStatsHandler);
 };
