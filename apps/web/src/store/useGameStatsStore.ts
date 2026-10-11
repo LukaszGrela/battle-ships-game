@@ -27,6 +27,7 @@ export const useSocketGameStats = () => {
       setStats(stats);
     };
 
+    socket.emitWithAck("get_stats").then(setStats);
     socket.on("server_stats", handleServerStats);
     return () => {
       socket.off("server_stats", handleServerStats);

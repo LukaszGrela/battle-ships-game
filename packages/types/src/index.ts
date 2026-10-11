@@ -179,7 +179,7 @@ export interface IClientToServerEvents {
    */
   disconnect_from_server: () => void;
 
-  request_stats: () => void;
+  get_stats: (callback: (stats: TStats) => void) => void;
 }
 
 export interface IServerToClientEvents {

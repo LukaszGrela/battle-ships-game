@@ -2,11 +2,13 @@ import styles from "./StatsContainer.module.css";
 import { FC } from "react";
 import { DecoratedContainer } from "../DecoratedContainer";
 import { classNames } from "../../utils/classNames";
-import { useGameStatsStore } from "../../store/useGameStatsStore";
+import { useGameStatsStore, useSocketGameStats } from "../../store/useGameStatsStore";
 
 export const StatsContainer: FC<{
   className?: string;
 }> = ({ className }) => {
+  useSocketGameStats();
+
   const { activeGames, activePlayers, playedGames } = useGameStatsStore();
   return (
     <DecoratedContainer

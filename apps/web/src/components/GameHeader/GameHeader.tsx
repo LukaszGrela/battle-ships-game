@@ -6,7 +6,7 @@ import { EmitLeaveGameButton } from "../EmitLeaveGameButton/EmitLeaveGameButton"
 import { LifeBuoy } from "../icons/LifeBuoy";
 import { Flag } from "../icons/Flag";
 import { EmitForfeitGameButton } from "../EmitForfaitGameButton/EmitForfaitGameButton";
-import { Button } from "../Button";
+import { RequestRematchButton } from "../RequestRematchButton/RequestRematchButton";
 
 export type TGameHeaderAllowedState = TGameState & {
   phase: EGamePhase.Placement | EGamePhase.Playing | EGamePhase.Finished;
@@ -41,7 +41,7 @@ export const GameHeader: FC<{
             <span>Forfait</span>
           </EmitForfeitGameButton>
         )}
-        {showRevenge && <Button size="sm">Give me revenge</Button>}
+        {showRevenge && <RequestRematchButton size="sm" />}
         {showLeave && (
           <EmitLeaveGameButton
             size="sm"

@@ -4,6 +4,7 @@
 }
 .GameHeader_toolbar {
   display: flex;
+  justify-content: space-between;
 }
 .responsiveIconButton {
   @media screen and (max-width: 500px) {

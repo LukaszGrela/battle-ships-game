@@ -10,16 +10,25 @@ import {
   TGameHeaderAllowedState,
 } from "../components/GameHeader/GameHeader";
 import { GameResultsModal } from "../components/GameResultsModal";
+import { RematchRequestSentModal } from "../components/request-rematch/RematchRequestSentModal";
+import { ConfirmRematchModal } from "../components/request-rematch/ConfirmRematchModal";
 
 export const GameOver: FC = () => {
-  const { gameState } = useGameStore();
+  const { gameState, revengeRequest } = useGameStore();
+
+  console.log("[GameOver] gameState", gameState);
 
   const state =
     gameState && gameState.phase === "finished" ? gameState : undefined;
   const myResults = state?.result[state.self.id];
   const winner = myResults === "win";
 
-  const [open, setOpen] = useState(true);
+  const requestRematchStatus = revengeRequest?.status;
+  const isRequestor = revengeRequest?.requestorId === state?.self.id;
+
+  const [open, setOpen] = useState(
+    isRequestor && requestRematchStatus === "pending" ? false : true,
+  );
   const closeModal = () => {
     setOpen(false);
   };
@@ -61,6 +70,18 @@ export const GameOver: FC = () => {
           open={open}
           onClose={closeModal}
         />
+      )}
+      {requestRematchStatus && (
+        <>
+          {/* If requestor show pending modal */}
+          <RematchRequestSentModal
+            open={requestRematchStatus === "pending" && isRequestor}
+          />
+          {/* If requestee (!requestor) and pending show confirm modal */}
+          <ConfirmRematchModal
+            open={requestRematchStatus === "pending" && !isRequestor}
+          />
+        </>
       )}
     </AppLayout>
   );

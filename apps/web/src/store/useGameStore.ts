@@ -1,4 +1,4 @@
-import { EGamePhase, IPlayer, TGameState } from "@repo/types";
+import { EGamePhase, IPlayer, TGameState, TRematchRequest } from "@repo/types";
 import { useEffect } from "react";
 import { create } from "zustand";
 import { socket } from "../socket";
@@ -9,12 +9,15 @@ type TGameStoreActions = {
   setError: (message: string | null) => void;
 
   setEnemyReady: (enemy: Pick<IPlayer, "name" | "seed" | "owner">) => void;
+  setRematchRequest: (request: TRematchRequest | undefined) => void;
 };
 
 type TGameStore = {
   gameState: TGameState | null;
   selfId: string | null;
   errorMessage: string | null;
+
+  revengeRequest?: TRematchRequest;
 } & TGameStoreActions;
 
 export const useGameStore = create<TGameStore>((set) => ({
@@ -37,13 +40,22 @@ export const useGameStore = create<TGameStore>((set) => ({
           },
         }) as TGameStore & { phase: EGamePhase.Placement },
     ),
+
+  setRematchRequest: (request) => set({ revengeRequest: request }),
+
   selfId: null,
   errorMessage: null,
   gameState: null,
 }));
 
 export const useSocketGameState = () => {
-  const { setGameState, setError, setSelfId, setEnemyReady } = useGameStore();
+  const {
+    setGameState,
+    setError,
+    setSelfId,
+    setEnemyReady,
+    setRematchRequest,
+  } = useGameStore();
   useEffect(() => {
     function onUpdate(state: TGameState | null) {
       console.log("[useGameStore.onUpdate]", state);
@@ -52,6 +64,9 @@ export const useSocketGameState = () => {
       if (state === null) {
         setSelfId(null);
         setError(null);
+        setRematchRequest(undefined);
+      } else {
+        setRematchRequest(state.rematchRequest);
       }
     }
 
@@ -69,17 +84,25 @@ export const useSocketGameState = () => {
       console.log(`Player ${player.name} is ready!`);
       setEnemyReady(player);
     };
+
+    const opponentRequestRematchHandler = (request: TRematchRequest) => {
+      console.log("[useGameStore.opponentRequestRematchHandler]", request);
+      setRematchRequest(request);
+    };
+
     socket.on("player_ready", playerReadyCallback);
 
     socket.on("game_updated", onUpdate);
     socket.on("welcome", onWelcome);
     socket.on("error", onError);
+    socket.on("rematch_requested", opponentRequestRematchHandler);
 
     return () => {
       socket.off("game_updated", onUpdate);
       socket.off("welcome", onWelcome);
       socket.off("error", onError);
       socket.off("player_ready", playerReadyCallback);
+      socket.off("rematch_requested", opponentRequestRematchHandler);
     };
-  }, [setEnemyReady, setError, setGameState, setSelfId]);
+  }, [setEnemyReady, setError, setGameState, setRematchRequest, setSelfId]);
 };

@@ -5,7 +5,6 @@ import { DisconnectButton } from "../components/DisconnectButton/DisconnectButto
 import { OpenGames } from "../components/OpenGames/OpenGames";
 import { CreateNewGame } from "../components/CreateNewGame/CreateNewGame";
 import { StatsContainer } from "../components/StatsContainer/StatsContainer";
-import { useSocketGameStats } from "../store/useGameStatsStore";
 import { useConnectionStatus } from "../store/useConnectionStatus";
 import { PlayerAvatar } from "../components/PirateAvatar/PirateAvatar";
 import { Ribbon } from "../components/Ribbon/Ribbon";
@@ -44,8 +43,6 @@ const Header = () => {
 };
 
 const ConnectedLobby = () => {
-  useSocketGameStats();
-
   return (
     <section className={styles.Lobby_content}>
       <CreateNewGame className={styles.column1} />

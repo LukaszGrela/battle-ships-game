@@ -2,7 +2,6 @@ import styles from "./GameResultsModal.module.css";
 import { FC, useState } from "react";
 import { TProps as TModalProps, Modal } from "../Modal";
 import { TGameState } from "@repo/types";
-import { Button } from "../Button";
 import { EmitLeaveGameButton } from "../EmitLeaveGameButton/EmitLeaveGameButton";
 import { classNames } from "../../utils/classNames";
 import { getSpriteStyle } from "../../assets/getSpriteStyle";
@@ -12,6 +11,7 @@ import {
   TDecorSprite,
   VICTORY_SPRITES,
 } from "../../assets/decorations";
+import { RequestRematchButton } from "../RequestRematchButton/RequestRematchButton";
 
 type TProps = {
   gameState: TGameState;
@@ -82,7 +82,7 @@ export const GameResultsModal: FC<TProps> = ({ open, onClose, gameState }) => {
 
         footer={() => (
           <>
-            {!winner && <Button>Give me revenge</Button>}
+            {!winner && <RequestRematchButton />}
 
             <EmitLeaveGameButton type="secondary" skipConfirmation={true}>
               Sail Away

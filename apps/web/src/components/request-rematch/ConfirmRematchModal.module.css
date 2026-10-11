@@ -1,0 +1,42 @@
+.Modal_body {
+  padding: 1rem 0;
+}
+
+.title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--text-strong);
+  text-shadow: 0 0 20px rgba(252, 208, 46, 0.25);
+}
+
+.separator {
+  --waves-stroke: var(--pirates-palette-23);
+
+  margin: 1rem 0;
+  
+  max-width: 380px;
+}
+
+.message1,
+.message2 {
+  margin: 0;
+  min-height: 1.6em; /* reserves space so rotation doesn't jump */
+  font-size: 1.0625rem;
+  font-style: italic;
+  line-height: 1.5;
+  color: var(--text-soft);
+  text-wrap: balance;
+  margin-bottom: 1rem;
+}
+
+.message1::before {
+  content: "\201C";
+  color: var(--accent);
+}
+
+.message2::after {
+  content: "\201D";
+  color: var(--accent);
+}
