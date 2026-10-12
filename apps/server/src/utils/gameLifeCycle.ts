@@ -353,20 +353,23 @@ export function transitionToPlaying(
   return room;
 }
 
+export type TUpdateRoomWithNewTurnDataStatus =
+  -1 | -2 | -3 | -4 | -5 | -6 | -7 | -8;
+
 export function updateRoomWithNewTurnData(
   roomId: string,
   playerId: string,
   coord?: TCoordinate,
-) {
+): TUpdateRoomWithNewTurnDataStatus | TRoomState {
   console.log("[updateRoomWithNewTurnData]", roomId, playerId, coord);
   // Find the room
   const room = RoomServiceSingleton.getInstance().getRoom(roomId);
   // Confirm it is playing phase
   if (!room || room.phase !== EGamePhase.Playing) {
-    return;
+    return -1;
   }
   if (!coord) {
-    return;
+    return -2;
   }
 
   // apply game turn data
@@ -376,18 +379,18 @@ export function updateRoomWithNewTurnData(
 
   const clientSession = sessions.readSession(playerId);
   if (!clientSession || clientSession.gameId !== room.id) {
-    return;
+    return -3;
   }
 
   const opponent = getOtherPlayer(playerId, room.players);
   const opponentSession = sessions.readSession(opponent?.id ?? "");
   if (!opponent || !opponentSession || opponentSession.gameId !== room.id) {
-    return;
+    return -4;
   }
 
   const targetBoard = room.boards[opponent.id];
   if (!targetBoard) {
-    return;
+    return -5;
   }
   console.log("[updateRoomWithNewTurnData]", "room.boards", room.boards);
   const cell = getCell(targetBoard, coord.x, coord.y);
@@ -399,7 +402,7 @@ export function updateRoomWithNewTurnData(
       coord,
       targetBoard,
     );
-    return;
+    return -6;
   }
 
   if (
@@ -408,7 +411,7 @@ export function updateRoomWithNewTurnData(
     cell === ECellStatus.Miss
   ) {
     // already attacked, ignore
-    return;
+    return -7;
   }
 
   const attackResult = resolveAttack(targetBoard, coord);
@@ -416,7 +419,7 @@ export function updateRoomWithNewTurnData(
   const result = setCell(targetBoard, coord.x, coord.y, attackResult);
   if (result < 0) {
     console.error("Failed to update board cell", result, coord, targetBoard);
-    return;
+    return -8;
   }
 
   // Update history

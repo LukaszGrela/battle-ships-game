@@ -67,15 +67,14 @@ type TFinishHistory = {
   whoWon: string;
 };
 
-export type THistoryEntry =
-  | {
-      turn: TUserId;
-      coords: TCoordinate;
-      result: ECellStatus.Hit | ECellStatus.Miss;
-      isSunk: boolean;
-    }
-  | TInitHistory
-  | TFinishHistory;
+export type TAttackHistory = {
+  turn: TUserId;
+  coords: TCoordinate;
+  result: ECellStatus.Hit | ECellStatus.Miss;
+  isSunk: boolean;
+};
+
+export type THistoryEntry = TAttackHistory | TInitHistory | TFinishHistory;
 
 export type TRoomIdentity = {
   id: TRoomId;
@@ -157,7 +156,17 @@ export interface IClientToServerEvents {
 
   place_ships: (ships: (TShip & { type: "pending" })[]) => void;
 
-  attack_coordinate: (coord: TCoordinate) => void;
+  attack_coordinate: (
+    coord: TCoordinate,
+    callback: (
+      result:
+        | {
+            ok: true;
+            status: ECellStatus.Hit | ECellStatus.Miss | ECellStatus.Destroyed;
+          }
+        | { ok: false; message: string },
+    ) => void,
+  ) => void;
   request_rematch: () => void;
   accept_rematch: () => void;
   reject_rematch: () => void;
