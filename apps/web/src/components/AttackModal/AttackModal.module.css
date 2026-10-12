@@ -1,0 +1,15 @@
+.AttackModule_title {
+  text-transform: capitalize;
+
+}
+.AttackModule_body {
+
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+
+}
+
+.AttackModule_timeout {
+  --wave-timout-duration: 4s;
+}
