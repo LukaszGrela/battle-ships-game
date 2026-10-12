@@ -6,7 +6,6 @@
   max-width: 22rem;
   height: 18px;
   overflow: hidden; /* Hides the sliding overflow */
-
 }
 
 .Waves_svg {
@@ -35,6 +34,48 @@
        Content is 480 wide in a 360 viewBox,
        so the right edge is never starved. */
     transform: translateX(-120px);
+  }
+}
+
+/* ─── Timeout indicator ──────────────────────────────────────
+   <Waves timeout style={{ "--wave-timout-duration": "30s" }} />
+   The visible window drains from one edge to the other while
+   the drift keeps playing inside it.
+
+   clip-path (not width/scaleX) so the drain is composited:
+   no layout, and the wave pattern is never stretched.     */
+.Waves[data-mode="timeout"] .Waves_svg {
+  animation: shrink-right var(--wave-timout-duration, 10s)
+    var(--wave-timout-easing, linear) forwards;
+  animation-delay: var(--wave-timout-delay, 0s);
+}
+
+/* Drain towards the wave's direction of travel */
+.Waves[data-mode="timeout"][data-direction="right"] .Waves_svg {
+  animation-name: shrink-left;
+}
+
+/* Freeze/resume the clock without losing progress */
+.Waves[data-mode="timeout"][data-paused="true"] .Waves_svg {
+  animation-play-state: paused;
+}
+
+@keyframes shrink-right {
+  /* inset(top right bottom left): erode from the right edge */
+  from {
+    clip-path: inset(0 0 0 0);
+  }
+  to {
+    clip-path: inset(0 100% 0 0);
+  }
+}
+
+@keyframes shrink-left {
+  from {
+    clip-path: inset(0 0 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 100%);
   }
 }
 

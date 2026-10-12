@@ -1,15 +1,39 @@
 import { classNames } from "../../utils/classNames";
 import styles from "./Waves.module.css";
-import { FC } from "react";
+import { CSSProperties, FC } from "react";
 
-export const Waves: FC<{
+type WavesProps = {
   className?: string;
   direction?: "left" | "right";
-}> = ({ className, direction }) => {
+  /**
+   * Timeout indicator mode: the wave drains to nothing over
+   * `--wave-timout-duration`. Set the var inline (style prop) or
+   * on any ancestor. Omit for a plain animated divider.
+   */
+  timeout?: boolean;
+  /** Freezes (and later resumes) the drain with progress intact. */
+  paused?: boolean;
+  /** Fired when the drain finishes. */
+  onDrained?: () => void;
+  /** Escape hatch for inline styles / custom properties. */
+  style?: CSSProperties;
+};
+
+export const Waves: FC<WavesProps> = ({
+  className,
+  direction,
+  timeout = false,
+  paused = false,
+  onDrained,
+  style,
+}) => {
   return (
     <div
       className={classNames(styles.Waves, className)}
       data-direction={direction}
+      data-mode={timeout ? "timeout" : undefined}
+      data-paused={paused ? "true" : undefined}
+      style={style}
     >
       <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -17,6 +41,7 @@ export const Waves: FC<{
         preserveAspectRatio="none"
         className={styles.Waves_svg}
         aria-hidden="true"
+        onAnimationEnd={onDrained}
         strokeLinecap="round"
       >
         {/*
