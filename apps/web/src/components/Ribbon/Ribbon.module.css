@@ -139,6 +139,20 @@
   );
 }
 
+.ribbon-fold-children-left {
+  padding-left: var(--ribbon-left-notch-size);
+  padding-right: var(--ribbon-left-x-offset);
+}
+.ribbon-fold-children-right {
+  padding-left: var(--ribbon-right-x-offset);
+  padding-right: var(--ribbon-right-notch-size);
+}
+.ribbon-fold-children {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
 .ribbon-fold-left {
   --fold-h: var(--ribbon-fold-left-height);
   --y: var(--ribbon-left-y-offset, 0rem);
