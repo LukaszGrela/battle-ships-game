@@ -128,15 +128,33 @@
     ) {
     background-color: #aaa;
     &[data-type="hit"] {
-      background-image: url("./explosions-64.png");
-      background-position: 0
-        calc(var(--cell-explosion-index) * var(--grid-size) * -1);
+      --atlas-size: 256px;
+      --cell-size: 64px;
+      --scale: calc(var(--grid-size) / var(--cell-size));
+
+      background-repeat: no-repeat;
+      background-image: url("./assets/explosions-sprites.png");
+      background-size: calc(var(--atlas-size) * var(--scale))
+        calc(var(--atlas-size) * var(--scale));
+
+      background-position: calc(-1px * var(--cell-frame-x, 0) * var(--scale))
+        calc(-1px * var(--cell-frame-y, 0) * var(--scale));
     }
   }
 
   &[data-type="miss"] {
+      --atlas-size: 256px;
+      --cell-size: 64px;
+      --scale: calc(var(--grid-size) / var(--cell-size));
+      
     background-color: var(--pirates-palette-24);
-    background-image: url("./splash-64.png");
+    background-repeat: no-repeat;
+    background-image: url("./assets/splashes-sprites.png");
+    background-size: calc(var(--atlas-size) * var(--scale))
+      calc(var(--atlas-size) * var(--scale));
+
+    background-position: calc(-1px * var(--cell-frame-x, 0) * var(--scale))
+      calc(-1px * var(--cell-frame-y, 0) * var(--scale));
   }
 
   &[data-first-row] {

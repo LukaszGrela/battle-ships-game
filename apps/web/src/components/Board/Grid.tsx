@@ -86,8 +86,8 @@ Pick<TProps, "board" | "disabled" | "pad"> & TInteractivityProps
             lastRow={y === rowsLength - 1 ? "" : undefined}
             firstColumn={x === 0 ? "" : undefined}
             firstRow={y === 0 ? "" : undefined}
-            // 3 number of frames from explosion atlas
-            explosionIndex={random.nextInt(0, 2)}
+            // 4x4 number of frames from explosion/splash atlas
+            frameIndex={random.nextInt(0, 15)}
 
             {...interactiveProps}
           />

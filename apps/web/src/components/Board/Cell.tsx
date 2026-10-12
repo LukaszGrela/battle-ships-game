@@ -1,7 +1,10 @@
 import styles from "./BoardGrid.module.css";
-import { FC, useCallback, MouseEvent, CSSProperties } from "react";
+import { FC, useCallback, MouseEvent, CSSProperties, useMemo } from "react";
 import { TCell } from "./types";
 import { ECellStatus } from "@repo/types";
+import { getSpriteStyle } from "../../assets/getSpriteStyle";
+import { EXPLOSION_ATLAS, EXPLOSION_SPRITES } from "../../assets/explosions";
+import { SPLASH_ATLAS, SPLASH_SPRITES } from "../../assets/splashes";
 
 export const Cell: FC<TCell> = ({
   status,
@@ -11,7 +14,7 @@ export const Cell: FC<TCell> = ({
   firstRow,
   lastColumn,
   lastRow,
-  explosionIndex = 0,
+  frameIndex = 0,
   ...interactiveProps
 }) => {
   const Tag = interactiveProps.isInteractive ? "button" : "div";
@@ -23,6 +26,24 @@ export const Cell: FC<TCell> = ({
     },
     [coords, interactiveProps],
   );
+
+  const style = useMemo((): CSSProperties | undefined => {
+    if (status === ECellStatus.Empty) return undefined;
+
+    const frame = (status === ECellStatus.Margin
+      ? SPLASH_ATLAS[SPLASH_SPRITES[frameIndex] ?? 0]
+      : EXPLOSION_ATLAS[EXPLOSION_SPRITES[frameIndex] ?? 0]) ?? {
+      x: 0,
+      y: 0,
+    };
+
+    return {
+      "--cell-frame-index": frameIndex,
+      "--cell-frame-x": frame.x,
+      "--cell-frame-y": frame.y,
+    } as CSSProperties;
+  }, [frameIndex, status]);
+
   return (
     <Tag
       aria-label={`Cell ${coords.x},${coords.y} - ${status}`}
@@ -40,12 +61,8 @@ export const Cell: FC<TCell> = ({
       data-first-row={firstRow}
       data-last-column={lastColumn}
       data-last-row={lastRow}
-      style={
-        {
-          "--cell-explosion-index": explosionIndex,
-        } as CSSProperties
-      }
-      data-explosion-index={explosionIndex}
+      style={style}
+      data-frame-index={frameIndex}
     />
   );
 };
