@@ -25,3 +25,15 @@
     order: -1;
   }
 }
+
+.turnIndicator {
+  display: flex;
+  justify-content: center;
+  --turn-indicator-margin: -0.5rem 0 0.5rem 0;
+
+  & :global(.TurnIndicator_label) {
+    font-weight: bold;
+    -webkit-text-stroke: 3px var(--pirates-palette-16);
+    paint-order: stroke fill;
+  }
+}

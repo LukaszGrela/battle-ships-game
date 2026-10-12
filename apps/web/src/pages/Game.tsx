@@ -1,9 +1,9 @@
 import styles from "./Game.module.css";
-import { FC, useMemo } from "react";
+import { FC, useCallback, useMemo, useState } from "react";
 import { AppLayout } from "../components/AppLayout/AppLayout";
 import { useGameStore } from "../store/useGameStore";
 import { TInteractivityProps } from "../components/Board";
-import { TCoordinate, TPlacedShip } from "@repo/types";
+import { ECellStatus, TCoordinate, TPlacedShip } from "@repo/types";
 import { socket } from "../socket";
 import { ShipsBoard } from "../components/Board/ShipsBoard";
 import {
@@ -11,27 +11,43 @@ import {
   TGameHeaderAllowedState,
 } from "../components/GameHeader/GameHeader";
 import { OpponentTurnModal } from "../components/OpponentTurnModal";
+import { AttackModal } from "../components/AttackModal/AttackModal";
+import { TurnIndicator } from "../components/TurnIndicator/TurnIndicator";
 
 export const Game: FC = () => {
   const { gameState, selfId } = useGameStore();
 
   const myTurn = gameState?.turn === selfId;
 
+  const [attacking, setAttacking] = useState<TCoordinate | null>(null);
+  const [attackResult, setAttackResult] = useState<ECellStatus | null>(null);
+  const handleAttack = useCallback(async (coords: TCoordinate) => {
+    setAttacking(coords);
+    try {
+      const result = await socket.emitWithAck("attack_coordinate", coords);
+      if (!result.ok) throw result;
+
+      setAttackResult(result.status);
+    } catch (error) {
+      console.error(error);
+      setAttacking(null);
+      setAttackResult(null);
+    }
+  }, []);
+
   const attackInteractivity: TInteractivityProps & { disabled?: boolean } =
     useMemo(() => {
       if (gameState?.phase === "playing") {
         return {
           isInteractive: true,
-          onClick: (coords: TCoordinate) => {
-            socket.emit("attack_coordinate", coords);
-          },
+          onClick: handleAttack,
           disabled: !myTurn,
         };
       }
       return {
         isInteractive: false,
       };
-    }, [gameState?.phase, myTurn]);
+    }, [gameState?.phase, myTurn, handleAttack]);
 
   return (
     <AppLayout
@@ -45,7 +61,9 @@ export const Game: FC = () => {
       }
     >
       {gameState?.phase === "playing" && (
-        <section>Tura: {myTurn ? "Twoja kolej" : "Kolej przeciwnika"}</section>
+        <TurnIndicator className={styles.turnIndicator}>
+          {myTurn ? "Your turn" : "Opponents turn"}
+        </TurnIndicator>
       )}
       <section className={styles.Game_layout}>
         {gameState &&
@@ -72,8 +90,18 @@ export const Game: FC = () => {
       </section>
 
       <OpponentTurnModal
-        open={!myTurn}
+        open={!myTurn && !attacking}
         player={(gameState as TGameHeaderAllowedState).enemy}
+      />
+
+      <AttackModal
+        attack={!!attacking}
+        open={!!attacking}
+        result={attackResult}
+        onClose={() => {
+          setAttacking(null);
+          setAttackResult(null);
+        }}
       />
     </AppLayout>
   );
