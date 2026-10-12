@@ -7,15 +7,18 @@ export function getSpriteStyle(
   sprite: { x: number; y: number },
   displaySize: number = CELL_SIZE,
   atlasUrl = 'url("/assets/decoration-sprites.png")',
+  cellSize = CELL_SIZE,
+  atlasSizeWidth = ATLAS_SIZE,
+  atlasSizeHeight = ATLAS_SIZE,
 ): CSSProperties {
-  const scale = displaySize / CELL_SIZE;
+  const scale = displaySize / cellSize;
 
   return {
     width: displaySize,
     height: displaySize,
-    backgroundImage: atlasUrl,
     backgroundRepeat: "no-repeat",
-    backgroundSize: `${ATLAS_SIZE * scale}px ${ATLAS_SIZE * scale}px`,
+    backgroundSize: `${atlasSizeWidth * scale}px ${atlasSizeHeight * scale}px`,
     backgroundPosition: `${-sprite.x * scale}px ${-sprite.y * scale}px`,
+    ...(atlasUrl && { backgroundImage: atlasUrl }),
   };
 }
