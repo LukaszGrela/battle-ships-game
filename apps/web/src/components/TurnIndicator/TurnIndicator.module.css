@@ -1,0 +1,32 @@
+.Ribbon_shape {
+  /* ribbon */
+  --notch: 0.5rem;
+  --y-offset: 0.5rem;
+  --fold-width: 3rem;
+  --fold-height: 2rem;
+  --ribbon-left-y-offset: var(--y-offset);
+  --ribbon-fold-left-height: var(--fold-height);
+  --ribbon-fold-left-width: var(--fold-width);
+  --ribbon-left-notch-size: var(--notch);
+
+  --ribbon-right-y-offset: var(--y-offset);
+  --ribbon-fold-right-height: var(--fold-height);
+  --ribbon-fold-right-width: var(--fold-width);
+  --ribbon-right-notch-size: var(--notch);
+
+  /* Ogólne */
+  --ribbon-width: max-content;
+  --ribbon-min-height: 1rem;
+  --ribbon-min-width: 10rem;
+  --ribbon-max-width: unset;
+  --ribbon-base-y-offset: 0;
+}
+
+.TurnIndicator_container {
+  margin: var(--turn-indicator-margin, 0.5rem 0);
+}
+
+.TurnIndicator {
+  composes: Ribbon_shape;
+  width: fit-content;
+}
