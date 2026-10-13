@@ -43,6 +43,7 @@ const createRoom = (
       [opponent.id]: [],
     },
     turn: owner.id,
+    battles: [],
   };
 };
 

@@ -117,7 +117,7 @@ type TStringifiedEnum<E extends string> = E | `${E}`;
 
 export type TGameState = Omit<
   TRoomState,
-  "boards" | "history" | "players" | "phase" | "ships"
+  "boards" | "history" | "players" | "phase" | "ships" | "battles"
 > & {
   myBoard: TBoard;
   self: IPlayer;

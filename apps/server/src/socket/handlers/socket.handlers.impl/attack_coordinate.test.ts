@@ -4,7 +4,12 @@ import RoomServiceSingleton from "../../../services/room.service";
 import ClientSessionServiceSingleton from "../../../services/client-session.service";
 import { factoryAttackCoordinateHandler } from "./attack_coordinate";
 import { placeShip } from "@repo/game-logic";
-import { createGameRoom, createIo, createPlacedShip, createSocket } from "./__tests/utils";
+import {
+  createGameRoom,
+  createIo,
+  createPlacedShip,
+  createSocket,
+} from "./__tests/utils";
 
 const roomService = RoomServiceSingleton.getInstance();
 const sessionService = ClientSessionServiceSingleton.getInstance();
@@ -13,7 +18,6 @@ const cleanup = (...roomIds: string[]) => {
   roomIds.forEach((roomId) => roomService.deleteRoom(roomId));
   ["owner", "opponent"].forEach((id) => sessionService.deleteSession(id));
 };
-
 
 describe("attack_coordinate handler", () => {
   afterEach(() => {
@@ -53,7 +57,9 @@ describe("attack_coordinate handler", () => {
     const socket = createSocket("owner");
     const handler = factoryAttackCoordinateHandler(io, socket);
 
-    handler({ x: 2, y: 3 });
+    const callback = vi.fn();
+
+    handler({ x: 2, y: 3 }, callback);
 
     const updatedRoom = roomService.getRoom(roomId)!;
     expect(updatedRoom.turn).toBe("opponent");
@@ -62,6 +68,12 @@ describe("attack_coordinate handler", () => {
       turn: "owner",
       result: ECellStatus.Hit,
     });
+
+    expect(callback).toHaveBeenCalledWith({
+      ok: true,
+      status: ECellStatus.Hit,
+    });
+
     expect(io._toSpy).toHaveBeenCalledWith(
       "game_updated",
       expect.objectContaining({
@@ -97,12 +109,19 @@ describe("attack_coordinate handler", () => {
     const socket = createSocket("owner");
     const handler = factoryAttackCoordinateHandler(io, socket);
 
-    handler({ x: 0, y: 0 });
+    const callback = vi.fn();
+    handler({ x: 0, y: 0 }, callback);
 
     expect(socket.emit).toHaveBeenCalledWith(
       "error",
       "Not your turn or game not active",
     );
+
+    expect(callback).toHaveBeenCalledWith({
+      ok: false,
+      message: "Not your turn or game not active",
+    });
+
     expect(io._toSpy).not.toHaveBeenCalledWith(
       "game_updated",
       expect.anything(),
@@ -153,10 +172,17 @@ describe("attack_coordinate handler", () => {
     const socket = createSocket("owner");
     const handler = factoryAttackCoordinateHandler(io, socket);
 
-    handler({ x: 0, y: 0 });
+    const callback = vi.fn();
+    handler({ x: 0, y: 0 }, callback);
 
     const updatedRoom = roomService.getRoom(roomId)!;
-    console.log(updatedRoom)
+
+    expect(callback).toHaveBeenCalledWith({
+      ok: true,
+      status: ECellStatus.Destroyed,
+      size: 1,
+    });
+
     expect(updatedRoom.phase).toBe(EGamePhase.Finished);
     expect(updatedRoom.result).toEqual({ owner: "win", opponent: "lost" });
     expect(io._toSpy).toHaveBeenCalledWith(

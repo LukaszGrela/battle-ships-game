@@ -84,6 +84,7 @@ export const createGameRoom = (
   turn,
   result: {},
   history: [],
+  battles: [],
 });
 
 export const createPlacedShip = (id: number): TShip & { type: "placed" } => ({
@@ -128,6 +129,7 @@ export const createFinishedGameRoom = (
     isSunk: true,
     result: ECellStatus.Hit,
     turn: "owner",
+    size: 1
   });
 
   room.history.push({ finish: true, whoWon: "owner" });

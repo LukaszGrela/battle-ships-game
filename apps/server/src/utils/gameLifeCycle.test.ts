@@ -53,6 +53,7 @@ const createRoom = (
   boards: Object.fromEntries(players.map((player) => [player.id, []])),
   ships: Object.fromEntries(players.map((player) => [player.id, []])),
   turn: players[0]?.id ?? "",
+  battles: [],
 });
 
 const createPlacedShip = (id: number): TShip => ({
@@ -248,10 +249,7 @@ describe("game lifecycle", () => {
     );
     const room = roomService.getRoom(roomId)!;
     room.result = { winner: "win", loser: "lost" };
-    room.history = [
-      { init: true },
-      { finish: true, whoWon: "winner" },
-    ] as any;
+    room.history = [{ init: true }, { finish: true, whoWon: "winner" }] as any;
     room.game_finished = "2026-09-25T00:02:00.000Z";
     room.turn = "winner";
     roomService.saveRoom(room);
@@ -483,10 +481,12 @@ describe("game lifecycle", () => {
     sessionService.updateSession("opponent", opponentSession);
 
     const result = updateRoomWithNewTurnData(roomId, "owner", { x: 2, y: 3 });
+    expect(result).not.toBeTypeOf("number");
 
-    expect(result?.turn).toBe("opponent");
-    expect(result?.boards.opponent?.[3]?.[2]).toBe(ECellStatus.Hit);
-    expect(result?.history.at(-1)).toMatchObject({
+    const typedResult = result as TRoomState;
+    expect(typedResult?.turn).toBe("opponent");
+    expect(typedResult?.boards.opponent?.[3]?.[2]).toBe(ECellStatus.Hit);
+    expect(typedResult?.history.at(-1)).toMatchObject({
       turn: "owner",
       result: ECellStatus.Hit,
     });
@@ -519,7 +519,7 @@ describe("game lifecycle", () => {
 
     const result = updateRoomWithNewTurnData(roomId, "owner", { x: 1, y: 1 });
 
-    expect(result).toBeUndefined();
+    expect(result).toBeTypeOf('number');
     expect(roomService.getRoom(roomId)?.turn).toBe("owner");
     expect(getCell(roomService.getRoom(roomId)?.boards.opponent!, 1, 1)).toBe(
       ECellStatus.Miss,
