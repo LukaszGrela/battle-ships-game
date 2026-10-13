@@ -80,6 +80,7 @@ export const GameOver: FC = () => {
           {/* If requestee (!requestor) and pending show confirm modal */}
           <ConfirmRematchModal
             open={requestRematchStatus === "pending" && !isRequestor}
+            request={revengeRequest}
           />
         </>
       )}
