@@ -103,6 +103,11 @@ export type TRoomState = TRoomIdentity & {
   turn: TUserId;
   phase: TStringifiedEnum<EGamePhase>;
   result: Record<TUserId, "win" | "lost">;
+  /**
+   * Previous battles, if the opponent requested rematch.
+   * Cuttent `TRoomState` is the recent battle, and `battles` is the history of previous battles.
+   */
+  battles: TRoomState[];
 
   history: THistoryEntry[];
   rematchRequest?: TRematchRequest;

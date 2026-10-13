@@ -547,6 +547,11 @@ export function acceptRematch(roomId: string, winnerId: string) {
     return;
   }
 
+  // store previous game state
+  const previousGameState = structuredClone(room);
+
+  room.battles.push(previousGameState);
+
   room.phase = EGamePhase.Placement;
   room.game_started = null;
   room.game_finished = null;

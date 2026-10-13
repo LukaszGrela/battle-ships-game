@@ -43,7 +43,7 @@ export interface IRoomService {
    */
   activeGames: () => number;
   /**
-   * Number of completed games (phase finished)
+   * Number of completed games (phase finished), including all the battles in the room (rematches)
    */
   playedGames: () => number;
 }
@@ -145,9 +145,16 @@ export class RoomService implements IRoomService {
   }
 
   playedGames(): number {
-    return Array.from(this.rooms.values()).filter(
-      (needle) => needle.phase === EGamePhase.Finished,
-    ).length;
+    return Array.from(this.rooms.values())
+      .filter((needle) => needle.phase !== EGamePhase.Waiting)
+      .reduce((acc, room) => {
+        // count finished as 1 + battles length
+        if (room.phase === EGamePhase.Finished) {
+          return acc + 1 + room.battles.length;
+        }
+        // count placement and playing as 0 + battles length
+        return acc + room.battles.length;
+      }, 0);
   }
 
   private rooms: TRoomsMap = new Map<string, TRoomState>();

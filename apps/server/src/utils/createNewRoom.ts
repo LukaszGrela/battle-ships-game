@@ -14,6 +14,7 @@ export function createNewRoom(
     game_started: null,
     game_finished: null,
     history: [],
+    battles: [],
     phase: EGamePhase.Waiting,
     players: {
       [firstPlayer.id]: firstPlayer,
