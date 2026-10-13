@@ -86,10 +86,18 @@ export const factoryAttackCoordinateHandler = (
       callbackStatus,
     );
 
-    callback?.({
-      ok: true,
-      status: callbackStatus,
-    });
+    if (callbackStatus === ECellStatus.Destroyed) {
+      callback?.({
+        ok: true,
+        status: callbackStatus,
+        size: historyEntry.size,
+      });
+    } else {
+      callback?.({
+        ok: true,
+        status: callbackStatus,
+      });
+    }
 
     if (!enemyHasShips) {
       room = transitionToFinished(room.id, clientId);

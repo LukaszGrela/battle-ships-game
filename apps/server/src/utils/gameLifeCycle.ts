@@ -434,6 +434,7 @@ export function updateRoomWithNewTurnData(
     isSunk: false,
     result: attackResult,
     turn: playerId,
+    size: 0,
   };
 
   // fire at ship, check if it is sunk
@@ -447,6 +448,7 @@ export function updateRoomWithNewTurnData(
           enemyShip.hits.push(coord);
           if (enemyShip.hits.length === enemyShip.size) {
             historyEntry.isSunk = true;
+            historyEntry.size = enemyShip.size;
           }
         }
       }

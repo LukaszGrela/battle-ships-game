@@ -72,6 +72,7 @@ export type TAttackHistory = {
   coords: TCoordinate;
   result: ECellStatus.Hit | ECellStatus.Miss;
   isSunk: boolean;
+  size: number;
 };
 
 export type THistoryEntry = TAttackHistory | TInitHistory | TFinishHistory;
@@ -135,6 +136,10 @@ export type TGameState = Omit<
         enemy: IPlayer;
         enemyBoard: TBoard<Exclude<ECellStatus, ECellStatus.Ship>>;
         enemyDestroyedShips: TShip[];
+        /**
+         * Enemy attack result.
+         */
+        lastAttack?: TAttackHistory;
       }
     | {
         ships: TShip[];
@@ -158,14 +163,7 @@ export interface IClientToServerEvents {
 
   attack_coordinate: (
     coord: TCoordinate,
-    callback: (
-      result:
-        | {
-            ok: true;
-            status: ECellStatus.Hit | ECellStatus.Miss | ECellStatus.Destroyed;
-          }
-        | { ok: false; message: string },
-    ) => void,
+    callback: (result: TAttackResult) => void,
   ) => void;
   request_rematch: () => void;
   accept_rematch: () => void;
@@ -284,6 +282,17 @@ export interface IClientSession {
   seed: number;
 }
 
+export type TAttackResult =
+  | {
+      ok: true;
+      status: ECellStatus.Destroyed;
+      size: number;
+    }
+  | {
+      ok: true;
+      status: ECellStatus.Hit | ECellStatus.Miss;
+    }
+  | { ok: false; message: string };
 // -----
 /**
  * Makes partial selected as `K` fields.

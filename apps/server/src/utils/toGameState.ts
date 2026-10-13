@@ -1,6 +1,7 @@
 import {
   ECellStatus,
   EGamePhase,
+  TAttackHistory,
   TBoard,
   TGameState,
   TRoomState,
@@ -69,6 +70,8 @@ export function toGameState(
         rematchRequest: state.rematchRequest,
       };
     } else {
+      const lastAttack = state.history.at(-1) as TAttackHistory | undefined;
+
       return {
         id: state.id,
         name: state.name,
@@ -94,6 +97,8 @@ export function toGameState(
           });
         }),
         enemyDestroyedShips: enemyShips.filter(isSunk),
+        lastAttack:
+          lastAttack && state.turn === player.id ? lastAttack : undefined,
       };
     }
   }
