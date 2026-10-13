@@ -1,15 +1,34 @@
-.AttackModule_title {
-  text-transform: capitalize;
+/* Aligned with the other modals' shared panel look.
+   Sync the palette variables / border treatment with your other
+   modal CSS modules if they differ. */
+
+.panel {
+  --modal-dialog-width: 100%;
 
 }
-.AttackModule_body {
 
+.panel_body {
+  display: grid;
+  gap: 0.5rem;
+  justify-items: center;
+}
+
+.title {
+  margin: 0;
+  font-size: 1.5rem;
+  text-align: center;
+}
+
+.body {
   display: flex;
-  justify-content: space-between;
+  justify-content: space-around;
   align-items: flex-end;
-
+  /* Keeps the layout stable between waiting / splash / explosion /
+     destroyed-ship states so the modal doesn't jump around. */
+  min-height: 256px;
+  width: 100%;
 }
 
-.AttackModule_timeout {
-  --wave-timout-duration: 4s;
+.timeout {
+  --wave-timout-duration: 5s;
 }
