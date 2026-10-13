@@ -1,7 +1,7 @@
 {
   "name": "@repo/server",
   "private": true,
-  "version": "0.0.10",
+  "version": "0.1.1",
   
   "scripts": {
     "dev": "tsx watch src/main.ts",
