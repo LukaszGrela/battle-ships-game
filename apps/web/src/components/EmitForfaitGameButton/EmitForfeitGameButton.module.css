@@ -3,7 +3,7 @@
     --modal-margin: 0;
     --modal-max-width: 100vw;
     --modal-max-height: 100vh;
-    --modal-dialog-width: 100;
+    --modal-dialog-width: 100vw;
     --modal-dialog-height: 100vh;
     --modal-dialog-radius: 0;
   }
