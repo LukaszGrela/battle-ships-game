@@ -1,9 +1,14 @@
 import styles from "./Game.module.css";
-import { FC, useCallback, useMemo, useState } from "react";
+import { FC, useCallback, useEffect, useMemo, useState } from "react";
 import { AppLayout } from "../components/AppLayout/AppLayout";
 import { useGameStore } from "../store/useGameStore";
 import { TInteractivityProps } from "../components/Board";
-import { ECellStatus, TCoordinate, TPlacedShip } from "@repo/types";
+import {
+  ECellStatus,
+  TAttackResult,
+  TCoordinate,
+  TPlacedShip,
+} from "@repo/types";
 import { socket } from "../socket";
 import { ShipsBoard } from "../components/Board/ShipsBoard";
 import {
@@ -19,18 +24,24 @@ export const Game: FC = () => {
 
   const myTurn = gameState?.turn === selfId;
 
-  const [attacking, setAttacking] = useState<TCoordinate | null>(null);
-  const [attackResult, setAttackResult] = useState<ECellStatus | null>(null);
+  const currentAttack = useMemo(
+    () =>
+      !!(gameState && gameState.phase === "playing" && gameState.lastAttack) ===
+      false,
+    [gameState],
+  );
+  const [attacking, setAttacking] = useState(false);
+  const [attackResult, setAttackResult] = useState<TAttackResult | null>(null);
   const handleAttack = useCallback(async (coords: TCoordinate) => {
-    setAttacking(coords);
+    setAttacking(true);
     try {
       const result = await socket.emitWithAck("attack_coordinate", coords);
       if (!result.ok) throw result;
 
-      setAttackResult(result.status);
+      setAttackResult(result);
     } catch (error) {
       console.error(error);
-      setAttacking(null);
+      setAttacking(false);
       setAttackResult(null);
     }
   }, []);
@@ -48,6 +59,20 @@ export const Game: FC = () => {
         isInteractive: false,
       };
     }, [gameState?.phase, myTurn, handleAttack]);
+
+  useEffect(() => {
+    if (gameState && gameState.phase === "playing" && gameState.lastAttack) {
+      const { lastAttack } = gameState;
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setAttacking(true);
+      const attackResult: TAttackResult = {
+        ok: true,
+        status: lastAttack.isSunk ? ECellStatus.Destroyed : lastAttack.result,
+        size: lastAttack.size,
+      };
+      setAttackResult(attackResult);
+    }
+  }, [gameState]);
 
   return (
     <AppLayout
@@ -95,11 +120,18 @@ export const Game: FC = () => {
       />
 
       <AttackModal
-        attack={!!attacking}
-        open={!!attacking}
-        result={attackResult}
+        attack={currentAttack}
+        open={attacking}
+        result={attackResult && attackResult.ok ? attackResult.status : null}
+        shipSize={
+          attackResult &&
+          attackResult.ok &&
+          attackResult.status === ECellStatus.Destroyed
+            ? attackResult.size
+            : 0
+        }
         onClose={() => {
-          setAttacking(null);
+          setAttacking(false);
           setAttackResult(null);
         }}
       />
