@@ -22,6 +22,7 @@ export const GameOver: FC = () => {
     gameState && gameState.phase === "finished" ? gameState : undefined;
   const myResults = state?.result[state.self.id];
   const winner = myResults === "win";
+  const opponentActive = !!state?.enemy.active;
 
   const requestRematchStatus = revengeRequest?.status;
   const isRequestor = revengeRequest?.requestorId === state?.self.id;
@@ -75,11 +76,19 @@ export const GameOver: FC = () => {
         <>
           {/* If requestor show pending modal */}
           <RematchRequestSentModal
-            open={requestRematchStatus === "pending" && isRequestor}
+            open={
+              requestRematchStatus === "pending" &&
+              isRequestor &&
+              opponentActive
+            }
           />
           {/* If requestee (!requestor) and pending show confirm modal */}
           <ConfirmRematchModal
-            open={requestRematchStatus === "pending" && !isRequestor}
+            open={
+              requestRematchStatus === "pending" &&
+              !isRequestor &&
+              opponentActive
+            }
             request={revengeRequest}
           />
         </>

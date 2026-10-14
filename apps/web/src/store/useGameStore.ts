@@ -9,6 +9,7 @@ type TGameStoreActions = {
   setError: (message: string | null) => void;
 
   setEnemyReady: (enemy: Pick<IPlayer, "name" | "seed" | "owner">) => void;
+  setEnemyLeft: (enemy?: Pick<IPlayer, "id" | "name" | "seed">) => void;
   setRematchRequest: (request: TRematchRequest | undefined) => void;
 };
 
@@ -43,6 +44,27 @@ export const useGameStore = create<TGameStore>((set) => ({
 
   setRematchRequest: (request) => set({ revengeRequest: request }),
 
+  setEnemyLeft: (enemy?: Pick<IPlayer, "id" | "name" | "seed">) =>
+    set(
+      (state) =>
+        ({
+          gameState: {
+            ...state.gameState,
+            enemy:
+              state.gameState && state.gameState.phase !== "waiting"
+                ? {
+                    ...state.gameState.enemy,
+                    ...enemy,
+                    active: false,
+                  }
+                : {
+                    ...enemy,
+                    active: false,
+                  },
+          },
+        }) as TGameStore & { phase: EGamePhase.Placement },
+    ),
+
   selfId: null,
   errorMessage: null,
   gameState: null,
@@ -55,6 +77,7 @@ export const useSocketGameState = () => {
     setSelfId,
     setEnemyReady,
     setRematchRequest,
+    setEnemyLeft,
   } = useGameStore();
   useEffect(() => {
     function onUpdate(state: TGameState | null) {
@@ -79,10 +102,16 @@ export const useSocketGameState = () => {
       setError(message);
     }
     const playerReadyCallback = (
-      player: Pick<IPlayer, "name" | "seed" | "owner">,
+      player: Pick<IPlayer, "id" | "name" | "seed" | "owner">,
     ) => {
       console.log(`Player ${player.name} is ready!`);
       setEnemyReady(player);
+    };
+    const playerLeftCallback = (
+      player?: Pick<IPlayer, "id" | "name" | "seed">,
+    ) => {
+      console.log(`Player ${player?.name} has left the game!`);
+      setEnemyLeft(player);
     };
 
     const opponentRequestRematchHandler = (request: TRematchRequest) => {
@@ -91,6 +120,7 @@ export const useSocketGameState = () => {
     };
 
     socket.on("player_ready", playerReadyCallback);
+    socket.on("player_left", playerLeftCallback);
 
     socket.on("game_updated", onUpdate);
     socket.on("welcome", onWelcome);
@@ -102,7 +132,15 @@ export const useSocketGameState = () => {
       socket.off("welcome", onWelcome);
       socket.off("error", onError);
       socket.off("player_ready", playerReadyCallback);
+      socket.off("player_left", playerLeftCallback);
       socket.off("rematch_requested", opponentRequestRematchHandler);
     };
-  }, [setEnemyReady, setError, setGameState, setRematchRequest, setSelfId]);
+  }, [
+    setEnemyLeft,
+    setEnemyReady,
+    setError,
+    setGameState,
+    setRematchRequest,
+    setSelfId,
+  ]);
 };

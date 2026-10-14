@@ -7,6 +7,11 @@ export const RequestRematchButton: FC<Pick<TButtonProps, "size">> = ({
   size,
 }) => {
   const { gameState } = useGameStore();
+  const state =
+    gameState && gameState.phase === "finished" ? gameState : undefined;
+
+  const opponentActive = state?.enemy.active;
+
   const [requestSent, setRequestSent] = useState(
     () => !!gameState?.rematchRequest,
   );
@@ -31,7 +36,7 @@ export const RequestRematchButton: FC<Pick<TButtonProps, "size">> = ({
     <Button
       size={size}
       onClick={handleRequestRematch}
-      disabled={requestSent || !!gameState?.rematchRequest}
+      disabled={requestSent || !!gameState?.rematchRequest || !opponentActive}
     >
       Give me revenge
     </Button>

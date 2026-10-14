@@ -24,9 +24,6 @@ const acceptQuestions = [
   "Do ye dare to sail into battle once more?",
 ];
 
-const randomItem = (items: readonly unknown[]) =>
-  items[Math.floor(Math.random() * items.length)];
-
 export const ConfirmRematchModal: FC<{
   open: boolean;
   request?: TRematchRequest;
@@ -78,7 +75,7 @@ export const ConfirmRematchModal: FC<{
 
       backdrop={false}
       keyboard={false}
-    
+
       headerClassName={styles.title}
       bodyClassName={styles.Modal_body}
 
