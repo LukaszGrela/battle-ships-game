@@ -2,7 +2,10 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { EGamePhase } from "@repo/types";
 import ClientSessionServiceSingleton from "../services/client-session.service";
 import RoomServiceSingleton from "../services/room.service";
-import { expireDisconnectedPlayers, getReconnectTimeoutMs } from "./reconnectGrace";
+import {
+  expireDisconnectedPlayers,
+  getReconnectTimeoutMs,
+} from "./reconnectGrace";
 
 const sessionService = ClientSessionServiceSingleton.getInstance();
 const roomService = RoomServiceSingleton.getInstance();
@@ -10,7 +13,9 @@ const roomService = RoomServiceSingleton.getInstance();
 describe("reconnectGrace", () => {
   afterEach(() => {
     roomService.listRooms().forEach((room) => roomService.deleteRoom(room.id));
-    sessionService.listSessions().forEach((session) => sessionService.deleteSession(session.id));
+    sessionService
+      .listSessions()
+      .forEach((session) => sessionService.deleteSession(session.id));
   });
 
   it("defaults to a 60 second reconnect timeout", () => {
@@ -19,7 +24,10 @@ describe("reconnectGrace", () => {
 
   it("forfeits a playing room when a player has been disconnected longer than the timeout", () => {
     const owner = sessionService.createSession("owner", "owner-socket");
-    const opponent = sessionService.createSession("opponent", "opponent-socket");
+    const opponent = sessionService.createSession(
+      "opponent",
+      "opponent-socket",
+    );
     owner.gameId = "room-1";
     opponent.gameId = "room-1";
     owner.disconnectedAt = Date.now() - 61_000;
@@ -36,8 +44,22 @@ describe("reconnectGrace", () => {
       result: {},
       phase: EGamePhase.Playing,
       players: {
-        owner: { id: "owner", name: "Owner", active: true, ready: true, owner: true, seed: 1 },
-        opponent: { id: "opponent", name: "Opponent", active: true, ready: true, owner: false, seed: 2 },
+        owner: {
+          id: "owner",
+          name: "Owner",
+          active: true,
+          ready: true,
+          owner: true,
+          seed: 1,
+        },
+        opponent: {
+          id: "opponent",
+          name: "Opponent",
+          active: true,
+          ready: true,
+          owner: false,
+          seed: 2,
+        },
       },
       boards: {
         owner: [],
@@ -48,6 +70,7 @@ describe("reconnectGrace", () => {
         opponent: [],
       },
       turn: "owner",
+      battles: [],
     });
 
     const io = {

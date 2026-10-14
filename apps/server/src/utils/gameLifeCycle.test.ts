@@ -257,7 +257,10 @@ describe("game lifecycle", () => {
 
     const requested = requestRematch(roomId, "loser");
     expect(requested).toBeDefined();
-    expect(requested?.rematchRequest).toMatchObject({
+    expect(requested).not.toBeTypeOf('number');
+    const typedResult = requested as TRoomState;
+
+    expect(typedResult?.rematchRequest).toMatchObject({
       requestorId: "loser",
       status: "pending",
     });
@@ -312,7 +315,7 @@ describe("game lifecycle", () => {
       status: "rejected",
     });
 
-    expect(requestRematch(roomId, "loser")).toBeUndefined();
+    expect(requestRematch(roomId, "loser")).toBe(-4);
 
     cleanup(roomId);
   });
@@ -519,7 +522,7 @@ describe("game lifecycle", () => {
 
     const result = updateRoomWithNewTurnData(roomId, "owner", { x: 1, y: 1 });
 
-    expect(result).toBeTypeOf('number');
+    expect(result).toBeTypeOf("number");
     expect(roomService.getRoom(roomId)?.turn).toBe("owner");
     expect(getCell(roomService.getRoom(roomId)?.boards.opponent!, 1, 1)).toBe(
       ECellStatus.Miss,
@@ -549,8 +552,6 @@ describe("game lifecycle", () => {
     expect(result?.result).toEqual({ winner: "win", loser: "lost" });
     expect(result?.history).toEqual([{ finish: true, whoWon: "winner" }]);
     expect(result?.game_finished).not.toBeNull();
-    expect(sessionService.readSession("winner")?.gameId).toBeUndefined();
-    expect(sessionService.readSession("loser")?.gameId).toBeUndefined();
 
     cleanup(roomId);
   });

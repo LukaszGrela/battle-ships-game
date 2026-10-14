@@ -10,7 +10,6 @@ import {
   destroyWarRoom,
   transitionToWaiting,
 } from "../../../utils/gameLifeCycle";
-import { finishRoomByForfeit } from "../../../utils/finishRoomByForfeit";
 
 type TDisconnectHandler = (reason: DisconnectReason) => void;
 

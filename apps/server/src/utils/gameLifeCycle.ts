@@ -392,7 +392,6 @@ export function updateRoomWithNewTurnData(
   if (!targetBoard) {
     return -5;
   }
-  console.log("[updateRoomWithNewTurnData]", "room.boards", room.boards);
   const cell = getCell(targetBoard, coord.x, coord.y);
   console.log("[updateRoomWithNewTurnData]", "cell", cell, coord);
   if (typeof cell === "number" && cell < 0) {
@@ -466,22 +465,26 @@ export function updateRoomWithNewTurnData(
   return room;
 }
 
-export function requestRematch(roomId: string, playerId: string) {
+export type TRequestRematch = -1 | -2 | -3 | -4;
+export function requestRematch(
+  roomId: string,
+  playerId: string,
+): TRequestRematch | TRoomState {
   const room = RoomServiceSingleton.getInstance().getRoom(roomId);
   if (!room || room.phase !== EGamePhase.Finished) {
-    return;
+    return -1;
   }
 
   if (!containsPlayer(playerId, room.players)) {
-    return;
+    return -2;
   }
 
   if (room.rematchRequest?.status === "pending") {
-    return;
+    return -3;
   }
 
   if (room.rematchRequest?.status === "rejected") {
-    return;
+    return -4;
   }
 
   room.rematchRequest = {
@@ -547,6 +550,11 @@ export function acceptRematch(roomId: string, winnerId: string) {
     return;
   }
 
+  room.rematchRequest = {
+    ...room.rematchRequest,
+    status: "accepted",
+  };
+
   // store previous game state
   const previousGameState = structuredClone(room);
 
@@ -558,11 +566,7 @@ export function acceptRematch(roomId: string, winnerId: string) {
   room.turn = winnerId;
   room.history = [];
   room.result = {};
-
-  room.rematchRequest = {
-    ...room.rematchRequest,
-    status: "accepted",
-  };
+  delete room.rematchRequest;
 
   Object.values(room.players).forEach((player) => {
     player.ready = false;
@@ -641,13 +645,16 @@ export function transitionToFinished(
     room.players[playerId].active = false;
   }
 
-  // clear session for all players
-  Object.values(room.players).forEach((player) => {
-    sessions.clearSessionGame(player.id);
-  });
-
   // Save the room
   RoomServiceSingleton.getInstance().saveRoom(room);
+
+  console.log(
+    "[transitionToFinished]",
+    "game result",
+    room.result,
+    "forfeit",
+    forfeit,
+  );
 
   warRoomNames.releaseRoom(room.name);
 
