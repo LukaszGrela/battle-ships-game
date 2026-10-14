@@ -47,11 +47,38 @@ export function toGameState(
       enemy,
       myBoard: state.boards[player.id] ?? [],
       ships: state.ships[player.id] ?? [],
+
+      battleResults: state.battles.reduce(
+        (acc, battle) => {
+          Object.entries(battle.result).forEach(([playerId, result]) => {
+            acc[playerId] = (acc[playerId] ?? 0) + (result === "win" ? 1 : 0);
+          });
+
+          return acc;
+        },
+        {} as Record<string, number>,
+      ),
     };
   } else {
     const enemy = getOtherPlayer(playerId, state.players)!;
     const enemyShips = state.ships[enemy.id] ?? [];
     if (state.phase === "finished") {
+      const battleResults = state.battles.reduce(
+        (acc, battle) => {
+          Object.entries(battle.result).forEach(([playerId, result]) => {
+            acc[playerId] = (acc[playerId] ?? 0) + (result === "win" ? 1 : 0);
+          });
+
+          return acc;
+        },
+        {} as Record<string, number>,
+      );
+
+      Object.entries(state.result).forEach(([playerId, result]) => {
+        battleResults[playerId] =
+          (battleResults[playerId] ?? 0) + (result === "win" ? 1 : 0);
+      });
+
       return {
         id: state.id,
         name: state.name,
@@ -68,6 +95,8 @@ export function toGameState(
         enemyBoard: state.boards[enemy.id] ?? [],
         enemyDestroyedShips: enemyShips,
         rematchRequest: state.rematchRequest,
+
+        battleResults,
       };
     } else {
       const lastAttack = state.history.at(-1) as TAttackHistory | undefined;
@@ -99,6 +128,17 @@ export function toGameState(
         enemyDestroyedShips: enemyShips.filter(isSunk),
         lastAttack:
           lastAttack && state.turn === player.id ? lastAttack : undefined,
+
+        battleResults: state.battles.reduce(
+          (acc, battle) => {
+            Object.entries(battle.result).forEach(([playerId, result]) => {
+              acc[playerId] = (acc[playerId] ?? 0) + (result === "win" ? 1 : 0);
+            });
+
+            return acc;
+          },
+          {} as Record<string, number>,
+        ),
       };
     }
   }

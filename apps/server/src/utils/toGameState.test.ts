@@ -28,6 +28,7 @@ describe("utils", () => {
         players: {
           [playerId]: player,
         },
+        battles: [],
       };
       const result = toGameState(playerId, waitinState);
 
@@ -78,9 +79,11 @@ describe("utils", () => {
           [playerId]: player,
           [enemyId]: enemy,
         },
+        battles: [],
       };
 
       expect(toGameState(playerId, placementState)).toEqual({
+        battleResults: {},
         id: placementState.id,
         name: placementState.name,
         phase: EGamePhase.Placement,
@@ -149,9 +152,18 @@ describe("utils", () => {
           [playerId]: player,
           [enemyId]: enemy,
         },
+        battles: [
+          {
+            result: { [playerId]: "win" as const, [enemyId]: "lost" as const },
+          } as unknown as TRoomState,
+        ],
       };
 
       expect(toGameState(playerId, playingState)).toEqual({
+        battleResults: {
+          "enemy-player-id": 0,
+          "test-player-id": 1,
+        },
         id: playingState.id,
         name: playingState.name,
         phase: EGamePhase.Playing,
@@ -183,6 +195,10 @@ describe("utils", () => {
       };
 
       expect(toGameState(playerId, finishedState)).toEqual({
+        battleResults: {
+          "enemy-player-id": 0,
+          "test-player-id": 2,
+        },
         id: finishedState.id,
         name: finishedState.name,
         phase: EGamePhase.Finished,

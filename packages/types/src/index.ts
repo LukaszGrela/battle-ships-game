@@ -129,6 +129,8 @@ export type TGameState = Omit<
         phase: TStringifiedEnum<EGamePhase.Placement> & {};
         ships: TShip[];
         enemy: IPlayer;
+
+        battleResults?: Record<TUserId, number>;
       }
     | {
         ships: TShip[];
@@ -145,6 +147,8 @@ export type TGameState = Omit<
          * Enemy attack result.
          */
         lastAttack?: TAttackHistory;
+
+        battleResults?: Record<TUserId, number>;
       }
     | {
         ships: TShip[];
@@ -153,6 +157,8 @@ export type TGameState = Omit<
         enemyBoard: TBoard;
         enemyDestroyedShips: TShip[];
         rematchRequest?: TRematchRequest;
+
+        battleResults?: Record<TUserId, number>;
       }
   );
 
@@ -216,8 +222,9 @@ export interface IServerToClientEvents {
    * @returns
    */
   player_ready: (
-    playerName: Pick<IPlayer, "name" | "seed" | "owner" | "ready">,
+    playerName: Pick<IPlayer, "id" | "name" | "seed" | "owner" | "ready">,
   ) => void;
+  player_left: (playerName?: Pick<IPlayer, "id" | "name" | "seed">) => void;
 
   /**
    * Emited when user entered war room and `waiting` is finished.
