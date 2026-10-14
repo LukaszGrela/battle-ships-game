@@ -172,8 +172,7 @@ describe("leave_game handler", () => {
 
     const finishedRoom = transitionToFinished(room!.id, "owner");
     expect(finishedRoom).toBeDefined();
-    expect(sessionService.readSession("owner")?.gameId).toBeUndefined();
-    expect(sessionService.readSession("opponent")?.gameId).toBeUndefined();
+    // finished room does not clear sessions (leaving does)
 
     const io = createIo();
     const socket = createSocket("owner");

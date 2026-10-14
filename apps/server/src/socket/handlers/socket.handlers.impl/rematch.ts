@@ -43,7 +43,14 @@ export const factoryRequestRematchHandler = (
     }
 
     const room = requestRematch(roomId, clientId);
-    if (!room) {
+
+    console.log(
+      "[factoryRequestRematchHandler]",
+      "room",
+      typeof room === "number" ? room : room?.id,
+    );
+
+    if (!room || typeof room === "number") {
       socket.emit("error", "Rematch request rejected");
       return;
     } else {

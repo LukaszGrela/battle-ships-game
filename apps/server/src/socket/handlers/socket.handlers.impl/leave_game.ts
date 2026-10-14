@@ -9,6 +9,8 @@ import {
   destroyWarRoom,
   transitionToWaiting,
 } from "../../../utils/gameLifeCycle";
+import { getOtherPlayer } from "../../../utils/getOtherPlayer";
+import { getPlayerById } from "../../../utils/getPlayerById";
 
 type TLeaveGameHandler = IClientToServerEvents["leave_game"];
 
@@ -30,7 +32,7 @@ export const factoryLeaveGameHandler = (
     }
 
     let room = roomService.getRoom(clientSession.gameId);
-    console.log("[leave_game]", "room", room);
+    console.log("[leave_game]", "room", room?.phase, room?.players);
     if (room) {
       if (room.phase === "waiting") {
         destroyWarRoom(clientId);
@@ -44,6 +46,36 @@ export const factoryLeaveGameHandler = (
           emitRoomStateToPlayers(io, room);
         }
       } else if (room.phase === "finished") {
+        // notify opponent that the player has left the game, in case they are waiting for a rematch or something
+        const opponentId = getOtherPlayer(clientId, room.players);
+        const self = getPlayerById(clientId, room.players);
+
+        if (opponentId) {
+          const opponentSession = session.readSession(opponentId.id);
+          if (
+            opponentId.active &&
+            opponentSession &&
+            opponentSession.socketId
+          ) {
+            io.to(opponentSession.socketId).emit(
+              "player_left",
+              self && {
+                seed: self.seed,
+                name: self.name,
+                id: self.id,
+              },
+            );
+          }
+        }
+
+        if (room.players[clientId]) {
+          room.players[clientId]!.active = false;
+          roomService.saveRoom(room);
+        }
+
+        // clear session for leaving player players
+        session.clearSessionGame(clientId);
+
         return;
       } else {
         if (room.players[clientId]) {

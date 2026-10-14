@@ -96,6 +96,7 @@ export const factoryPlaceShipsHandler = (
         const self = room.players[clientId];
         if (opponentSession && self) {
           io.to(opponentSession.socketId).emit("player_ready", {
+            id: self.id,
             name: self.name,
             seed: self.seed,
             owner: self.owner,
