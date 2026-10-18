@@ -1,28 +1,32 @@
 import { ECellStatus, TBoard } from "@repo/types";
 
-type TInvalidXCoordinate = -1;
-type TInvalidYCoordinate = -2;
-type TInvalidRow = -3;
-type TInvalidCell = -4;
-type TUnknownError = -5;
+type TInvalidXCoordinate = -101;
+type TInvalidYCoordinate = -102;
+type TInvalidRow = -103;
+type TInvalidCell = -104;
+type TUnknownError = -105;
 export type TGetCellFailure =
-  TInvalidXCoordinate | TInvalidYCoordinate | TInvalidCell | TInvalidRow;
+  | TInvalidXCoordinate
+  | TInvalidYCoordinate
+  | TInvalidRow
+  | TInvalidCell
+  | TUnknownError;
 
 export function getCell<S = ECellStatus>(
   board: TBoard<S>,
   x: number,
   y: number,
 ): S | TGetCellFailure {
-  if (x < 0 || x > 9) return -1;
-  if (y < 0 || y > 9) return -2;
+  if (x < 0 || x > 9) return -101;
+  if (y < 0 || y > 9) return -102;
 
   const row = board.at(y);
   if (row == undefined) {
-    return -3;
+    return -103;
   }
   const cell = row.at(x);
   if (cell == undefined) {
-    return -4;
+    return -104;
   }
   return cell;
 }
@@ -33,16 +37,16 @@ export function setCell<S = ECellStatus>(
   y: number,
   value: S,
 ): 1 | TGetCellFailure {
-  if (x < 0 || x > 9) return -1;
-  if (y < 0 || y > 9) return -2;
+  if (x < 0 || x > 9) return -101;
+  if (y < 0 || y > 9) return -102;
 
   const row = board.at(y);
   if (row == undefined) {
-    return -3;
+    return -103;
   }
   const cell = row.at(x);
   if (cell == undefined) {
-    return -4;
+    return -104;
   }
 
   // update cell

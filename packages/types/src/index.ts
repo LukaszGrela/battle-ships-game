@@ -9,6 +9,31 @@ export enum ECellStatus {
   Destroyed = "destroyed",
 }
 
+// When margin is needed this cell status can be used
+export type TCellStatusMargin = -2;
+export type TCellStatusEmpty = -1;
+export type TCellStatusMiss = 0;
+
+// Ship identifier, <1..10>
+export type TCellStatusShip = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
+
+// Ship hit (ship id + 100), <101..110>
+export type TCellStatusShipHitOffset = 100;
+export type TCellStatusShipHit =
+  101 | 102 | 103 | 104 | 105 | 106 | 107 | 108 | 109 | 110;
+
+// To indicate destroyed ship this cell status can be used, Ship id + 1000, <1001..1010>
+export type TCellStatusShipDestroyedOffset = 1000;
+export type TCellStatusShipDestroyed =
+  1001 | 1002 | 1003 | 1004 | 1005 | 1006 | 1007 | 1008 | 1009 | 1010;
+export type TCellStatus =
+  | TCellStatusMargin
+  | TCellStatusEmpty
+  | TCellStatusMiss
+  | TCellStatusShip
+  | TCellStatusShipHit
+  | TCellStatusShipDestroyed;
+
 export enum EGamePhase {
   Waiting = "waiting",
   Placement = "placement",
@@ -21,11 +46,26 @@ type TRoomId = string;
 type TUserId = string;
 
 export interface IPlayer {
+  /**
+   * Unique identifier of the player
+   */
   id: string;
+  /**
+   * Name of the player
+   */
   name: string;
-  active: boolean;
-  ready: boolean;
+  /**
+   * Random seed value
+   */
   seed: number;
+  /**
+   * Activity status
+   */
+  active: boolean;
+  /**
+   * Player is ready to play (ships placed)
+   */
+  ready: boolean;
   /**
    * Owner of the war room, this user created the game.
    */
@@ -112,8 +152,6 @@ export type TRoomState = TRoomIdentity & {
   history: THistoryEntry[];
   rematchRequest?: TRematchRequest;
 };
-
-type TStringifiedEnum<E extends string> = E | `${E}`;
 
 export type TGameState = Omit<
   TRoomState,
@@ -313,6 +351,41 @@ export type TAttackResult =
 export type TPartialPick<T, K extends keyof T> = Partial<Pick<T, K>> &
   Omit<T, K>;
 
+/**
+ * Makes required selected as `K` fields, and rest is partial.
+ */
+export type TPartialWithRequired<T, K extends keyof T> = Required<Pick<T, K>> &
+  Partial<Omit<T, K>>;
+
 export type TDataProps = {
   [key: `data-${string}`]: string | boolean | number | undefined;
 };
+
+export type TStringifiedEnum<E extends string> = E | `${E}`;
+
+export interface ISerializable {
+  serialize(): string;
+}
+
+export interface IDeserializableClass<C> {
+  new (): C;
+
+  deserialize(data: string): C;
+}
+
+export type TUnsubscribe = () => boolean;
+export type TListener<T> = (event: T) => void;
+export interface IEventDispatcher<E = void> {
+  /**
+   * Register callback listener for event notification.
+   * @param listener
+   * @returns Unsubscription method
+   */
+  subscribe: (listener: TListener<E>) => TUnsubscribe;
+  /**
+   * Unregister callback listener from receiving event notifications.
+   * @param listener
+   * @returns
+   */
+  unsubscribe: (listener: TListener<E>) => boolean;
+}
