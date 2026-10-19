@@ -465,11 +465,11 @@ export function updateRoomWithNewTurnData(
   return room;
 }
 
-export type TRequestRematch = -1 | -2 | -3 | -4;
+export type TRequestRematchFailureResponse = -1 | -2 | -3 | -4;
 export function requestRematch(
   roomId: string,
   playerId: string,
-): TRequestRematch | TRoomState {
+): TRequestRematchFailureResponse | TRoomState {
   const room = RoomServiceSingleton.getInstance().getRoom(roomId);
   if (!room || room.phase !== EGamePhase.Finished) {
     return -1;
