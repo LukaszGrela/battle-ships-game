@@ -79,14 +79,15 @@ describe("rematch handler", () => {
     roomService.saveRoom(room);
     sessionService.createSession("owner", "owner-socket");
     sessionService.createSession("opponent", "opponent-socket");
-
+    expect(room.phase).toBe("finished");
     const roomWithRematchRequest = requestRematch(roomId, "opponent");
     expect(roomWithRematchRequest).toBeDefined();
-    expect(roomWithRematchRequest?.rematchRequest?.requestorId).toBe(
-      "opponent",
-    );
-    expect(roomWithRematchRequest?.rematchRequest?.status).toBe("pending");
-    roomService.saveRoom(roomWithRematchRequest!);
+    expect(roomWithRematchRequest).not.toBeTypeOf("number");
+    const roomWithRematch = roomWithRematchRequest as TRoomState;
+
+    expect(roomWithRematch?.rematchRequest?.requestorId).toBe("opponent");
+    expect(roomWithRematch?.rematchRequest?.status).toBe("pending");
+    roomService.saveRoom(roomWithRematch!);
 
     const mockedId = createIo();
     const mockedSocket = createSocket("owner");
@@ -106,8 +107,8 @@ describe("rematch handler", () => {
     expect(updatedRoom).toBeDefined();
     expect(updatedRoom?.phase).toBe("placement");
 
-    // rematch request is accepted
-    expect(updatedRoom?.rematchRequest?.status).toBe("accepted");
+    // room now has removed rematchRequest
+    expect(updatedRoom?.rematchRequest).toBeUndefined();
 
     // requestor should have received room state update with rematch request status
     const loserGameState = toGameState("opponent", updatedRoom as TRoomState);
@@ -143,11 +144,15 @@ describe("rematch handler", () => {
 
     const roomWithRematchRequest = requestRematch(roomId, "opponent");
     expect(roomWithRematchRequest).toBeDefined();
-    expect(roomWithRematchRequest?.rematchRequest?.requestorId).toBe(
+
+    expect(roomWithRematchRequest).not.toBeTypeOf("number");
+    const roomWithRematch = roomWithRematchRequest as TRoomState;
+
+    expect(roomWithRematch?.rematchRequest?.requestorId).toBe(
       "opponent",
     );
-    expect(roomWithRematchRequest?.rematchRequest?.status).toBe("pending");
-    roomService.saveRoom(roomWithRematchRequest!);
+    expect(roomWithRematch?.rematchRequest?.status).toBe("pending");
+    roomService.saveRoom(roomWithRematch!);
 
     const mockedId = createIo();
     const mockedSocket = createSocket("owner");
