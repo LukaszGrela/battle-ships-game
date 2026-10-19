@@ -8,8 +8,8 @@ import {
   TStringifiedEnum,
   TUnsubscribe,
 } from "@repo/types";
-import { Board } from "../board/Board";
 import { AVAILABLE_SHIPS } from "../constants";
+import { BattleShipsBoard } from "../board/BattleShipsBoard";
 
 const deserializeToken = Symbol("BattleShips");
 
@@ -28,7 +28,7 @@ export class BattleShips
   #observers: Set<TListener<TBattleShipsEvents>> = new Set();
 
   private version: number = 1;
-  private boards: Map<string, Board> = new Map();
+  private boards: Map<string, BattleShipsBoard> = new Map();
   private players: Map<string, IPlayer> = new Map();
   private size: number = 10;
   private owner?: string;
@@ -41,7 +41,7 @@ export class BattleShips
   constructor(size: number);
   constructor(size: number, availableShips: readonly number[]);
   /**
-   * @private Used internally for deserialization. Do not use directly.
+   * @private Used internally for deserialization. Do not use directly. Use `BattleShips.deserialize()` instead.
    * @param source
    * @param token
    */
@@ -56,18 +56,13 @@ export class BattleShips
     if (typeof sizeOrSource === "number") {
       this.size = sizeOrSource;
       this.boards = new Map();
-      if (
-        Array.isArray(availableShipsOrToken) &&
-        availableShipsOrToken.some((element) => typeof element !== "number")
-      ) {
-        this.availableShips = availableShipsOrToken;
+      if (Array.isArray(availableShipsOrToken)) {
+        this.availableShips = [...availableShipsOrToken];
       }
     } else {
       const token = availableShipsOrToken as typeof deserializeToken;
       if (sizeOrSource && token !== deserializeToken) {
-        throw new Error(
-          "Use BattleShips.deserialize() to create an instance.",
-        );
+        throw new Error("Use BattleShips.deserialize() to create an instance.");
       }
 
       if (sizeOrSource) {
@@ -92,7 +87,7 @@ export class BattleShips
       playersCount < this.maxPlayers &&
       (!hasPlayers || !this.boards.has(player.id))
     ) {
-      this.boards.set(player.id, new Board(this.size));
+      this.boards.set(player.id, new BattleShipsBoard(this.size));
       const initiatedPlayer = this.#initPlayer(player);
       this.players.set(player.id, initiatedPlayer);
       if (!hasPlayers) {
@@ -140,6 +135,7 @@ export class BattleShips
       // change last player ownership
       if (this.players.size === 1) {
         const lastPlayer = Array.from(this.players.values()).at(0)!;
+        this.owner = lastPlayer.id;
         lastPlayer.owner = true;
         this.players.set(lastPlayer.id, lastPlayer);
 
@@ -155,9 +151,9 @@ export class BattleShips
     return false;
   }
 
-
-
-
+  getPhase(): TStringifiedEnum<EGamePhase> {
+    return this.phase;
+  }
 
   #initPlayer(player: IPlayer): IPlayer {
     return {
@@ -172,10 +168,6 @@ export class BattleShips
     this._publish({ type: `${TAG}:phase_changed` });
   }
 
-  getPhase(): TStringifiedEnum<EGamePhase> {
-    return this.phase;
-  }
-
   private deserialize(data: string): void {
     const parsed = JSON.parse(data, (key, value) => {
       if (key === "boards") {
@@ -183,7 +175,7 @@ export class BattleShips
           value.map(
             ({ playerId, board }: { playerId: string; board: string }) => [
               playerId,
-              Board.deserialize(board),
+              BattleShipsBoard.deserialize(board),
             ],
           ),
         );
@@ -201,6 +193,7 @@ export class BattleShips
       return value;
     });
     this.boards = parsed.boards;
+    this.players = parsed.players;
     this.size = parsed.size;
     this.phase = parsed.phase;
     this.owner = parsed.owner;
