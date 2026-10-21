@@ -94,6 +94,22 @@ describe("Board", () => {
     });
   });
 
+  describe("clear", () => {
+    it("clears the board", () => {
+      const board = new Board(2);
+      expect(board.setCell(1, 0, 7)).toBe(7);
+      expect(board.setCell(0, 1, 7)).toBe(7);
+
+      expect(board.getCell(1, 0)).toBe(7);
+      expect(board.getCell(0, 1)).toBe(7);
+
+      board.clear();
+
+      expect(board.getCell(1, 0)).toBe(-1);
+      expect(board.getCell(0, 1)).toBe(-1);
+    });
+  });
+
   describe("isCellFailure", () => {
     it("recognizes all cell failure codes", () => {
       const board = new Board(1);

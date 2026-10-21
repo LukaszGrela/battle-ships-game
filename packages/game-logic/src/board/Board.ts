@@ -76,6 +76,11 @@ export class Board implements ISerializable {
     return value;
   }
 
+  clear() {
+    this.board = Array.from({ length: this.size }, () =>
+      Array.from({ length: this.size }, (): TCellStatusEmpty => -1),
+    );
+  }
   /**
    * Replaces the value of the cell at (x, y) and every 4-directionally
    * connected cell that shares its original value with `newValue`.
