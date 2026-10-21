@@ -1,8 +1,11 @@
-import { EGamePhase, IPlayer } from "@repo/types";
+import { EGamePhase, IPlayer, TAttackHistory } from "@repo/types";
 import { AVAILABLE_SHIPS } from "../constants";
 import { BattleShips } from "./BattleShips";
 
-const createPlayer = (id: string, overrides: Partial<IPlayer> = {}): IPlayer => ({
+const createPlayer = (
+  id: string,
+  overrides: Partial<IPlayer> = {},
+): IPlayer => ({
   id,
   name: `Player ${id}`,
   seed: 1,
@@ -13,16 +16,24 @@ const createPlayer = (id: string, overrides: Partial<IPlayer> = {}): IPlayer => 
 
 const serializedState = (game: BattleShips) =>
   JSON.parse(game.serialize()) as {
+    version: number;
+    game_created: string;
+    game_finished: string | null;
+    game_started: string | null;
     phase: EGamePhase;
     size: number;
     owner?: string;
-    availableShips: number[];
-    players: Array<{ playerId: string; player: string }>;
+    turn?: string;
+    maxPlayers: number;
+    availableShips: readonly number[];
+    history: TAttackHistory[];
+
+    players: Array<{ playerId: string; player: IPlayer }>;
     boards: Array<{ playerId: string; board: string }>;
   };
 
 const playersFrom = (game: BattleShips) =>
-  serializedState(game).players.map(({ player }) => JSON.parse(player) as IPlayer);
+  serializedState(game).players.map(({ player }) => player as IPlayer);
 
 describe("BattleShips", () => {
   describe("construction", () => {
@@ -103,9 +114,9 @@ describe("BattleShips", () => {
       expect(playersFrom(game)).toEqual([
         { ...createPlayer("p1"), active: true, ready: false, owner: true },
       ]);
-      expect(serializedState(game).boards.map(({ playerId }) => playerId)).toEqual([
-        "p1",
-      ]);
+      expect(
+        serializedState(game).boards.map(({ playerId }) => playerId),
+      ).toEqual(["p1"]);
     });
 
     it("returns to waiting and transfers ownership when a placement player leaves", () => {
@@ -137,7 +148,9 @@ describe("BattleShips", () => {
       const listener = vi.fn();
 
       const unsubscribe = game.subscribe(listener);
-      expect(listener).toHaveBeenNthCalledWith(1, { type: "BattleShips:update" });
+      expect(listener).toHaveBeenNthCalledWith(1, {
+        type: "BattleShips:update",
+      });
 
       game.addPlayer(createPlayer("p1"));
       game.addPlayer(createPlayer("p2"));
@@ -182,7 +195,10 @@ describe("BattleShips", () => {
       expect(state.owner).toBe("p1");
       expect(state.availableShips).toEqual([2, 1]);
       expect(playersFrom(restored)).toEqual(playersFrom(game));
-      expect(state.boards.map(({ playerId }) => playerId)).toEqual(["p1", "p2"]);
+      expect(state.boards.map(({ playerId }) => playerId)).toEqual([
+        "p1",
+        "p2",
+      ]);
       expect(JSON.parse(state.boards[0]?.board!).board).toBeDefined();
     });
   });
