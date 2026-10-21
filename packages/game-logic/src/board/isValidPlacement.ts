@@ -15,7 +15,7 @@ export function cellIsEmpty<S = ECellStatus>(
   return cell === ECellStatus.Empty;
 }
 
-function spaceForShipIsEmpty<S = ECellStatus>(
+export function spaceForShipIsEmpty<S = ECellStatus>(
   board: TBoard<S>,
   coords: TCoordinate,
   ship: TShip,
@@ -31,7 +31,7 @@ function spaceForShipIsEmpty<S = ECellStatus>(
   return true;
 }
 
-function checkBreathingSpace<S = ECellStatus>(
+export function checkBreathingSpace<S = ECellStatus>(
   board: TBoard<S>,
   coords: TCoordinate,
   ship: TShip,
