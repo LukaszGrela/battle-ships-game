@@ -67,7 +67,9 @@ export const Game: FC = () => {
       setAttacking(true);
       const attackResult: TAttackResult = {
         ok: true,
-        status: lastAttack.isSunk ? ECellStatus.Destroyed : lastAttack.result,
+        status: lastAttack.isSunk
+          ? ECellStatus.Destroyed
+          : (lastAttack.result as ECellStatus.Hit | ECellStatus.Miss),
         size: lastAttack.size,
       };
       setAttackResult(attackResult);
