@@ -95,7 +95,7 @@ export const factoryAttackCoordinateHandler = (
     } else {
       callback?.({
         ok: true,
-        status: callbackStatus,
+        status: callbackStatus as ECellStatus.Hit | ECellStatus.Miss,
       });
     }
 

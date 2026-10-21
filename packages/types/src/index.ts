@@ -9,13 +9,15 @@ export enum ECellStatus {
   Destroyed = "destroyed",
 }
 
+export type TPlacementValidationErrors = -1001 | -1002 | -1003;
+
 // When margin is needed this cell status can be used
 export type TCellStatusMargin = -2;
 export type TCellStatusEmpty = -1;
 export type TCellStatusMiss = 0;
 
 // Ship identifier, <1..10>
-export type TCellStatusShip = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
+export type TCellStatusShipId = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
 
 // Ship hit (ship id + 100), <101..110>
 export type TCellStatusShipHitOffset = 100;
@@ -30,7 +32,7 @@ export type TCellStatus =
   | TCellStatusMargin
   | TCellStatusEmpty
   | TCellStatusMiss
-  | TCellStatusShip
+  | TCellStatusShipId
   | TCellStatusShipHit
   | TCellStatusShipDestroyed;
 
@@ -84,6 +86,7 @@ type TPlacedShipProps = {
 };
 
 export type TShip = {
+  // TODO: TCellStatusShip
   id: number;
   size: number;
 } & (
@@ -110,7 +113,12 @@ type TFinishHistory = {
 export type TAttackHistory = {
   turn: TUserId;
   coords: TCoordinate;
-  result: ECellStatus.Hit | ECellStatus.Miss;
+  result:
+    | ECellStatus.Hit
+    | ECellStatus.Miss
+    | TCellStatusMiss
+    | TCellStatusShipHit
+    | TCellStatusShipDestroyed;
   isSunk: boolean;
   size: number;
 };
