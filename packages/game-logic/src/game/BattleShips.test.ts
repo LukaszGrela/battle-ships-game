@@ -3,6 +3,7 @@ import {
   IPlayer,
   TAttackHistory,
   TCellStatusShipId,
+  TGameState,
   TShip,
 } from "@repo/types";
 import { AVAILABLE_SHIPS } from "../constants";
@@ -11,6 +12,7 @@ import {
   isDestroyedShipStatus,
   isHitShipStatus,
 } from "../board/BattleShipsBoard";
+import { createEmptyBoard } from "../board/createEmptyBoard";
 
 const createPlayer = (
   id: string,
@@ -187,6 +189,70 @@ describe("BattleShips", () => {
 
       if (player) player.name = "mutated copy";
       expect(game.getPlayer("p1")?.name).toBe("Player p1");
+    });
+  });
+
+  describe("activatePlayer", () => {
+    it("activates an existing inactive player", () => {
+      const game = new BattleShips();
+      game.addPlayer(createPlayer("p1", { active: false }));
+
+      expect(game.activatePlayer("p1")).toBe(true);
+      expect(game.getPlayer("p1")?.active).toBe(true);
+    });
+
+    it("returns false and emits an error for an unknown player", () => {
+      const game = new BattleShips();
+      const listener = vi.fn();
+      game.subscribe(listener);
+
+      expect(game.activatePlayer("missing")).toBe(false);
+      expect(listener).toHaveBeenLastCalledWith({
+        type: "BattleShips:error",
+        payload: { message: 'Player "missing" does not exist.' },
+      });
+    });
+  });
+
+  describe("getTimeStamps", () => {
+    it("reports creation time and tracks start and finish timestamps", () => {
+      const game = createPlacementGame();
+      const created = game.getTimeStamps();
+
+      expect(created.game_created).toEqual(expect.any(String));
+      expect(Date.parse(created.game_created ?? "")).not.toBeNaN();
+      expect(created.game_started).toBeNull();
+      expect(created.game_finished).toBeNull();
+
+      game.placeShips("p1", createPlacedFleet(1, 1, 1));
+      game.placeShips("p2", createPlacedFleet(2, 3, 3));
+      const started = game.getTimeStamps();
+      expect(started.game_created).toBe(created.game_created);
+      expect(Date.parse(started.game_started!)).not.toBeNaN();
+      expect(started.game_finished).toBeNull();
+
+      game.attack("p1", { x: 3, y: 3 });
+      const finished = game.getTimeStamps();
+      expect(finished.game_created).toBe(created.game_created);
+      expect(finished.game_started).toBe(started.game_started);
+      expect(Date.parse(finished.game_finished!)).not.toBeNaN();
+    });
+  });
+
+  describe("getResult", () => {
+    it("returns no results before the game is finished, then reports winner and loser", () => {
+      const game = createPlacementGame();
+
+      expect(game.getResult()).toEqual({});
+
+      game.placeShips("p1", createPlacedFleet(1, 1, 1));
+      game.placeShips("p2", createPlacedFleet(2, 3, 3));
+      expect(game.getResult()).toEqual({});
+
+      game.attack("p1", { x: 3, y: 3 });
+
+      expect(game.getPhase()).toBe(EGamePhase.Finished);
+      expect(game.getResult()).toEqual({ p1: "win", p2: "lost" });
     });
   });
 
@@ -444,7 +510,7 @@ describe("BattleShips", () => {
     });
   });
 
-  describe("game-flow", () => {
+  describe("getGameState", () => {
     it("goes from waiting to finish - happy path", () => {
       const size = 4;
       const availableShips = [1, 1, 2] as const;
@@ -452,6 +518,8 @@ describe("BattleShips", () => {
 
       expect(game.getPhase()).toBe(EGamePhase.Waiting);
       expect(game.getTurn()).toBeUndefined();
+
+      expect(game.getGameState("lukasz")).toBeNull();
 
       expect(
         game.addPlayer({
@@ -461,6 +529,21 @@ describe("BattleShips", () => {
           active: true,
         }),
       ).toBe(true);
+
+      const lukasz: IPlayer = {
+        active: true,
+        id: "lukasz",
+        name: "Lukasz",
+        owner: true,
+        ready: false,
+        seed: 1979,
+      };
+      // waiting
+      const stateWaiting = game.getGameState("lukasz");
+      expect(stateWaiting?.phase).toEqual(EGamePhase.Waiting);
+      expect(stateWaiting?.self).toEqual(lukasz);
+      expect(stateWaiting?.myBoard).toEqual(createEmptyBoard(size, -1));
+
       expect(
         game.addPlayer({
           id: "marek",
@@ -517,6 +600,69 @@ describe("BattleShips", () => {
           },
         ]),
       ).toBe(true);
+
+      const statePlacement = game.getGameState("lukasz") as TGameState & {
+        phase: EGamePhase.Placement;
+      };
+      expect(statePlacement?.phase).toEqual(EGamePhase.Placement);
+
+      expect(statePlacement?.self).toEqual({
+        ...lukasz,
+        ready: true,
+      });
+      expect(statePlacement?.myBoard).toEqual([
+        [1, -1, -1, -1],
+        [-1, -1, -1, -1],
+        [3, 3, -1, -1],
+        [-1, -1, -1, 2],
+      ]);
+      expect(statePlacement?.ships).toEqual([
+        {
+          coords: {
+            x: 0,
+            y: 0,
+          },
+          hits: [],
+          id: 1,
+          orientation: "horizontal",
+          placed: true,
+          size: 1,
+          type: "placed",
+        },
+        {
+          coords: {
+            x: 3,
+            y: 3,
+          },
+          hits: [],
+          id: 2,
+          orientation: "vertical",
+          placed: true,
+          size: 1,
+          type: "placed",
+        },
+        {
+          coords: {
+            x: 0,
+            y: 2,
+          },
+          hits: [],
+          id: 3,
+          orientation: "horizontal",
+          placed: true,
+          size: 2,
+          type: "placed",
+        },
+      ]);
+      const marek: IPlayer = {
+        active: true,
+        id: "marek",
+        name: "Marek",
+        ready: false,
+        seed: 1980,
+      };
+      expect(statePlacement?.enemy).toEqual(marek);
+
       expect(
         game.placeShips("marek", [
           {
@@ -560,6 +706,185 @@ describe("BattleShips", () => {
       expect(game.getTurn()).toBe("marek");
       expect(game.attack("marek", { x: 3, y: 0 })).toBe(0); // miss
       expect(game.getTurn()).toBe("lukasz");
+
+      const statePlayingLukasz = game.getGameState("lukasz") as TGameState & {
+        phase: EGamePhase.Playing;
+      };
+      const statePlayingMarek = game.getGameState("marek") as TGameState & {
+        phase: EGamePhase.Playing;
+      };
+      expect(statePlayingLukasz?.phase).toEqual(EGamePhase.Playing);
+      expect(statePlayingMarek?.phase).toEqual(EGamePhase.Playing);
+
+      expect(statePlayingLukasz?.self).toEqual({ ...lukasz, ready: true });
+      expect(statePlayingMarek?.self).toEqual({ ...marek, ready: true });
+
+      expect(statePlayingLukasz?.enemy).toEqual({ ...marek, ready: true });
+      expect(statePlayingMarek?.enemy).toEqual({ ...lukasz, ready: true });
+
+      expect(statePlayingLukasz?.turn).toEqual("lukasz");
+      expect(statePlayingMarek?.turn).toEqual("lukasz");
+
+      expect(statePlayingLukasz?.myBoard).toEqual([
+        [1001, -1, -1, 0], // hit destroyed,,,miss
+        [-1, -1, -1, -1],
+        [3, 3, -1, -1],
+        [-1, -1, -1, 2],
+      ]);
+      expect(statePlayingMarek?.myBoard).toEqual([
+        [0, 3, -1, 1001], // miss,,,hit destroyed
+        [-1, 3, -1, -1],
+        [-1, -1, -1, -1],
+        [2, -1, -1, -1],
+      ]);
+      expect(statePlayingLukasz?.enemyBoard).toEqual([
+        [0, -1, -1, 1001], // miss,,,hit destroyed
+        [-1, -1, -1, -1],
+        [-1, -1, -1, -1],
+        [-1, -1, -1, -1],
+      ]);
+      expect(statePlayingMarek?.enemyBoard).toEqual([
+        [1001, -1, -1, 0], // hit destroyed,,,miss
+        [-1, -1, -1, -1],
+        [-1, -1, -1, -1],
+        [-1, -1, -1, -1],
+      ]);
+      expect(statePlayingLukasz?.ships).toEqual([
+        {
+          coords: {
+            x: 0,
+            y: 0,
+          },
+          hits: [
+            {
+              x: 0,
+              y: 0,
+            },
+          ],
+          id: 1,
+          orientation: "horizontal",
+          placed: true,
+          size: 1,
+          type: "placed",
+        },
+        {
+          coords: {
+            x: 3,
+            y: 3,
+          },
+          hits: [],
+          id: 2,
+          orientation: "vertical",
+          placed: true,
+          size: 1,
+          type: "placed",
+        },
+        {
+          coords: {
+            x: 0,
+            y: 2,
+          },
+          hits: [],
+          id: 3,
+          orientation: "horizontal",
+          placed: true,
+          size: 2,
+          type: "placed",
+        },
+      ]);
+      expect(statePlayingMarek?.ships).toEqual([
+        {
+          coords: {
+            x: 3,
+            y: 0,
+          },
+          hits: [
+            {
+              x: 3,
+              y: 0,
+            },
+          ],
+          id: 1,
+          orientation: "horizontal",
+          placed: true,
+          size: 1,
+          type: "placed",
+        },
+        {
+          coords: {
+            x: 0,
+            y: 3,
+          },
+          hits: [],
+          id: 2,
+          orientation: "vertical",
+          placed: true,
+          size: 1,
+          type: "placed",
+        },
+        {
+          coords: {
+            x: 1,
+            y: 0,
+          },
+          hits: [],
+          id: 3,
+          orientation: "vertical",
+          placed: true,
+          size: 2,
+          type: "placed",
+        },
+      ]);
+      expect(statePlayingLukasz?.enemyDestroyedShips).toEqual([
+        {
+          coords: {
+            x: 3,
+            y: 0,
+          },
+          hits: [
+            {
+              x: 3,
+              y: 0,
+            },
+          ],
+          id: 1,
+          orientation: "horizontal",
+          placed: true,
+          size: 1,
+          type: "placed",
+        },
+      ]);
+      expect(statePlayingMarek?.enemyDestroyedShips).toEqual([
+        {
+          coords: {
+            x: 0,
+            y: 0,
+          },
+          hits: [
+            {
+              x: 0,
+              y: 0,
+            },
+          ],
+          id: 1,
+          orientation: "horizontal",
+          placed: true,
+          size: 1,
+          type: "placed",
+        },
+      ]);
+      expect(statePlayingLukasz?.lastAttack).toEqual({
+        coords: {
+          x: 3,
+          y: 0,
+        },
+        isSunk: false,
+        result: 0,
+        size: 0,
+        turn: "marek",
+      });
+      expect(statePlayingMarek?.lastAttack).toBeUndefined();
+
       expect(game.attack("lukasz", { x: 3, y: 3 })).toBe(0); // miss
       expect(game.getTurn()).toBe("marek");
       expect(game.attack("marek", { x: 0, y: 3 })).toBe(0); // miss
@@ -584,6 +909,73 @@ describe("BattleShips", () => {
       ); // hit, destroy, winner, turn not changed
       expect(game.getTurn()).toBe("marek");
       expect(game.getPhase()).toBe(EGamePhase.Finished);
+
+      const stateFinishedLukasz = game.getGameState("lukasz") as TGameState & {
+        phase: EGamePhase.Finished;
+      };
+      const stateFinishedMarek = game.getGameState("marek") as TGameState & {
+        phase: EGamePhase.Finished;
+      };
+
+      const finishedStates = [stateFinishedLukasz, stateFinishedMarek];
+      expect(finishedStates.map(({ phase }) => phase)).toEqual([
+        EGamePhase.Finished,
+        EGamePhase.Finished,
+      ]);
+
+      for (const state of finishedStates) {
+        expect(state.game_created).toEqual(expect.any(String));
+        expect(state.game_started).toEqual(expect.any(String));
+        expect(state.game_finished).toEqual(expect.any(String));
+        expect(state.turn).toBe("marek");
+        expect(state.result).toEqual({ lukasz: "lost", marek: "win" });
+      }
+
+      expect(stateFinishedLukasz.self).toEqual({ ...lukasz, ready: true });
+      expect(stateFinishedLukasz.enemy).toEqual({ ...marek, ready: true });
+      expect(stateFinishedMarek.self).toEqual({ ...marek, ready: true });
+      expect(stateFinishedMarek.enemy).toEqual({ ...lukasz, ready: true });
+
+      const lukaszBoardAfterGame = [
+        [1001, -1, -1, 0],
+        [-1, -1, -1, -1],
+        [1003, 1003, -1, -1],
+        [0, -1, -1, 1002],
+      ];
+      const marekBoardAfterGame = [
+        [0, 3, -1, 1001],
+        [-1, 3, -1, -1],
+        [0, 0, -1, -1],
+        [1002, -1, -1, 0],
+      ];
+      expect(stateFinishedLukasz.myBoard).toEqual(lukaszBoardAfterGame);
+      expect(stateFinishedLukasz.enemyBoard).toEqual(marekBoardAfterGame);
+      expect(stateFinishedMarek.myBoard).toEqual(marekBoardAfterGame);
+      expect(stateFinishedMarek.enemyBoard).toEqual(lukaszBoardAfterGame);
+
+      const shipHits = (state: typeof stateFinishedLukasz) =>
+        state.ships.map((ship) => [
+          ship.id,
+          "hits" in ship ? ship.hits : [],
+        ]);
+      expect(shipHits(stateFinishedLukasz)).toEqual([
+        [1, [{ x: 0, y: 0 }]],
+        [2, [{ x: 3, y: 3 }]],
+        [3, [{ x: 0, y: 2 }, { x: 1, y: 2 }]],
+      ]);
+      expect(shipHits(stateFinishedMarek)).toEqual([
+        [1, [{ x: 3, y: 0 }]],
+        [2, [{ x: 0, y: 3 }]],
+        [3, []],
+      ]);
+      expect(stateFinishedMarek.enemyDestroyedShips).toEqual(
+        stateFinishedLukasz.ships,
+      );
+      expect(stateFinishedLukasz.enemyDestroyedShips).toEqual(
+        stateFinishedMarek.ships,
+      );
+
+      // console.log(JSON.stringify(`${game.serialize()}`));
     });
   });
 });

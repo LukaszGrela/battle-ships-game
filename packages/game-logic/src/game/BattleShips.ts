@@ -17,13 +17,17 @@ import {
   TCellStatusShipHit,
   TCellStatusShipHitOffset,
   TAttackHistory,
+  TGameTimeStamps,
+  TGameState,
 } from "@repo/types";
 import { AVAILABLE_SHIPS } from "../constants";
 import {
   BattleShipsBoard,
   isDestroyedShipStatus,
   isHitShipStatus,
+  isShipStatus,
 } from "../board/BattleShipsBoard";
+import { isSunk } from "../board/isSunk";
 
 const hitOffset: TCellStatusShipHitOffset = 100;
 const destroyOffset: TCellStatusShipDestroyedOffset = 1000;
@@ -58,6 +62,7 @@ export class BattleShips
   private version: number = 1;
   private boards: Map<string, BattleShipsBoard> = new Map();
   private players: Map<string, IPlayer> = new Map();
+
   private size: number = 10;
   private owner?: string;
   private turn?: string;
@@ -101,6 +106,132 @@ export class BattleShips
       } else {
         this.boards = new Map();
         this.size = 10;
+      }
+    }
+  }
+
+  activatePlayer(playerId: string): boolean {
+    if (!this.players.has(playerId)) {
+      this._publish({
+        type: `${TAG}:error`,
+        payload: {
+          message: `Player "${playerId}" does not exist.`,
+        },
+      });
+      return false;
+    }
+
+    return this.updatePlayer({
+      id: playerId,
+      active: true,
+    });
+  }
+
+  getTimeStamps(): TGameTimeStamps {
+    return {
+      game_created: this.game_created,
+      game_started: this.game_started,
+      game_finished: this.game_finished,
+    };
+  }
+
+  getGameState(
+    playerId: string,
+  ): Omit<
+    TGameState,
+    "id" | "name" | "battleResults" | "rematchRequest"
+  > | null {
+    if (!this.players.has(playerId) || !this.boards.has(playerId)) {
+      this._publish({
+        type: `${TAG}:error`,
+        payload: {
+          message: `Player "${playerId}" does not exist.`,
+        },
+      });
+      return null;
+    }
+    const enemy = structuredClone(this.getOpponent(playerId)!);
+    const phase = this.getPhase();
+    const myBoard = this.boards.get(playerId);
+    const self = structuredClone(this.players.get(playerId)!);
+
+    if (phase === EGamePhase.Waiting) {
+      return {
+        phase: EGamePhase.Waiting,
+        game_created: this.game_created,
+        game_finished: this.game_finished,
+        game_started: this.game_started,
+        result: this.getResult(),
+        turn: this.getTurn()!,
+        self,
+        // TODO: remove never once TGameState sorted
+        myBoard: (myBoard?.getBoard() as never) ?? [],
+      };
+    } else if (phase === EGamePhase.Placement) {
+      return {
+        phase: EGamePhase.Placement,
+        game_created: this.game_created,
+        game_finished: this.game_finished,
+        game_started: this.game_started,
+        result: this.getResult(),
+        turn: this.getTurn()!,
+        self,
+        enemy,
+        myBoard: (myBoard?.getBoard() as never) ?? [],
+        ships: myBoard?.getFleet() ?? [],
+      } as Omit<TGameState, "id" | "name">;
+    } else {
+      const enemyBoard = this.boards.get(enemy.id);
+      const enemyShips = enemyBoard?.getFleet() ?? [];
+
+      if (phase === "finished") {
+        return {
+          phase: EGamePhase.Finished,
+          game_created: this.game_created,
+          game_finished: this.game_finished,
+          game_started: this.game_started,
+          result: this.getResult(),
+          turn: this.getTurn()!,
+          self,
+          enemy,
+          ships: myBoard?.getFleet() ?? [],
+          myBoard: (myBoard?.getBoard() as never) ?? [],
+          enemyBoard: (enemyBoard?.getBoard() as never) ?? [],
+          enemyDestroyedShips: enemyShips,
+        } as Omit<
+          TGameState,
+          "id" | "name" | "battleResults" | "rematchRequest"
+        >;
+      } else {
+        const lastAttack = this.history.at(-1) as TAttackHistory | undefined;
+
+        return {
+          phase: EGamePhase.Playing,
+          game_created: this.game_created,
+          game_finished: this.game_finished,
+          game_started: this.game_started,
+          result: this.getResult(),
+          turn: this.getTurn()!,
+          self,
+          enemy,
+          myBoard: (myBoard?.getBoard() as never) ?? [],
+          ships: myBoard?.getFleet() ?? [],
+          enemyBoard: enemyBoard?.getBoard().map((row) => {
+            return row.map((cell) => {
+              // allow all but ECellStatus.Ship
+              if (isShipStatus(cell)) {
+                return -1;
+              }
+              return cell;
+            });
+          }) as never,
+          enemyDestroyedShips: enemyShips.filter(isSunk),
+          lastAttack:
+            lastAttack && this.getTurn() === playerId ? lastAttack : undefined,
+        } as Omit<
+          TGameState,
+          "id" | "name" | "battleResults" | "rematchRequest"
+        >;
       }
     }
   }
@@ -431,6 +562,23 @@ export class BattleShips
     }
 
     return 0;
+  }
+
+  getResult(): Record<string, "win" | "lost"> {
+    if (this.getPhase() === EGamePhase.Finished) {
+      return Array.from(this.players.values()).reduce((result, player) => {
+        if (this.boards.has(player.id)) {
+          return {
+            ...result,
+            [player.id]: !this.boards.get(player.id)?.fleetDestroyed()
+              ? "win"
+              : "lost",
+          };
+        }
+        return result;
+      }, {});
+    }
+    return {};
   }
 
   getPhase(): TStringifiedEnum<EGamePhase> {
