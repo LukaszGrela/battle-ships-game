@@ -116,3 +116,172 @@ The client should react to:
 Session data is the source of truth.
 
 A reconnecting client must be matched by the stored session and not by a stale socket id from a previous connection. This avoids the null or stale-state bug where the server emits `game_updated` to the wrong socket target.
+
+# New Design
+## App layers
+
+### Connection
+#### Invalid user connection sequence
+```mermaid
+sequenceDiagram
+   actor ConnectedPlayers as Connected players (3)
+   actor Player1 as Player 1
+   participant Browser as Web browser
+   participant Server as Socket.IO server
+
+   loop connection
+      Player1->>Browser: "Connect to game server"
+      Browser->>Server: connect(auth.clientId)
+      Server->>Server: disconnect
+      Server-->>Browser: disconnect
+      Server-->>Browser: emit stats
+      Browser-->>ConnectedPlayers: "active players 3"
+
+      Note over ConnectedPlayers,Server: Incorrect connection of new player
+
+   end
+```
+
+#### New user connected
+
+```mermaid
+sequenceDiagram
+   actor ConnectedPlayers as Connected players (3)
+   actor Player1 as Player 1
+   participant Browser as Web browser
+   participant Server as Socket.IO server
+   participant Session as Client session (including active users)
+
+   loop connection
+      Player1->>Browser: "Connect to game server"
+      Browser->>Server: connect(auth.clientId)
+      activate Server
+      Server->>Session: create session
+      Session-->>Server: session state
+      Server-->>Browser: session_created
+      Browser-->>Player1: session data
+      Server-->>Browser: open_games
+      par Browser to Player1
+         Browser-->>Player1: "0 open games"
+      and Browser to ConnectedPlayers
+         Browser-->>ConnectedPlayers: "0 open games"
+      end
+      Server-->>Browser: game_updated(null)
+      Browser-->>Player1: null
+      Server-->>Browser: emit stats
+      deactivate Server
+      par Browser to Player1
+         Browser-->>Player1: "active players 4"
+      and Browser to ConnectedPlayers
+         Browser-->>ConnectedPlayers: "active players 4"
+      end
+      Note over ConnectedPlayers,Session: Successful connection of new player
+
+   end
+```
+
+#### Successful reconnection (with session)
+```mermaid
+sequenceDiagram
+   actor ConnectedPlayers as Connected players (4)
+   actor Player as Player 2
+   participant Browser as Web browser
+   participant Server as Socket.IO server
+   participant Session as Client session (including active users)
+   participant RoomService as RoomService (ActiveGameRegistry)
+
+   loop connection
+      Player->>Browser: "Connect to game server"
+      Browser->>Server: connect(auth.clientId)
+      activate Server
+      Server->>Session: restore session
+      Session-->>Server: session state
+      Server-->>Browser: session_restored
+      Browser-->>Player: session data
+      Server-->>Browser: welcome (clientId)
+      Browser-->>Player: clientId
+      Server->>RoomService: getOpenGames
+      RoomService-->>Server: results
+      Server-->>Browser: open_games
+      par Browser to Player
+         Browser-->>Player: "0 open games"
+      and Browser to ConnectedPlayers
+         Browser-->>ConnectedPlayers: "0 open games"
+      end
+      Server->>RoomService: getRoom
+      RoomService-->>Server: results
+
+      Server-->>Browser: game_updated(game state)
+      Browser-->>Player: game state
+
+      Server-->>Browser: emit stats
+      deactivate Server
+      par Browser to Player
+         Browser-->>Player: "active players 5"
+      and Browser to ConnectedPlayers
+         Browser-->>ConnectedPlayers: "active players 5"
+      end
+      Note over ConnectedPlayers,Session: Successful reconnection of a player
+   end
+```
+
+### User requests
+```mermaid
+sequenceDiagram
+   participant Browser as Web browser
+   participant Server as Socket.IO server
+   participant Session as Client session (including active users)
+   participant RoomService as RoomService (ActiveGameRegistry)
+   participant WarRoom@{"type":"collections"} as WarRoom (game)
+   participant Repository@{ "type": "database" } as GameRepository
+
+   loop user requests
+      Browser->>Server: ACK get_rooms [server.handlers]
+      Server->>RoomService: listRooms
+      RoomService -->> Server: listRooms value
+      Server-->>Browser: callback with current list rooms
+      Browser->>Server: ACK get_war_room_name (?proposition) [server.handlers]
+      Server-->>Browser: callback with proposition or next available name
+      Browser->>Server: ACK get_stats [server.handlers]
+      Server->>Session: countUsers
+      Session-->>Server: results
+      Server->>RoomService: activeGames, playedGames
+      RoomService -->> Server: results
+      Server-->>Browser: callback with current stats
+      Browser->>Server: disconnect_from_server
+      Server->>RoomService: if playing finish by forfeit
+      RoomService-->>WarRoom: Serialize
+      WarRoom-->>RoomService: success
+      RoomService->>Repository: Store finished game
+      Server->>Session: updateSession
+      Server->>Server: disconnect
+      Server->>RoomService: getOpenGames
+      RoomService-->>Server: results
+      Server-->>Browser: open_games
+      Server->>Browser: emit stats
+   end
+```
+
+### Game
+```mermaid
+sequenceDiagram
+   participant Browser as Web browser
+   participant Server as Socket.IO server
+   participant Session as Client session (including active users)
+   participant RoomService as RoomService (ActiveGameRegistry)
+   participant WarRoom@{"type":"collections"} as WarRoom (game)
+   participant Repository@{ "type": "database" } as GameRepository
+
+   loop room requests
+      Browser->>Server: join_game [room.handlers]
+
+      Browser->>Server: leave_game [room.handlers]
+   end
+   loop game play
+      Browser->>Server: place_ships [game.handlers]
+      Browser->>Server: attack_coordinate [game.handlers]
+      Browser->>Server: request_rematch [game.handlers]
+      Browser->>Server: accept_rematch [game.handlers]
+      Browser->>Server: reject_rematch [game.handlers]
+   end
+```
