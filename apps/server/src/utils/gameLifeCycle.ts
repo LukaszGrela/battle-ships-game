@@ -22,6 +22,7 @@ import {
 import { getShips } from "./getShips";
 import { warRoomNames } from "../services/WarRoomName.service";
 import { createNewRoom } from "./createNewRoom";
+import { WarRoom } from "../services/WarRoom";
 
 export function createWarRoom(
   roomIdentifier: { name: string; id: string },
@@ -44,22 +45,28 @@ export function createWarRoom(
   if (roomService.hasRoom(roomIdentifier.id)) {
     return;
   }
-  const room = createNewRoom(
-    { ...roomIdentifier },
-    {
-      id: ownerId,
-      active: true,
-      ready: false,
-      owner: true,
-      name: clientSession.name,
-      seed: clientSession.seed,
-    },
+  // init room
+  const firstPlayer = {
+    id: ownerId,
+    active: true,
+    ready: false,
+    owner: true,
+    name: clientSession.name,
+    seed: clientSession.seed,
+  };
+  const warRoom = new WarRoom(
+    roomIdentifier.id,
+    roomIdentifier.name,
+    firstPlayer,
   );
+  console.log("warRoom", warRoom);
+  // create current game
+  const room = createNewRoom({ ...roomIdentifier }, firstPlayer);
 
   warRoomNames.claimRoom(roomIdentifier.name);
 
   clientSession.gameId = roomIdentifier.id;
-  sessions.updateSession(ownerId, clientSession);
+  sessions.updateSession(firstPlayer.id, clientSession);
 
   // Save the room
   RoomServiceSingleton.getInstance().saveRoom(room);

@@ -9,6 +9,7 @@ import ActiveUsersServiceSingleton from "../services/users.service";
 import ClientSessionServiceSingleton from "../services/client-session.service";
 import { registerServerHandlers } from "./handlers/server.handlers";
 import { emitRoomStateToPlayers } from "../utils/emitRoomStateToPlayers";
+import ActiveGameRegistry from "../services/active-game-registry";
 
 export const factoryConnectHandler =
   (io: Server<IClientToServerEvents, IServerToClientEvents>) =>
@@ -30,6 +31,7 @@ export const factoryConnectHandler =
     registerServerHandlers(io, socket);
 
     // emit events
+    const activeGameRegistry = ActiveGameRegistry.getInstance();
     const roomService = RoomService.getInstance();
     const existing = sessions.readSession(clientId);
     if (existing) {
@@ -38,7 +40,10 @@ export const factoryConnectHandler =
       // check if session has a game id
       if (existing.gameId) {
         // find room
-        if (!roomService.getRoom(existing.gameId)) {
+        if (
+          !roomService.getRoom(existing.gameId) &&
+          !activeGameRegistry.hasRoom(existing.gameId)
+        ) {
           // if not found remove id
           existing.gameId = undefined;
         }
@@ -52,6 +57,11 @@ export const factoryConnectHandler =
       socket.emit("session_restored", existing);
       if (existing.gameId) {
         const room = roomService.getRoom(existing.gameId);
+        const warRoom = activeGameRegistry.getRoom(existing.gameId);
+        if (warRoom && warRoom.activatePlayer(clientId)) {
+          socket.emit("welcome", clientId);
+          // emitRoomStateToPlayers(io, room);
+        }
         if (room) {
           // activate user
           room.players[clientId]!.active = true;
@@ -70,12 +80,22 @@ export const factoryConnectHandler =
 
     ActiveUsersServiceSingleton.getInstance().setUser(socket.id);
 
+    const activeOpenGames = activeGameRegistry.getOpenGames();
     const openGames = roomService.getOpenGames();
+    console.log("open_games", activeOpenGames);
 
     // in the lobby - send open games
     io.emit("open_games", openGames);
 
-    if (existing && existing.gameId && roomService.getRoom(existing.gameId)) {
+    if (
+      existing &&
+      existing.gameId &&
+      roomService.getRoom(existing.gameId) &&
+      activeGameRegistry.hasRoom(existing.gameId)
+    ) {
+      const gameState = activeGameRegistry
+        .getRoom(existing.gameId)
+        ?.getGameState(clientId);
       // send notification with game update, so the user reconnects to the game
       socket.emit(
         "game_updated",
@@ -89,6 +109,10 @@ export const factoryConnectHandler =
     console.log(
       "[STATS] active users",
       ActiveUsersServiceSingleton.getInstance().countUsers(),
+      ClientSessionServiceSingleton.getInstance().listSessions(),
+      ClientSessionServiceSingleton.getInstance()
+        .listSessions()
+        .filter(({ disconnectedAt }) => !disconnectedAt).length,
     );
 
     emitStats(io);
