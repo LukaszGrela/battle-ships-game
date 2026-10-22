@@ -48,6 +48,9 @@ export interface IRoomService {
   playedGames: () => number;
 }
 
+/**
+ * This is "active game registry"
+ */
 export class RoomService implements IRoomService {
   getRoom(id: string): TRoomState | undefined {
     this.log("getRoom", id);
