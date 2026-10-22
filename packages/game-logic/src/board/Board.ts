@@ -34,10 +34,6 @@ export class Board implements ISerializable {
     return this.size;
   }
 
-  isCellFailure(cell: TCellStatus | TGetCellFailure): cell is TGetCellFailure {
-    return cell <= -101 && cell >= -105;
-  }
-
   getCell(x: number, y: number): TCellStatus | TGetCellFailure {
     if (x < 0 || x >= this.size) return -101;
     if (y < 0 || y >= this.size) return -102;
@@ -81,6 +77,10 @@ export class Board implements ISerializable {
       Array.from({ length: this.size }, (): TCellStatusEmpty => -1),
     );
   }
+
+  getBoard(): TBoard<TCellStatus> {
+    return structuredClone(this.board);
+  }
   /**
    * Replaces the value of the cell at (x, y) and every 4-directionally
    * connected cell that shares its original value with `newValue`.
@@ -89,7 +89,7 @@ export class Board implements ISerializable {
    */
   protected _floodFill(x: number, y: number, newValue: TCellStatus) {
     const originalValue = this.getCell(x, y);
-    if (this.isCellFailure(originalValue) || originalValue === newValue) {
+    if (isCellFailure(originalValue) || originalValue === newValue) {
       return;
     }
 
@@ -103,7 +103,7 @@ export class Board implements ISerializable {
       // Repainted cells hold `newValue`, which differs from `originalValue`,
       // so this comparison doubles as the visited check.
       const cell = this.getCell(cx, cy);
-      if (this.isCellFailure(cell) || cell !== originalValue) {
+      if (isCellFailure(cell) || cell !== originalValue) {
         continue;
       }
 
@@ -135,3 +135,9 @@ export class Board implements ISerializable {
     return new Board(serialized, deserializeToken);
   };
 }
+
+export const isCellFailure = (
+  cell: TCellStatus | TGetCellFailure,
+): cell is TGetCellFailure => {
+  return cell <= -101 && cell >= -105;
+};

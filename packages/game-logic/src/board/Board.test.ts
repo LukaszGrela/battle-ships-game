@@ -1,5 +1,5 @@
 import { TCellStatus } from "@repo/types";
-import { Board } from "./Board";
+import { Board, isCellFailure } from "./Board";
 
 // Exposes the protected _floodFill for testing
 class TestBoard extends Board {
@@ -115,7 +115,7 @@ describe("Board", () => {
       const board = new Board(1);
 
       for (const failure of [-101, -102, -103, -104, -105] as const) {
-        expect(board.isCellFailure(failure)).toBe(true);
+        expect(isCellFailure(failure)).toBe(true);
       }
     });
 
@@ -123,7 +123,7 @@ describe("Board", () => {
       const board = new Board(1);
 
       for (const value of [-2, -1, 0, 1, 101, 1001] as const) {
-        expect(board.isCellFailure(value)).toBe(false);
+        expect(isCellFailure(value)).toBe(false);
       }
     });
   });
