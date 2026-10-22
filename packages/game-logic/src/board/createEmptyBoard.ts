@@ -1,7 +1,10 @@
 import { ECellStatus, TBoard } from "@repo/types";
 
-export function createEmptyBoard(): TBoard {
-  return Array(10)
+export function createEmptyBoard<S = ECellStatus>(
+  size = 10,
+  fill: S = ECellStatus.Miss as S,
+): TBoard<S> {
+  return Array(size)
     .fill(null)
-    .map(() => Array(10).fill(ECellStatus.Empty));
+    .map(() => Array(size).fill(fill));
 }
