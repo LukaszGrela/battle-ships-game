@@ -4,7 +4,12 @@ import {
   TPlacedShip,
   TShip,
 } from "@repo/types";
-import { BattleShipsBoard } from "./BattleShipsBoard";
+import {
+  BattleShipsBoard,
+  isDestroyedShipStatus,
+  isHitShipStatus,
+  isShipStatus,
+} from "./BattleShipsBoard";
 
 describe("BattleShipsBoard", () => {
   describe("board and fleet state", () => {
@@ -38,6 +43,27 @@ describe("BattleShipsBoard", () => {
       ).toBe(false);
       expect(board.placeShip(ship, { x: 4, y: 2 })).toBe(false);
       expect(board.fleetCount()).toBe(1);
+    });
+
+    it("returns board and fleet copies without exposing internal state", () => {
+      const board = new BattleShipsBoard(5);
+      const ship: TShip & { type: "pending"; id: TCellStatusShipId } = {
+        id: 1,
+        size: 2,
+        type: "pending",
+        placed: true,
+      };
+      board.placeShip(ship, { x: 1, y: 2 });
+
+      const boardCopy = board.getBoard();
+      boardCopy[2]![1] = -1;
+      const fleetCopy = board.getFleet();
+      fleetCopy[0]!.hits.push({ x: 1, y: 2 });
+      fleetCopy.pop();
+
+      expect(board.getCell(1, 2)).toBe(1);
+      expect(board.getFleet()).toHaveLength(1);
+      expect(board.getShipById(ship.id)?.hits).toEqual([]);
     });
 
     it("removes a placed ship and resets its cells", () => {
@@ -190,6 +216,87 @@ describe("BattleShipsBoard", () => {
       expect(board.placeShip(ship, coords, orientation)).toBe(true);
       expect(board.getCell(coords.x, coords.y)).toBe(ship.id);
     });
+  });
+
+  describe("placement validation", () => {
+    const ship: TShip & { type: "pending"; id: TCellStatusShipId } = {
+      id: 1,
+      size: 2,
+      type: "pending",
+      placed: true,
+    };
+
+    it("distinguishes occupied start, occupied ship span, and blocked breathing space", () => {
+      const occupiedStart = new BattleShipsBoard(5);
+      occupiedStart.placeShip(
+        { ...ship, id: 2 },
+        { x: 1, y: 2 },
+      );
+      expect(occupiedStart.isValidPlacement({ x: 1, y: 2 }, ship, "horizontal")).toBe(
+        -1001,
+      );
+
+      const occupiedSpan = new BattleShipsBoard(5);
+      occupiedSpan.placeShip(
+        { ...ship, id: 2 },
+        { x: 2, y: 2 },
+      );
+      expect(occupiedSpan.isValidPlacement({ x: 1, y: 2 }, ship, "horizontal")).toBe(
+        -1002,
+      );
+
+      const blockedBreathingSpace = new BattleShipsBoard(5);
+      blockedBreathingSpace.placeShip(
+        { ...ship, id: 2 },
+        { x: 1, y: 1 },
+      );
+      expect(
+        blockedBreathingSpace.isValidPlacement(
+          { x: 1, y: 2 },
+          ship,
+          "horizontal",
+        ),
+      ).toBe(-1003);
+    });
+
+    it("exposes empty-cell, ship-span, and breathing-space checks", () => {
+      const board = new BattleShipsBoard(5);
+      const coords = { x: 1, y: 2 };
+
+      expect(board.cellIsEmpty(coords)).toBe(true);
+      expect(board.spaceForShipIsEmpty(coords, ship, "horizontal")).toBe(true);
+      expect(board.checkBreathingSpace(coords, ship, "horizontal")).toBe(true);
+
+      board.resolveAttack({ x: 2, y: 2 });
+      expect(board.cellIsEmpty({ x: 2, y: 2 })).toBe(false);
+      expect(board.spaceForShipIsEmpty(coords, ship, "horizontal")).toBe(false);
+      board.resolveAttack({ x: 1, y: 1 });
+      expect(board.checkBreathingSpace(coords, ship, "horizontal")).toBe(false);
+      expect(board.cellIsEmpty({ x: -1, y: 0 })).toBe(false);
+    });
+  });
+
+  describe("cell status helpers", () => {
+    it.each([
+      [1, true, false, false],
+      [10, true, false, false],
+      [101, false, true, false],
+      [110, false, true, false],
+      [1001, false, false, true],
+      [1010, false, false, true],
+      [-1, false, false, false],
+      [0, false, false, false],
+      [11, false, false, false],
+      [111, false, false, false],
+    ] as const)(
+      "classifies status %i correctly",
+      (status, isShip, isHit, isDestroyed) => {
+        const cellStatus = status as TCellStatus;
+        expect(isShipStatus(cellStatus)).toBe(isShip);
+        expect(isHitShipStatus(cellStatus)).toBe(isHit);
+        expect(isDestroyedShipStatus(cellStatus)).toBe(isDestroyed);
+      },
+    );
   });
 
   describe("ship painting rollback", () => {

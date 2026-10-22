@@ -13,8 +13,9 @@ import {
   TShipPlacementOrientation,
   TPlacementValidationErrors,
   TPlacedShip,
+  TBoard,
 } from "@repo/types";
-import { Board } from "./Board";
+import { Board, isCellFailure } from "./Board";
 import { TGetCellFailure } from "./cell";
 import { isSunk } from "./isSunk";
 
@@ -102,7 +103,7 @@ export class BattleShipsBoard implements ISerializable {
   ): TCellStatusShipHit | TCellStatusShipDestroyed | TCellStatusMiss {
     const miss: TCellStatusMiss = 0;
     const current = this.getCell(attackCoords.x, attackCoords.y);
-    if (this.board.isCellFailure(current)) {
+    if (isCellFailure(current)) {
       // miss
       return miss;
     }
@@ -135,20 +136,16 @@ export class BattleShipsBoard implements ISerializable {
     // miss
     return miss;
   }
-
-  #setShipHit(ship: TPlacedShip | undefined, attackCoords: TCoordinate) {
-    if (ship) {
-      const key = `${ship.coords.x},${ship.coords.y}`;
-      const copy = structuredClone(ship);
-      copy.hits.push(attackCoords);
-      // save it
-      this.ships.set(key, copy);
-    }
+  getBoard(): TBoard<TCellStatus> {
+    return this.board.getBoard();
   }
-
   clear() {
     this.board.clear();
     this.ships.clear();
+  }
+
+  getFleet() {
+    return Array.from(this.ships.values()).map((ship) => structuredClone(ship));
   }
 
   fleetCount() {
@@ -168,7 +165,7 @@ export class BattleShipsBoard implements ISerializable {
     const cell = this.board.getCell(coords.x, coords.y);
     const empty: TCellStatusEmpty = -1;
 
-    return !this.board.isCellFailure(cell) && cell === empty;
+    return !isCellFailure(cell) && cell === empty;
   }
 
   spaceForShipIsEmpty(
@@ -195,7 +192,7 @@ export class BattleShipsBoard implements ISerializable {
     const empty: TCellStatusEmpty = -1;
     const validCell = (x: number, y: number): boolean => {
       const cell = this.board.getCell(x, y);
-      if (this.board.isCellFailure(cell)) {
+      if (isCellFailure(cell)) {
         return x < 0 || x >= this.getSize() || y < 0 || y >= this.getSize();
       }
       return cell === empty;
@@ -271,6 +268,16 @@ export class BattleShipsBoard implements ISerializable {
     });
   }
 
+  #setShipHit(ship: TPlacedShip | undefined, attackCoords: TCoordinate) {
+    if (ship) {
+      const key = `${ship.coords.x},${ship.coords.y}`;
+      const copy = structuredClone(ship);
+      copy.hits.push(attackCoords);
+      // save it
+      this.ships.set(key, copy);
+    }
+  }
+
   #paintShip(ship: TPlacedShip, paint: TCellStatus): boolean {
     const coords = ship.coords;
     const orientation = ship.orientation;
@@ -296,7 +303,7 @@ export class BattleShipsBoard implements ISerializable {
         placementCoords.y,
       );
 
-      if (this.board.isCellFailure(previousValue)) {
+      if (isCellFailure(previousValue)) {
         rollback();
         return false;
       }
@@ -307,7 +314,7 @@ export class BattleShipsBoard implements ISerializable {
         placementCoords.y,
         paint,
       );
-      if (this.board.isCellFailure(result)) {
+      if (isCellFailure(result)) {
         rollback();
         return false;
       }
@@ -368,7 +375,7 @@ export class BattleShipsBoard implements ISerializable {
             ? { x: coords.x + offset, y: coords.y }
             : { x: coords.x, y: coords.y + offset };
         const cell = this.getCell(placementCoords.x, placementCoords.y);
-        if (this.board.isCellFailure(cell) || isShipStatus(cell)) {
+        if (isCellFailure(cell) || isShipStatus(cell)) {
           return false;
         }
       }
