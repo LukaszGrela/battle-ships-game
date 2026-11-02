@@ -2,12 +2,12 @@
   "name": "@repo/server",
   "private": true,
   "version": "0.1.1",
-  
   "scripts": {
     "dev": "tsx watch src/main.ts",
     "build": "tsc",
     "start": "node dist/main.js",
-    "test": "vitest run"
+    "test": "vitest run",
+    "check-types":"tsc --noEmit"
   },
   "dependencies": {
     "@repo/game-logic": "workspace:*",
@@ -17,6 +17,7 @@
   },
   "devDependencies": {
     "@repo/typescript-config": "workspace:*",
+    "@socket.io/admin-ui": "^0.5.1",
     "@types/node": "^26.4.0",
     "tsx": "^4.23.13",
     "vitest": "^5.0.1"
