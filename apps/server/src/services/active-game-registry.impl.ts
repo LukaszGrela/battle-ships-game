@@ -34,6 +34,7 @@ export interface IActiveGameRegistry {
 
   getOpenGames(): TRoomIdentity[];
   listRooms(): TRoomIdentity[];
+  findFinishedRoomForPlayer(playerId: string): TRoomIdentity | undefined;
 }
 
 /**
@@ -94,5 +95,25 @@ export class ActiveGameRegistry implements IActiveGameRegistry {
       phase: room.getPhase() ?? EGamePhase.Waiting,
       ...room.getTimeStamps(),
     }));
+  }
+
+  findFinishedRoomForPlayer(playerId: string): TRoomIdentity | undefined {
+    const warRoom = Array.from(this.warRooms.values()).find((room) => {
+      if (room.getPhase() !== EGamePhase.Finished) {
+        return false;
+      }
+      return room.hasPlayer(playerId);
+    });
+
+    if (warRoom) {
+      return {
+        id: warRoom.id,
+        name: warRoom.name,
+        phase: warRoom.getPhase() ?? EGamePhase.Waiting,
+        ...warRoom.getTimeStamps(),
+      };
+    }
+
+    return undefined;
   }
 }
