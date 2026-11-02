@@ -4,8 +4,10 @@ import {
   EGamePhase,
   IPlayer,
   ISerializable,
+  TCellStatusShipId,
   TGameState,
   TGameTimeStamps,
+  TShip,
   TStringifiedEnum,
 } from "@repo/types";
 
@@ -52,7 +54,7 @@ export class WarRoom implements ISerializable {
         throw new Error("Invalid or missing player");
       }
       this.currentGame = new BattleShips(10, AVAILABLE_SHIPS);
-      this.currentGame.addPlayer(player);
+      this.addPlayer(player);
     } else {
       // deserialization
       if (nameOrToken !== deserializeToken) {
@@ -64,9 +66,22 @@ export class WarRoom implements ISerializable {
     }
   }
 
-  activatePlayer(userId: string): boolean {
+  addPlayer(player: IPlayer): boolean {
+    return !!this.currentGame?.addPlayer(player);
+  }
+  removePlayer(playerId: string): boolean {
+    return !!this.currentGame?.removePlayer(playerId);
+  }
+
+  activatePlayer(playerId: string): boolean {
     if (this.currentGame) {
-      return this.currentGame.activatePlayer(userId);
+      return this.currentGame.activatePlayer(playerId);
+    }
+    return false;
+  }
+  deactivatePlayer(playerId: string): boolean {
+    if (this.currentGame) {
+      return this.currentGame.activatePlayer(playerId, false);
     }
     return false;
   }
@@ -100,7 +115,7 @@ export class WarRoom implements ISerializable {
           {} as Record<string, number>,
         );
       }
-      if(state.phase === EGamePhase.Finished) {
+      if (state.phase === EGamePhase.Finished) {
         state.rematchRequest = /* get rematch request */ undefined;
       }
 
@@ -108,11 +123,32 @@ export class WarRoom implements ISerializable {
     }
     return null;
   }
+  hasPlayer(playerId: string): boolean {
+    return !!this.currentGame?.hasPlayer(playerId);
+  }
+  getPlayer(playerId: string): IPlayer | undefined {
+    return this.currentGame?.getPlayer(playerId);
+  }
+  getOpponent(ofPlayerId: string): IPlayer | undefined {
+    return this.currentGame?.getOpponent(ofPlayerId);
+  }
 
-  forfeit(forfeitingPlayerId: string) {}
+  placeShips(
+    playerId: string,
+    ships: (TShip & { type: "pending"; id: TCellStatusShipId })[],
+  ) {
+    return !!this.currentGame?.placeShips(playerId, ships);
+  }
+
+  forfeit(forfeitingPlayerId: string): boolean {
+    return !!this.currentGame?.forfeit(forfeitingPlayerId);
+  }
 
   get battlesPlayed() {
     return this.battles.length;
+  }
+  get playersCount() {
+    return this.currentGame?.getPlayersCount() ?? 0;
   }
   get id() {
     return this.#id;

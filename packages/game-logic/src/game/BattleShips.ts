@@ -582,7 +582,7 @@ export class BattleShips
         this.history.push({
           finish: true,
           whoWon: winner.id,
-          byForfeit: true
+          byForfeit: true,
         });
         this.game_finished = new Date().toISOString();
         // deactivate losing side
@@ -622,7 +622,9 @@ export class BattleShips
   getTurn(): string | undefined {
     return this.turn;
   }
-
+  hasPlayer(playerId: string): boolean {
+    return this.players.has(playerId);
+  }
   getPlayer(playerId: string): IPlayer | undefined {
     const player = this.players.get(playerId);
     if (player) {
