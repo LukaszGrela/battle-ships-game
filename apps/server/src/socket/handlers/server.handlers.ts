@@ -17,7 +17,7 @@ export const registerServerHandlers = (
   // user used disconnect button
   socket.on(
     "disconnect_from_server",
-    factoryGetDisconnectFromServerHandler(socket),
+    factoryGetDisconnectFromServerHandler(io, socket),
   );
 
   // user has disonnected for some other reason

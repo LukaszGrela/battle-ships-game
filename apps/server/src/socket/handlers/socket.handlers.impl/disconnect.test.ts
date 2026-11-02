@@ -1,36 +1,76 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { EGamePhase } from "@repo/types";
+import { EGamePhase, IPlayer } from "@repo/types";
+import ActiveGameRegistrySingleton from "../../../services/active-game-registry";
 import ClientSessionServiceSingleton from "../../../services/client-session.service";
-import RoomServiceSingleton from "../../../services/room.service";
-import {
-  createWarRoom,
-  transitionToPlacement,
-  transitionToPlaying,
-} from "../../../utils/gameLifeCycle";
+import { WarRoom } from "../../../services/WarRoom";
 import { factoryDisconnectHandler } from "./disconnect";
 import { createIo, createSocket } from "./__tests/utils";
 
+const activeGames = ActiveGameRegistrySingleton.getInstance();
 const sessionService = ClientSessionServiceSingleton.getInstance();
-const roomService = RoomServiceSingleton.getInstance();
+
+const createPlayer = (
+  id: string,
+  name: string,
+  owner = false,
+  seed = id === "owner" ? 42 : 7,
+): IPlayer => ({
+  id,
+  name,
+  active: true,
+  ready: false,
+  owner,
+  seed,
+});
+
+const createWaitingRoom = (id: string) => {
+  const room = new WarRoom(id, `Room ${id}`, {
+    ...createPlayer("owner", "Captain Black", true),
+  });
+  activeGames.addRoom(id, room);
+  return room;
+};
+
+const createPlacementRoom = (id: string) => {
+  const room = createWaitingRoom(id);
+  room.addPlayer(createPlayer("opponent", "Captain Red"));
+  return room;
+};
+
+const createPlayingRoom = (id: string) => {
+  const room = createPlacementRoom(id);
+  const game = (room as any).currentGame;
+  game.phase = EGamePhase.Playing;
+  game.updatePlayer({ id: "owner", active: true, ready: true });
+  game.updatePlayer({ id: "opponent", active: true, ready: true });
+  return room;
+};
+
+const attachSessionToRoom = (clientId: string, roomId: string) => {
+  const session = sessionService.readSession(clientId);
+  if (!session) {
+    throw new Error(`Missing session for ${clientId}`);
+  }
+  session.gameId = roomId;
+  sessionService.updateSession(clientId, session);
+};
+
+const cleanup = () => {
+  activeGames.listRooms().forEach(({ id }) => activeGames.deleteRoom(id));
+  ["owner", "opponent", "third"].forEach((id) =>
+    sessionService.deleteSession(id),
+  );
+};
 
 describe("disconnect handler", () => {
-  afterEach(() => {
-    roomService.listRooms().forEach((room) => roomService.deleteRoom(room.id));
-    ["owner", "opponent", "third"].forEach((id) =>
-      sessionService.deleteSession(id),
-    );
-  });
+  afterEach(cleanup);
 
   it("ignores stale socket disconnects for an active session", () => {
+    const room = createWaitingRoom("stale-room");
     const ownerSession = sessionService.createSession("owner", "live-socket");
-    ownerSession.gameId = "stale-room";
+    ownerSession.name = "Captain Black";
     sessionService.updateSession("owner", ownerSession);
-
-    const room = createWarRoom(
-      { id: "stale-room", name: "Stale Room" },
-      "owner",
-    );
-    expect(room).toBeDefined();
+    attachSessionToRoom("owner", room.id);
 
     const io = createIo();
     const socket = createSocket("owner", "stale-socket");
@@ -38,46 +78,26 @@ describe("disconnect handler", () => {
 
     handler("transport close");
 
-    expect(roomService.getRoom("stale-room")?.phase).toBe(EGamePhase.Waiting);
+    expect(activeGames.hasRoom(room.id)).toBe(true);
+    expect(room.getPhase()).toBe(EGamePhase.Waiting);
     expect(sessionService.readSession("owner")?.socketId).toBe("live-socket");
+    expect(io.emit).not.toHaveBeenCalledWith("open_games", expect.any(Array));
     expect(io.emit).toHaveBeenCalledWith("server_stats", expect.any(Object));
   });
 
   it("marks a player as disconnected during play without ending the room", () => {
+    const room = createPlayingRoom("disconnect-playing");
     const ownerSession = sessionService.createSession("owner", "owner-socket");
+    ownerSession.name = "Captain Black";
+    sessionService.updateSession("owner", ownerSession);
     const opponentSession = sessionService.createSession(
       "opponent",
       "opponent-socket",
     );
-    ownerSession.name = "Captain Black";
     opponentSession.name = "Captain Red";
-    sessionService.updateSession("owner", ownerSession);
     sessionService.updateSession("opponent", opponentSession);
-
-    const room = createWarRoom(
-      { id: "disconnect-playing", name: "Playing Room" },
-      "owner",
-    );
-    expect(room).toBeDefined();
-    transitionToPlacement(room!.id, "opponent");
-
-    const roomState = roomService.getRoom(room!.id)!;
-    if (roomState.players.opponent) {
-      roomState.players.opponent.ready = true;
-    }
-    roomService.saveRoom(roomState);
-
-    const playingRoom = transitionToPlaying(room!.id, "owner", [
-      {
-        id: 1,
-        size: 2,
-        type: "placed",
-        coords: { x: 0, y: 0 },
-        orientation: "horizontal",
-        hits: [],
-      },
-    ]);
-    expect(playingRoom).toBeDefined();
+    attachSessionToRoom("owner", room.id);
+    attachSessionToRoom("opponent", room.id);
 
     const io = createIo();
     const socket = createSocket("owner", "owner-socket");
@@ -87,32 +107,25 @@ describe("disconnect handler", () => {
 
     const updatedSession = sessionService.readSession("owner");
     expect(updatedSession?.disconnectedAt).toBeTypeOf("number");
-    expect(roomService.getRoom(room!.id)?.phase).toBe(EGamePhase.Playing);
+    expect(room.getPhase()).toBe(EGamePhase.Playing);
+    expect(room.getPlayer("owner")?.active).toBe(false);
+    expect(io.emit).toHaveBeenCalledWith("open_games", expect.any(Array));
     expect(io.emit).toHaveBeenCalledWith("server_stats", expect.any(Object));
   });
 
-  it("tears down a placement room when the last remaining player disconnects", () => {
+  it("emits the updated room state to the remaining opponent when a player disconnects during play", () => {
+    const room = createPlayingRoom("disconnect-playing-update");
     const ownerSession = sessionService.createSession("owner", "owner-socket");
+    ownerSession.name = "Captain Black";
+    sessionService.updateSession("owner", ownerSession);
     const opponentSession = sessionService.createSession(
       "opponent",
       "opponent-socket",
     );
-    ownerSession.name = "Captain Black";
     opponentSession.name = "Captain Red";
-    sessionService.updateSession("owner", ownerSession);
     sessionService.updateSession("opponent", opponentSession);
-
-    const room = createWarRoom(
-      { id: "disconnect-one-player", name: "Single Player Room" },
-      "owner",
-    );
-    expect(room).toBeDefined();
-    transitionToPlacement(room!.id, "opponent");
-
-    const roomState = roomService.getRoom(room!.id)!;
-    delete roomState.players.opponent;
-    delete roomState.boards.opponent;
-    roomService.saveRoom(roomState);
+    attachSessionToRoom("owner", room.id);
+    attachSessionToRoom("opponent", room.id);
 
     const io = createIo();
     const socket = createSocket("owner", "owner-socket");
@@ -120,29 +133,52 @@ describe("disconnect handler", () => {
 
     handler("transport close");
 
-    expect(roomService.hasRoom(room!.id)).toBe(false);
+    expect(io._toSpy).toHaveBeenCalledWith(
+      "game_updated",
+      expect.objectContaining({
+        phase: EGamePhase.Playing,
+        id: room.id,
+        self: expect.objectContaining({ id: "opponent" }),
+      }),
+    );
+    expect(room.getPlayer("owner")?.active).toBe(false);
+  });
+
+  it("tears down a placement room when the last remaining player disconnects", () => {
+    const room = createWaitingRoom("disconnect-one-player");
+    room.addPlayer(createPlayer("opponent", "Captain Red"));
+    room.removePlayer("opponent");
+
+    const ownerSession = sessionService.createSession("owner", "owner-socket");
+    ownerSession.name = "Captain Black";
+    sessionService.updateSession("owner", ownerSession);
+    attachSessionToRoom("owner", room.id);
+
+    const io = createIo();
+    const socket = createSocket("owner", "owner-socket");
+    const handler = factoryDisconnectHandler(io, socket);
+
+    handler("transport close");
+
+    expect(activeGames.hasRoom(room.id)).toBe(false);
     expect(sessionService.readSession("owner")?.gameId).toBeUndefined();
     expect(io.emit).toHaveBeenCalledWith("open_games", expect.any(Array));
     expect(io.emit).toHaveBeenCalledWith("server_stats", expect.any(Object));
   });
 
   it("moves a placement room back to waiting when one player disconnects", () => {
+    const room = createPlacementRoom("disconnect-placement");
     const ownerSession = sessionService.createSession("owner", "owner-socket");
+    ownerSession.name = "Captain Black";
+    sessionService.updateSession("owner", ownerSession);
     const opponentSession = sessionService.createSession(
       "opponent",
       "opponent-socket",
     );
-    ownerSession.name = "Captain Black";
     opponentSession.name = "Captain Red";
-    sessionService.updateSession("owner", ownerSession);
     sessionService.updateSession("opponent", opponentSession);
-
-    const room = createWarRoom(
-      { id: "disconnect-placement", name: "Placement Room" },
-      "owner",
-    );
-    expect(room).toBeDefined();
-    transitionToPlacement(room!.id, "opponent");
+    attachSessionToRoom("owner", room.id);
+    attachSessionToRoom("opponent", room.id);
 
     const toSpy = vi.fn();
     const socketEmitter = { emit: vi.fn() };
@@ -156,13 +192,11 @@ describe("disconnect handler", () => {
 
     handler("transport close");
 
-    const updatedRoom = roomService.getRoom(room!.id)!;
-    expect(updatedRoom.phase).toBe(EGamePhase.Waiting);
-    expect(updatedRoom.players).not.toHaveProperty("owner");
+    expect(room.getPhase()).toBe(EGamePhase.Waiting);
+    expect(room.getPlayer("owner")).toBeUndefined();
+    expect(room.getPlayer("opponent")?.owner).toBe(true);
     expect(sessionService.readSession("owner")?.gameId).toBeUndefined();
-    expect(updatedRoom.players.opponent).toBeDefined();
     expect(io.emit).toHaveBeenCalledWith("server_stats", expect.any(Object));
-
     expect(toSpy).toHaveBeenCalledWith("opponent-socket");
     expect(socketEmitter.emit).toHaveBeenCalledWith(
       "game_updated",
@@ -171,15 +205,11 @@ describe("disconnect handler", () => {
   });
 
   it("tears down a waiting room when the owner disconnects", () => {
+    const room = createWaitingRoom("disconnect-waiting");
     const ownerSession = sessionService.createSession("owner", "owner-socket");
     ownerSession.name = "Captain Black";
     sessionService.updateSession("owner", ownerSession);
-
-    const room = createWarRoom(
-      { id: "disconnect-waiting", name: "Waiting Room" },
-      "owner",
-    );
-    expect(room).toBeDefined();
+    attachSessionToRoom("owner", room.id);
 
     const io = createIo();
     const socket = createSocket("owner", "owner-socket");
@@ -187,7 +217,7 @@ describe("disconnect handler", () => {
 
     handler("transport close");
 
-    expect(roomService.hasRoom(room!.id)).toBe(false);
+    expect(activeGames.hasRoom(room.id)).toBe(false);
     expect(sessionService.readSession("owner")?.gameId).toBeUndefined();
     expect(io.emit).toHaveBeenCalledWith("open_games", expect.any(Array));
     expect(io.emit).toHaveBeenCalledWith("server_stats", expect.any(Object));

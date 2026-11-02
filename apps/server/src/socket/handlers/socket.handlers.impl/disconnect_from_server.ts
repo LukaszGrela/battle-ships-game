@@ -4,14 +4,17 @@ import {
   IServerToClientEvents,
 } from "@repo/types";
 import RoomServiceSingleton from "../../../services/room.service";
-import { Socket } from "socket.io";
+import { Socket, Server } from "socket.io";
 import ClientSessionServiceSingleton from "../../../services/client-session.service";
 import { finishRoomByForfeit } from "../../../utils/finishRoomByForfeit";
 import ActiveGameRegistrySingleton from "../../../services/active-game-registry";
+import { warRoomNames } from "../../../services/WarRoomName.service";
+import { emitRoomStateToPlayers2 } from "../../../utils/emitRoomStateToPlayers";
 
 type THandler = IClientToServerEvents["disconnect_from_server"];
 
 export const factoryGetDisconnectFromServerHandler = (
+  io: Server<IClientToServerEvents, IServerToClientEvents>,
   socket: Socket<IClientToServerEvents, IServerToClientEvents>,
 ): THandler => {
   return function getDisconnectFromServerHandler() {
@@ -31,23 +34,13 @@ export const factoryGetDisconnectFromServerHandler = (
         const activeGameRegistry = ActiveGameRegistrySingleton.getInstance();
         if (activeGameRegistry.hasRoom(clientSession.gameId)) {
           const warRoom = activeGameRegistry.getRoom(clientSession.gameId)!;
-          if (warRoom.getPhase() === EGamePhase.Playing) {
+          if (
+            warRoom.getPhase() === EGamePhase.Playing &&
+            warRoom.forfeit(clientId)
+          ) {
             // forfeit the game
-            // finishRoomByForfeit(room.id, clientId!);
-            console.log(
-              "[factoryGetDisconnectFromServerHandler]",
-              `TODO: warRoom.forfeit();`,
-            );
-          }
-        }
-
-        const roomService = RoomServiceSingleton.getInstance();
-        // find game and release it (send back to waiting) (or forfeit)
-        const room = roomService.getRoom(clientSession.gameId);
-        if (room) {
-          if (room.phase === "playing") {
-            // forfeit the game
-            finishRoomByForfeit(room.id, clientId!);
+            warRoomNames.releaseRoom(warRoom.name);
+            emitRoomStateToPlayers2(io, clientId, warRoom.id);
           }
         }
       }
