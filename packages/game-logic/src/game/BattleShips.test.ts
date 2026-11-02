@@ -4,6 +4,7 @@ import {
   TAttackHistory,
   TCellStatusShipId,
   TGameState,
+  TRematchRequest,
   TShip,
 } from "@repo/types";
 import { AVAILABLE_SHIPS } from "../constants";
@@ -42,6 +43,7 @@ const serializedState = (game: BattleShips) =>
 
     players: Array<{ playerId: string; player: IPlayer }>;
     boards: Array<{ playerId: string; board: string }>;
+    rematchRequest?: TRematchRequest;
   };
 
 const playersFrom = (game: BattleShips) =>
@@ -623,6 +625,42 @@ describe("BattleShips", () => {
       expect(after.game_started).toBe(before.game_started);
       expect(after.game_finished).toBeNull();
       expect(restored.getPlayer("p1")?.ready).toBe(true);
+    });
+
+    it("preserves a rematch request set on a finished game", () => {
+      const game = createPlacementGame();
+      game.placeShips("p1", createPlacedFleet(1, 1, 1));
+      game.placeShips("p2", createPlacedFleet(2, 3, 3));
+      game.attack("p1", { x: 3, y: 3 });
+
+      const rematchRequest: TRematchRequest = {
+        requestorId: "p2",
+        status: "pending",
+        name: "Player p2",
+        seed: 1,
+      };
+      game.setRematchRequest(rematchRequest);
+
+      expect(serializedState(game).rematchRequest).toEqual(rematchRequest);
+
+      const restored = BattleShips.deserialize(game.serialize());
+
+      expect(serializedState(restored).rematchRequest).toEqual(rematchRequest);
+      expect(restored.serialize()).toBe(game.serialize());
+    });
+
+    it("clears a rematch request when set to undefined", () => {
+      const game = createPlacementGame();
+      game.setRematchRequest({
+        requestorId: "p2",
+        status: "pending",
+        name: "Player p2",
+        seed: 1,
+      });
+
+      game.setRematchRequest(undefined);
+
+      expect(serializedState(game).rematchRequest).toBeUndefined();
     });
   });
 

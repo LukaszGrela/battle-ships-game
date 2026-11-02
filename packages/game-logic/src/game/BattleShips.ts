@@ -26,6 +26,7 @@ import {
   TAttackResultUnknownError,
   TAttackResultUnknownUser,
   TCellStatus,
+  TRematchRequest,
 } from "@repo/types";
 import { AVAILABLE_SHIPS } from "../constants";
 import {
@@ -80,6 +81,8 @@ export class BattleShips
   private availableShips: readonly number[];
 
   private phase: TStringifiedEnum<EGamePhase>;
+
+  #rematchRequest?: TRematchRequest;
 
   constructor();
   constructor(size: number);
@@ -691,6 +694,10 @@ export class BattleShips
     return this.players.size;
   }
 
+  setRematchRequest(request: TRematchRequest | undefined) {
+    this.#rematchRequest = request;
+  }
+
   #validTurn(playerId: string): boolean {
     return this.turn === playerId;
   }
@@ -738,6 +745,7 @@ export class BattleShips
     this.game_created = parsed.game_created;
     this.game_finished = parsed.game_finished;
     this.game_started = parsed.game_started;
+    this.#rematchRequest = parsed.rematchRequest;
   }
 
   // IEventDispatcher
@@ -792,6 +800,7 @@ export class BattleShips
         board: board.serialize(),
       })),
       history: this.history,
+      rematchRequest: this.#rematchRequest,
     });
   }
 
@@ -814,6 +823,7 @@ interface IDeserializedBattleShips {
   history: TAttackHistory[];
   players: Map<string, IPlayer>;
   boards: Map<string, BattleShipsBoard>;
+  rematchRequest?: TRematchRequest;
 }
 
 function normalizeShipId(
