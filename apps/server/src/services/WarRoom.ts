@@ -9,6 +9,7 @@ import {
   TCoordinate,
   TGameState,
   TGameTimeStamps,
+  TRematchRequest,
   TShip,
   TStringifiedEnum,
 } from "@repo/types";
@@ -34,6 +35,7 @@ export class WarRoom implements ISerializable {
   private currentGame?: BattleShips;
   private battles: BattleShips[] = [];
 
+  #rematchRequest?: TRematchRequest;
   #id: string;
   #name: string;
 
@@ -122,13 +124,14 @@ export class WarRoom implements ISerializable {
         );
       }
       if (state.phase === EGamePhase.Finished) {
-        state.rematchRequest = /* get rematch request */ undefined;
+        state.rematchRequest = this.#rematchRequest;
       }
 
       return state;
     }
     return null;
   }
+
   hasPlayer(playerId: string): boolean {
     return !!this.currentGame?.hasPlayer(playerId);
   }
@@ -161,6 +164,106 @@ export class WarRoom implements ISerializable {
     return undefined;
   }
 
+  requestRematch(requestorId: string) {
+    if (
+      this.currentGame &&
+      this.currentGame.getPhase() === EGamePhase.Finished
+    ) {
+      if (this.currentGame.hasPlayer(requestorId)) {
+        if (this.#rematchRequest?.status === "pending") {
+          return -3;
+        }
+
+        if (this.#rematchRequest?.status === "rejected") {
+          return -4;
+        }
+        const requestor = this.currentGame.getPlayer(requestorId);
+        if (!requestor) {
+          return -2;
+        }
+
+        this.#rematchRequest = {
+          requestorId,
+          status: "pending",
+          name: requestor.name,
+          seed: requestor.seed,
+        };
+        return 1;
+      }
+      return -2;
+    }
+    return -1;
+  }
+
+  rejectRematch(winnerId: string) {
+    if (
+      this.currentGame &&
+      this.currentGame.getPhase() === EGamePhase.Finished
+    ) {
+      if (this.currentGame.hasPlayer(winnerId)) {
+        if (
+          !this.#rematchRequest ||
+          this.#rematchRequest.status !== "pending"
+        ) {
+          return -3;
+        }
+        if (this.#rematchRequest.requestorId === winnerId) {
+          return -4;
+        }
+
+        this.#rematchRequest.status = "rejected";
+
+        return 1;
+      }
+      return -2;
+    }
+    return -1;
+  }
+  acceptRematch(winnerId: string) {
+    if (
+      this.currentGame &&
+      this.currentGame.getPhase() === EGamePhase.Finished
+    ) {
+      const winner = this.getPlayer(winnerId);
+
+      if (winner) {
+        if (
+          !this.#rematchRequest ||
+          this.#rematchRequest.status !== "pending"
+        ) {
+          return -3;
+        }
+        if (this.#rematchRequest.requestorId === winnerId) {
+          return -4;
+        }
+
+        const requestor = this.currentGame.getPlayer(
+          this.#rematchRequest.requestorId,
+        );
+        if (!requestor) {
+          return -2;
+        }
+
+        this.#rematchRequest.status = "accepted";
+
+        this.currentGame.setRematchRequest(this.#rematchRequest);
+
+        this.battles.push(this.currentGame);
+
+        this.currentGame = new BattleShips(10, AVAILABLE_SHIPS);
+
+        this.addPlayer(winner);
+        this.addPlayer(requestor);
+
+        this.#rematchRequest = undefined;
+
+        return 1;
+      }
+      return -2;
+    }
+    return -1;
+  }
+
   get battlesPlayed() {
     return this.battles.length;
   }
@@ -190,6 +293,7 @@ export class WarRoom implements ISerializable {
       name: string;
       currentGame?: BattleShips;
       battles: BattleShips[];
+      rematchRequest?: TRematchRequest;
     };
     switch (parsed.version) {
       case 1:
@@ -197,6 +301,7 @@ export class WarRoom implements ISerializable {
         this.#name = parsed.name;
         this.currentGame = parsed.currentGame;
         this.battles = parsed.battles;
+        this.#rematchRequest = parsed.rematchRequest;
         break;
 
       default:
@@ -210,6 +315,7 @@ export class WarRoom implements ISerializable {
       name: this.#name,
       currentGame: this.currentGame?.serialize(),
       battles: this.battles.map((battle) => battle.serialize()),
+      rematchRequest: this.#rematchRequest,
     });
   }
   static deserialize(data: string): WarRoom {
