@@ -469,6 +469,81 @@ describe("BattleShips", () => {
     });
   });
 
+  describe("identifyShip", () => {
+    const startTwoCellShipGame = () => {
+      const game = new BattleShips(6, [2]);
+      game.addPlayer(createPlayer("p1"));
+      game.addPlayer(createPlayer("p2"));
+      game.placeShips("p1", [
+        {
+          id: 4,
+          size: 2,
+          type: "pending",
+          placed: true,
+          coords: { x: 0, y: 0 },
+          orientation: "horizontal",
+        },
+      ]);
+      game.placeShips("p2", [
+        {
+          id: 7,
+          size: 2,
+          type: "pending",
+          placed: true,
+          coords: { x: 2, y: 2 },
+          orientation: "horizontal",
+        },
+      ]);
+      return game;
+    };
+
+    it("identifies a ship from its intact, hit, and destroyed cell statuses", () => {
+      const game = startTwoCellShipGame();
+
+      expect(game.identifyShip("p2", 7)).toMatchObject({
+        id: 7,
+        size: 2,
+        type: "placed",
+      });
+
+      expect(game.attack("p1", { x: 2, y: 2 })).toBe(107);
+      expect(game.identifyShip("p2", 107)).toMatchObject({
+        id: 7,
+        size: 2,
+        type: "placed",
+        hits: [{ x: 2, y: 2 }],
+      });
+
+      expect(game.attack("p2", { x: 0, y: 0 })).toBe(104);
+      expect(game.attack("p1", { x: 3, y: 2 })).toBe(1007);
+      expect(game.identifyShip("p2", 1007)).toMatchObject({
+        id: 7,
+        size: 2,
+        type: "placed",
+        hits: [
+          { x: 2, y: 2 },
+          { x: 3, y: 2 },
+        ],
+      });
+    });
+
+    it.each([-2, -1, 0, 11, 100, 111, 1000, 1011] as const)(
+      "returns undefined for non-ship cell status %i",
+      (cell) => {
+        const game = startTwoCellShipGame();
+
+        expect(game.identifyShip("p1", cell)).toBeUndefined();
+      },
+    );
+
+    it("returns undefined when the player or encoded ship is unknown", () => {
+      const game = startTwoCellShipGame();
+
+      expect(game.identifyShip("missing", 7)).toBeUndefined();
+      expect(game.identifyShip("p1", 7)).toBeUndefined();
+    });
+  });
+
   describe("events", () => {
     it("immediately notifies a new subscriber and publishes phase changes", () => {
       const game = new BattleShips();

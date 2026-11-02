@@ -20,6 +20,18 @@ export type TGetCellFailure =
   | TInvalidCell
   | TUnknownError;
 
+export type TAttackResultUnknownError = -1100;
+export type TAttackResultSameCell = -1101;
+export type TAttackResultInvalidPhase = -1102;
+export type TAttackResultInvalidTurn = -1103;
+export type TAttackResultUnknownUser = -1104;
+export type TAttackResultFailure =
+  | TAttackResultUnknownUser
+  | TAttackResultInvalidTurn
+  | TAttackResultInvalidPhase
+  | TAttackResultSameCell
+  | TAttackResultUnknownError;
+
 export type TPlacementValidationErrors =
   -1001 | -1002 | -1003 | TInvalidXCoordinate | TInvalidYCoordinate;
 

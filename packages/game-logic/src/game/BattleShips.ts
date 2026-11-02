@@ -20,6 +20,12 @@ import {
   TGameTimeStamps,
   TGameState,
   TCellStatusEmpty,
+  TAttackResultSameCell,
+  TAttackResultInvalidPhase,
+  TAttackResultInvalidTurn,
+  TAttackResultUnknownError,
+  TAttackResultUnknownUser,
+  TCellStatus,
 } from "@repo/types";
 import { AVAILABLE_SHIPS } from "../constants";
 import {
@@ -488,7 +494,18 @@ export class BattleShips
    * @emits `BattleShips:attack_result`
    * @emits `BattleShips:error`
    */
-  attack(playerId: string, coords: TCoordinate) {
+  attack(
+    playerId: string,
+    coords: TCoordinate,
+  ):
+    | TAttackResultSameCell
+    | TAttackResultInvalidPhase
+    | TAttackResultInvalidTurn
+    | TAttackResultUnknownError
+    | TAttackResultUnknownUser
+    | TCellStatusShipHit
+    | TCellStatusShipDestroyed
+    | TCellStatusMiss {
     const player = this.players.get(playerId);
 
     if (
@@ -503,6 +520,9 @@ export class BattleShips
         // console.log("board", board);
         if (board) {
           const result = board.resolveAttack(coords);
+          if (result === -1101) {
+            return result as TAttackResultSameCell; // same cell attack
+          }
           const shipId = normalizeShipId(result);
           const ship = shipId === 0 ? undefined : board.getShipById(shipId);
           const isSunk = result > destroyOffset;
@@ -537,7 +557,7 @@ export class BattleShips
             this.turn = opponent.id;
           }
           // shot fired
-          return result;
+          return result; // miss, hit, destoryed
         }
       }
     }
@@ -550,6 +570,7 @@ export class BattleShips
             "Invalid game phase. Player can attack ONLY during playing phase.",
         },
       });
+      return -1102 as TAttackResultInvalidPhase;
     } else if (!this.#validTurn(playerId)) {
       this._publish({
         type: `${TAG}:error`,
@@ -557,6 +578,7 @@ export class BattleShips
           message: "Not your turn.",
         },
       });
+      return -1103 as TAttackResultInvalidTurn;
     } else if (!player) {
       this._publish({
         type: `${TAG}:error`,
@@ -564,9 +586,10 @@ export class BattleShips
           message: `Player "${playerId}" does not exist.`,
         },
       });
+      return -1104 as TAttackResultUnknownUser;
     }
 
-    return 0;
+    return 0 as TAttackResultUnknownError;
   }
 
   forfeit(forfeitingPlayerId: string): boolean {
@@ -597,6 +620,27 @@ export class BattleShips
       }
     }
     return false;
+  }
+  identifyShip(playerId: string, cell: TCellStatus): TShip | undefined {
+    const myBoard = this.boards.get(playerId);
+    if (myBoard) {
+      const fleet = myBoard.getFleet();
+      let id: TCellStatusShipId;
+      if (isShipStatus(cell)) {
+        id = cell;
+      } else if (isDestroyedShipStatus(cell)) {
+        id = (cell - destroyOffset) as TCellStatusShipId;
+      } else if (isHitShipStatus(cell)) {
+        id = (cell - hitOffset) as TCellStatusShipId;
+      } else {
+        return undefined;
+      }
+      const ship = fleet.find((s) => s.id === id);
+      if (ship) {
+        return structuredClone(ship);
+      }
+    }
+    return undefined;
   }
 
   getResult(): Record<string, "win" | "lost"> {

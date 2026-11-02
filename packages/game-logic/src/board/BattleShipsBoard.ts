@@ -15,6 +15,7 @@ import {
   TPlacedShip,
   TBoard,
   TGetCellFailure,
+  TAttackResultSameCell,
 } from "@repo/types";
 import { Board } from "./Board";
 import { isSunk } from "./isSunk";
@@ -101,7 +102,11 @@ export class BattleShipsBoard implements ISerializable {
 
   resolveAttack(
     attackCoords: TCoordinate,
-  ): TCellStatusShipHit | TCellStatusShipDestroyed | TCellStatusMiss {
+  ):
+    | TAttackResultSameCell
+    | TCellStatusShipHit
+    | TCellStatusShipDestroyed
+    | TCellStatusMiss {
     const miss: TCellStatusMiss = 0;
     const current = this.getCell(attackCoords.x, attackCoords.y);
     if (this.board.isCellFailure(current)) {
@@ -129,7 +134,8 @@ export class BattleShipsBoard implements ISerializable {
     }
 
     if (isHitShipStatus(current) || isDestroyedShipStatus(current)) {
-      return current;
+      const result: TAttackResultSameCell = -1101;
+      return result;
     }
 
     this.board.setCell(attackCoords.x, attackCoords.y, miss);
@@ -137,6 +143,7 @@ export class BattleShipsBoard implements ISerializable {
     // miss
     return miss;
   }
+
   getBoard(): TBoard<TCellStatus> {
     return this.board.getBoard();
   }

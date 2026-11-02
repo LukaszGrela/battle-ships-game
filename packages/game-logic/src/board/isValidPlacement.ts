@@ -1,4 +1,5 @@
 import {
+  TAttackResultFailure,
   TBoard,
   TCellStatus,
   TCellStatusEmpty,
@@ -12,6 +13,11 @@ import { checkCoordsWithinBoard, getCell } from "./cell";
 
 const empty: TCellStatusEmpty = -1;
 
+export const isAttackResultFailure = <S = TCellStatus>(
+  cell: S | TAttackResultFailure,
+): cell is TAttackResultFailure => {
+  return typeof cell === "number" && cell <= -1100 && cell >= -1104;
+};
 export const isCellFailure = <S = TCellStatus>(
   cell: S | TGetCellFailure,
 ): cell is TGetCellFailure => {

@@ -4,7 +4,9 @@ import {
   EGamePhase,
   IPlayer,
   ISerializable,
+  TCellStatus,
   TCellStatusShipId,
+  TCoordinate,
   TGameState,
   TGameTimeStamps,
   TShip,
@@ -94,6 +96,10 @@ export class WarRoom implements ISerializable {
     return this.currentGame?.getPhase();
   }
 
+  getTurn(): String | undefined {
+    return this.currentGame?.getTurn();
+  }
+
   getGameState(playerId: string): TGameState | null {
     const currentGameState = this.currentGame?.getGameState(playerId);
     if (currentGameState) {
@@ -140,8 +146,19 @@ export class WarRoom implements ISerializable {
     return !!this.currentGame?.placeShips(playerId, ships);
   }
 
+  attack(attackingPlayerId: string, target: TCoordinate) {
+    return this.currentGame?.attack(attackingPlayerId, target);
+  }
+
   forfeit(forfeitingPlayerId: string): boolean {
     return !!this.currentGame?.forfeit(forfeitingPlayerId);
+  }
+
+  identifyShip(playerId: string, cell: TCellStatus): TShip | undefined {
+    if (this.currentGame) {
+      return this.currentGame.identifyShip(playerId, cell);
+    }
+    return undefined;
   }
 
   get battlesPlayed() {
