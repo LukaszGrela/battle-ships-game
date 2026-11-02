@@ -1,62 +1,53 @@
-import { describe, expect, it, vi } from "vitest";
-import { EGamePhase } from "@repo/types";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { IPlayer } from "@repo/types";
+import ActiveGameRegistrySingleton from "../services/active-game-registry";
 import ClientSessionServiceSingleton from "../services/client-session.service";
+import { WarRoom } from "../services/WarRoom";
 import { emitRoomStateToPlayers } from "./emitRoomStateToPlayers";
 
 const sessionService = ClientSessionServiceSingleton.getInstance();
+const activeGames = ActiveGameRegistrySingleton.getInstance();
 
-const createRoom = () => ({
-  id: "room-1",
-  name: "Pirate Room",
-  game_created: "2026-09-25T00:00:00.000Z",
-  game_started: null,
-  game_finished: null,
-  history: [],
-  result: {},
-  phase: EGamePhase.Waiting,
-  players: {
-    owner: {
-      id: "owner",
-      name: "Captain Black",
-      active: true,
-      ready: false,
-      seed: 42,
-      owner: true,
-    },
-    opponent: {
-      id: "opponent",
-      name: "Captain Red",
-      active: true,
-      ready: false,
-      seed: 7,
-      owner: false,
-    },
-  },
-  boards: {
-    owner: [],
-    opponent: [],
-  },
-  ships: {
-    owner: [],
-    opponent: [],
-  },
-  turn: "owner",
+const createPlayer = (id: string, owner = false): IPlayer => ({
+  id,
+  name: id === "owner" ? "Captain Black" : "Captain Red",
+  active: true,
+  ready: false,
+  seed: id === "owner" ? 42 : 7,
+  owner,
 });
 
+const createRoom = () => {
+  const room = new WarRoom("room-1", "Pirate Room", createPlayer("owner", true));
+  room.addPlayer(createPlayer("opponent"));
+  activeGames.addRoom(room.id, room);
+  return room;
+};
+
 describe("emitRoomStateToPlayers", () => {
+  afterEach(() => {
+    activeGames.listRooms().forEach(({ id }) => activeGames.deleteRoom(id));
+    ["owner", "opponent"].forEach((id) => sessionService.deleteSession(id));
+  });
+
   it("emits room state to all connected players except the skipped one", () => {
     const room = createRoom();
+    const emit = vi.fn();
     const io = {
-      to: vi.fn().mockReturnValue({ emit: vi.fn() }),
+      to: vi.fn().mockReturnValue({ emit }),
     } as any;
 
     sessionService.createSession("owner", "owner-socket");
     sessionService.createSession("opponent", "opponent-socket");
 
-    emitRoomStateToPlayers(io, room, "owner");
+    emitRoomStateToPlayers(io, "owner", room.id, "owner");
 
     expect(io.to).toHaveBeenCalledTimes(1);
     expect(io.to).toHaveBeenCalledWith("opponent-socket");
+    expect(emit).toHaveBeenCalledWith(
+      "game_updated",
+      expect.objectContaining({ id: room.id, name: room.name }),
+    );
   });
 
   it("skips players without a valid session", () => {
@@ -68,7 +59,7 @@ describe("emitRoomStateToPlayers", () => {
     sessionService.createSession("owner", "owner-socket");
     sessionService.deleteSession("opponent");
 
-    emitRoomStateToPlayers(io, room);
+    emitRoomStateToPlayers(io, "owner", room.id);
 
     expect(io.to).toHaveBeenCalledTimes(1);
     expect(io.to).toHaveBeenCalledWith("owner-socket");
