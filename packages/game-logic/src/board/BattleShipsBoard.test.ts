@@ -1,4 +1,5 @@
 import {
+  TAttackResultSameCell,
   TCellStatus,
   TCellStatusShipId,
   TPlacedShip,
@@ -129,9 +130,12 @@ describe("BattleShipsBoard", () => {
       expect(board.fleetDestroyed()).toBe(false);
       expect(board.getShipById(ship.id)?.hits).toEqual([{ x: 1, y: 2 }]);
 
-      expect(board.resolveAttack({ x: 1, y: 2 })).toBe(103);
+      // Attempt to hit the same cell again
+      const attackedTheSameCell: TAttackResultSameCell = -1101;
+      expect(board.resolveAttack({ x: 1, y: 2 })).toBe(attackedTheSameCell);
       expect(board.getShipById(ship.id)?.hits).toEqual([{ x: 1, y: 2 }]);
 
+      // Destroyed ship
       expect(board.resolveAttack({ x: 2, y: 2 })).toBe(1003);
       expect(board.getCell(1, 2)).toBe(1003);
       expect(board.getCell(2, 2)).toBe(1003);
@@ -140,7 +144,9 @@ describe("BattleShipsBoard", () => {
         { x: 2, y: 2 },
       ]);
       expect(board.fleetDestroyed()).toBe(true);
-      expect(board.resolveAttack({ x: 2, y: 2 })).toBe(1003);
+
+      // Attempt to hit the same cell again
+      expect(board.resolveAttack({ x: 2, y: 2 })).toBe(attackedTheSameCell);
     });
 
     it("reports the fleet destroyed only after every ship is sunk", () => {
