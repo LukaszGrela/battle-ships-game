@@ -1,28 +1,30 @@
 import { IClientToServerEvents, IServerToClientEvents } from "@repo/types";
 import { Server, Socket } from "socket.io";
-import RoomService from "../../../services/room.service";
 import ClientSessionServiceSingleton from "../../../services/client-session.service";
-import { emitRoomStateToPlayers } from "../../../utils/emitRoomStateToPlayers";
-import {
-  acceptRematch,
-  rejectRematch,
-  requestRematch,
-} from "../../../utils/gameLifeCycle";
-import { toGameState } from "../../../utils/toGameState";
+import { emitRoomStateToPlayers2 } from "../../../utils/emitRoomStateToPlayers";
+import ActiveGameRegistrySingleton from "../../../services/active-game-registry";
 
 type TRequestRematchHandler = IClientToServerEvents["request_rematch"];
 type TAcceptRematchHandler = IClientToServerEvents["accept_rematch"];
 type TRejectRematchHandler = IClientToServerEvents["reject_rematch"];
 
-const findFinishedRoomIdForPlayer = (playerId: string) => {
-  const roomService = RoomService.getInstance();
+const warRoomFinder = (
+  socket: Socket<IClientToServerEvents, IServerToClientEvents>,
+  clientId: string,
+) => {
+  const activeGameRegistry = ActiveGameRegistrySingleton.getInstance();
+  const warRoomIdent = activeGameRegistry.findFinishedRoomForPlayer(clientId);
+  if (!warRoomIdent) {
+    socket.emit("error", "No finished game to rematch");
+    return;
+  }
+  const warRoom = activeGameRegistry.getRoom(warRoomIdent.id);
+  if (!warRoom) {
+    socket.emit("error", "No finished game to rematch");
+    return;
+  }
 
-  const roomEntry = roomService.listRooms().find((roomIdentity) => {
-    const room = roomService.getRoom(roomIdentity.id);
-    return !!room && room.phase === "finished" && !!room.players[playerId];
-  });
-
-  return roomEntry?.id;
+  return warRoom;
 };
 
 export const factoryRequestRematchHandler = (
@@ -36,43 +38,40 @@ export const factoryRequestRematchHandler = (
       return;
     }
 
-    const roomId = findFinishedRoomIdForPlayer(clientId);
-    if (!roomId) {
-      socket.emit("error", "No finished game to rematch");
-      return;
-    }
+    const warRoom = warRoomFinder(socket, clientId);
+    if (warRoom) {
+      const rematchResult = warRoom.requestRematch(clientId);
 
-    const room = requestRematch(roomId, clientId);
+      console.log(
+        "[factoryRequestRematchHandler]",
+        "room",
+        warRoom.id,
+        "rematchRequestResult",
+        rematchResult,
+      );
 
-    console.log(
-      "[factoryRequestRematchHandler]",
-      "room",
-      typeof room === "number" ? room : room?.id,
-    );
+      if (rematchResult < 1) {
+        // failure
+        socket.emit("error", "Rematch request rejected");
+      } else {
+        // success
+        socket.emit("game_updated", warRoom.getGameState(clientId));
+      }
 
-    if (!room || typeof room === "number") {
-      socket.emit("error", "Rematch request rejected");
-      return;
-    } else {
-      socket.emit("game_updated", toGameState(clientId, room));
-    }
-
-    const otherPlayerId = Object.keys(room.players).find(
-      (id) => id !== clientId,
-    );
-    if (!otherPlayerId) {
-      return;
-    }
-
-    const sessionService = ClientSessionServiceSingleton.getInstance();
-    const otherPlayerSession = sessionService.readSession(otherPlayerId);
-    if (otherPlayerSession) {
-      io.to(otherPlayerSession.socketId).emit("rematch_requested", {
-        requestorId: clientId,
-        status: "pending",
-        name: room.players[clientId]?.name ?? "",
-        seed: room.players[clientId]?.seed ?? 0,
-      });
+      const requestor = warRoom.getPlayer(clientId);
+      const otherPlayer = warRoom.getOpponent(clientId);
+      if (otherPlayer) {
+        const sessionService = ClientSessionServiceSingleton.getInstance();
+        const otherPlayerSession = sessionService.readSession(otherPlayer.id);
+        if (otherPlayerSession) {
+          io.to(otherPlayerSession.socketId).emit("rematch_requested", {
+            requestorId: clientId,
+            status: "pending",
+            name: requestor?.name ?? "",
+            seed: requestor?.seed ?? 0,
+          });
+        }
+      }
     }
   };
 };
@@ -88,33 +87,35 @@ export const factoryAcceptRematchHandler = (
       return;
     }
 
-    const roomId = findFinishedRoomIdForPlayer(clientId);
-    if (!roomId) {
-      socket.emit("error", "No finished game to rematch");
-      return;
-    }
-
-    const room = acceptRematch(roomId, clientId);
-    if (!room) {
-      socket.emit("error", "Rematch cannot be accepted");
-      return;
-    }
-
-    const sessionService = ClientSessionServiceSingleton.getInstance();
-    Object.keys(room.players).forEach((playerId) => {
-      const playerSession = sessionService.readSession(playerId);
-      if (playerSession) {
-        playerSession.gameId = room.id;
-        sessionService.updateSession(playerId, playerSession);
+    const warRoom = warRoomFinder(socket, clientId);
+    if (warRoom) {
+      const acceptStatus = warRoom.acceptRematch(clientId);
+      if (acceptStatus < 1) {
+        socket.emit("error", "Rematch cannot be accepted");
+        return;
       }
-    });
 
-    io.to(room.id).emit("rematch_accepted", {
-      roomId: room.id,
-      status: "accepted",
-    });
+      const session = ClientSessionServiceSingleton.getInstance();
+      const acceptor = warRoom.getPlayer(clientId);
+      const requestor = warRoom.getOpponent(clientId);
 
-    emitRoomStateToPlayers(io, room);
+      function updateSession(playerId: string | undefined, warRoomId: string) {
+        const clientSession = playerId && session.readSession(playerId);
+        if (playerId && clientSession) {
+          clientSession.gameId = warRoomId;
+          session.updateSession(playerId, clientSession);
+        }
+      }
+      updateSession(acceptor?.id, warRoom.id);
+      updateSession(requestor?.id, warRoom.id);
+
+      io.to(warRoom.id).emit("rematch_accepted", {
+        roomId: warRoom.id,
+        status: "accepted",
+      });
+
+      emitRoomStateToPlayers2(io, clientId, warRoom.id);
+    }
   };
 };
 
@@ -129,29 +130,34 @@ export const factoryRejectRematchHandler = (
       return;
     }
 
-    const roomId = findFinishedRoomIdForPlayer(clientId);
-    if (!roomId) {
-      socket.emit("error", "No finished game to rematch");
-      return;
-    }
+    const warRoom = warRoomFinder(socket, clientId);
 
-    const room = rejectRematch(roomId, clientId);
-    if (!room) {
-      socket.emit("error", "Rematch cannot be rejected");
-      return;
-    }
+    if (warRoom) {
+      const rematchRequest = warRoom.getGameState(clientId)?.rematchRequest;
+      const rejectResult = warRoom.rejectRematch(clientId);
 
-    const requestorId = room.rematchRequest?.requestorId ?? clientId;
-    const requestorSession =
-      ClientSessionServiceSingleton.getInstance().readSession(requestorId);
-    if (requestorSession) {
-      io.to(requestorSession.socketId).emit("rematch_rejected", {
-        roomId: room.id,
-        requestorId,
-        status: "rejected",
-      });
-    }
+      if (rejectResult < 1) {
+        console.log("Failed to reject rematch", rejectResult);
+        socket.emit("error", "Rematch cannot be rejected");
+        return;
+      }
 
-    emitRoomStateToPlayers(io, room);
+      const requestorId = rematchRequest?.requestorId;
+      if (!requestorId) {
+        socket.emit("error", "Rematch cannot be rejected");
+        return;
+      }
+      const requestorSession =
+        ClientSessionServiceSingleton.getInstance().readSession(requestorId);
+      if (requestorSession) {
+        io.to(requestorSession.socketId).emit("rematch_rejected", {
+          roomId: warRoom.id,
+          requestorId,
+          status: "rejected",
+        });
+      }
+
+      emitRoomStateToPlayers2(io, clientId, warRoom.id);
+    }
   };
 };

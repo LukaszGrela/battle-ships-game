@@ -1,207 +1,158 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
-import RoomServiceSingleton from "../../../services/room.service";
-import ClientSessionServiceSingleton from "../../../services/client-session.service";
+import { afterEach, describe, expect, it } from "vitest";
 import {
-  createFinishedGameRoom,
-  createIo,
-  createSocket,
-} from "./__tests/utils";
+  EGamePhase,
+  IPlayer,
+  TCellStatusShipId,
+  TShip,
+} from "@repo/types";
+import ActiveGameRegistrySingleton from "../../../services/active-game-registry";
+import ClientSessionServiceSingleton from "../../../services/client-session.service";
+import { WarRoom } from "../../../services/WarRoom";
+import { createIo, createSocket } from "./__tests/utils";
 import {
   factoryAcceptRematchHandler,
   factoryRejectRematchHandler,
   factoryRequestRematchHandler,
 } from "./rematch";
-import { toGameState } from "../../../utils/toGameState";
-import { TRoomState } from "@repo/types";
-import { requestRematch } from "../../../utils/gameLifeCycle";
 
-const roomService = RoomServiceSingleton.getInstance();
+const activeGames = ActiveGameRegistrySingleton.getInstance();
 const sessionService = ClientSessionServiceSingleton.getInstance();
 
-describe("rematch handler", () => {
+const createPlayer = (id: string, owner = false): IPlayer => ({
+  id,
+  name: `${id}-name`,
+  seed: id.length * 10,
+  active: true,
+  ready: false,
+  owner,
+});
+
+const createFleet = (): (TShip & {
+  type: "pending";
+  id: TCellStatusShipId;
+})[] =>
+  [5, 4, 3, 3, 2].map((size, index) => ({
+    id: (index + 1) as TCellStatusShipId,
+    size,
+    type: "pending",
+    placed: true,
+    coords: { x: 0, y: index * 2 },
+    orientation: "horizontal",
+  }));
+
+const createFinishedWarRoom = (roomId: string) => {
+  const room = new WarRoom(
+    roomId,
+    `${roomId}-name`,
+    createPlayer("owner", true),
+  );
+  room.addPlayer(createPlayer("opponent"));
+  expect(room.placeShips("owner", createFleet())).toBe(true);
+  expect(room.placeShips("opponent", createFleet())).toBe(true);
+  expect(room.forfeit("owner")).toBe(true);
+  expect(room.getPhase()).toBe(EGamePhase.Finished);
+  activeGames.addRoom(room.id, room);
+  return room;
+};
+
+const createSessions = () => {
+  sessionService.createSession("owner", "owner-socket");
+  sessionService.createSession("opponent", "opponent-socket");
+};
+
+describe("rematch handlers", () => {
   afterEach(() => {
-    roomService.listRooms().forEach((room) => roomService.deleteRoom(room.id));
+    activeGames.listRooms().forEach(({ id }) => activeGames.deleteRoom(id));
     ["owner", "opponent"].forEach((id) => sessionService.deleteSession(id));
   });
 
-  it("should handle rematch request correctly", () => {
-    const roomId = "rematch-requested-room";
-    // owner is the winner, it should receive a rematch request from the opponent
-    const room = createFinishedGameRoom(roomId, "owner");
-    roomService.saveRoom(room);
-    sessionService.createSession("owner", "owner-socket");
-    sessionService.createSession("opponent", "opponent-socket");
+  it("handles a rematch request and notifies the other player", () => {
+    const room = createFinishedWarRoom("rematch-requested-room");
+    createSessions();
 
-    const mockedId = createIo();
-    const mockedSocket = createSocket("opponent");
-    const handler = factoryRequestRematchHandler(mockedId, mockedSocket);
+    const io = createIo();
+    const socket = createSocket("opponent");
+    factoryRequestRematchHandler(io, socket)();
 
-    handler();
-
-    // room should now have the opponent's rematch request recorded
-    const updatedRoom = roomService.getRoom(roomId);
-    expect(updatedRoom).toBeDefined();
-    expect(updatedRoom?.phase).toBe("finished");
-    expect(updatedRoom?.rematchRequest?.requestorId).toContain("opponent");
-    expect(updatedRoom?.rematchRequest?.status).toContain("pending");
-
-    // requestor should have received room state update with rematch request status
-    const sentGameState = toGameState("opponent", updatedRoom as TRoomState);
-
-    expect(sentGameState).toBeDefined();
-
-    // sent game state needs to include the rematch request status
-    expect(sentGameState!.rematchRequest).toEqual({
+    expect(room.getPhase()).toBe(EGamePhase.Finished);
+    expect(room.getGameState("opponent")?.rematchRequest).toEqual({
       requestorId: "opponent",
       status: "pending",
-      name: updatedRoom?.players["opponent"]?.name ?? "",
-      seed: updatedRoom?.players["opponent"]?.seed ?? 0,
+      name: "opponent-name",
+      seed: 80,
     });
-
-    expect(mockedSocket.emit).toHaveBeenCalledWith(
+    expect(socket.emit).toHaveBeenCalledWith(
       "game_updated",
-      sentGameState,
+      expect.objectContaining({
+        id: room.id,
+        phase: EGamePhase.Finished,
+        rematchRequest: expect.objectContaining({
+          requestorId: "opponent",
+          status: "pending",
+        }),
+      }),
     );
-
-    // other player should have received `rematch_requeted` event
-    expect(mockedId._toSpy).toHaveBeenCalledWith("rematch_requested", {
+    expect(io._toSpy).toHaveBeenCalledWith("rematch_requested", {
       requestorId: "opponent",
       status: "pending",
-      name: updatedRoom?.players["opponent"]?.name ?? "",
-      seed: updatedRoom?.players["opponent"]?.seed ?? 0,
+      name: "opponent-name",
+      seed: 80,
     });
   });
 
-  it("should handle rematch accepted request correctly", () => {
-    const roomId = "rematch-accepted-room";
-    // owner is the winner, it should receive a rematch request from the opponent
-    const room = createFinishedGameRoom(roomId, "owner");
-    roomService.saveRoom(room);
-    sessionService.createSession("owner", "owner-socket");
-    sessionService.createSession("opponent", "opponent-socket");
-    expect(room.phase).toBe("finished");
-    const roomWithRematchRequest = requestRematch(roomId, "opponent");
-    expect(roomWithRematchRequest).toBeDefined();
-    expect(roomWithRematchRequest).not.toBeTypeOf("number");
-    const roomWithRematch = roomWithRematchRequest as TRoomState;
+  it("accepts a rematch, resets the game, updates sessions, and emits state", () => {
+    const room = createFinishedWarRoom("rematch-accepted-room");
+    createSessions();
+    expect(room.requestRematch("opponent")).toBe(1);
 
-    expect(roomWithRematch?.rematchRequest?.requestorId).toBe("opponent");
-    expect(roomWithRematch?.rematchRequest?.status).toBe("pending");
-    roomService.saveRoom(roomWithRematch!);
+    const io = createIo();
+    const socket = createSocket("owner");
+    factoryAcceptRematchHandler(io, socket)();
 
-    const mockedId = createIo();
-    const mockedSocket = createSocket("owner");
-    // winner (owner) accepts the rematch request from the opponent
-    const handler = factoryAcceptRematchHandler(mockedId, mockedSocket);
-
-    handler();
-
-    // players sessions should have gameId set
-    const ownerSession = sessionService.readSession("owner");
-    const opponentSession = sessionService.readSession("opponent");
-    expect(ownerSession?.gameId).toBe(roomId);
-    expect(opponentSession?.gameId).toBe(roomId);
-
-    // room should now be in placement phase
-    const updatedRoom = roomService.getRoom(roomId);
-    expect(updatedRoom).toBeDefined();
-    expect(updatedRoom?.phase).toBe("placement");
-
-    // room now has removed rematchRequest
-    expect(updatedRoom?.rematchRequest).toBeUndefined();
-
-    // requestor should have received room state update with rematch request status
-    const loserGameState = toGameState("opponent", updatedRoom as TRoomState);
-    const winnerGameState = toGameState("owner", updatedRoom as TRoomState);
-
-    expect(loserGameState).toBeDefined();
-    expect(winnerGameState).toBeDefined();
-
-    // rematch_accepted event
-    expect(mockedId._toSpy).toHaveBeenCalledWith("rematch_accepted", {
-      roomId,
+    expect(room.getPhase()).toBe(EGamePhase.Placement);
+    expect(room.battlesPlayed).toBe(1);
+    expect(room.getPlayer("owner")).toMatchObject({ ready: false, owner: true });
+    expect(room.getPlayer("opponent")?.ready).toBe(false);
+    expect(sessionService.readSession("owner")?.gameId).toBe(room.id);
+    expect(sessionService.readSession("opponent")?.gameId).toBe(room.id);
+    expect(io._toSpy).toHaveBeenCalledWith("rematch_accepted", {
+      roomId: room.id,
       status: "accepted",
     });
-
-    // players should be notified
-    expect(mockedId._toSpy).toHaveBeenCalledWith(
+    expect(io._toSpy).toHaveBeenCalledWith(
       "game_updated",
-      winnerGameState,
-    );
-    expect(mockedId._toSpy).toHaveBeenCalledWith(
-      "game_updated",
-      loserGameState,
+      expect.objectContaining({ id: room.id, phase: EGamePhase.Placement }),
     );
   });
 
-  it("should handle rematch rejected request correctly", () => {
-    const roomId = "rematch-rejected-room";
-    // owner is the winner, it should receive a rematch request from the opponent
-    const room = createFinishedGameRoom(roomId, "owner");
-    roomService.saveRoom(room);
-    sessionService.createSession("owner", "owner-socket");
-    sessionService.createSession("opponent", "opponent-socket");
+  it("rejects a pending rematch and notifies the requestor", () => {
+    const room = createFinishedWarRoom("rematch-rejected-room");
+    createSessions();
+    expect(room.requestRematch("opponent")).toBe(1);
 
-    const roomWithRematchRequest = requestRematch(roomId, "opponent");
-    expect(roomWithRematchRequest).toBeDefined();
+    const io = createIo();
+    const socket = createSocket("owner");
+    factoryRejectRematchHandler(io, socket)();
 
-    expect(roomWithRematchRequest).not.toBeTypeOf("number");
-    const roomWithRematch = roomWithRematchRequest as TRoomState;
-
-    expect(roomWithRematch?.rematchRequest?.requestorId).toBe(
-      "opponent",
-    );
-    expect(roomWithRematch?.rematchRequest?.status).toBe("pending");
-    roomService.saveRoom(roomWithRematch!);
-
-    const mockedId = createIo();
-    const mockedSocket = createSocket("owner");
-    // winner (owner) accepts the rematch request from the opponent
-    const handler = factoryRejectRematchHandler(mockedId, mockedSocket);
-
-    handler();
-
-    // room should now be in placement phase
-    const updatedRoom = roomService.getRoom(roomId);
-
-    // rematch request is accepted
-    expect(updatedRoom?.rematchRequest?.status).toBe("rejected");
-
-    // requestor should have received room state update with rematch request status
-    const loserGameState = toGameState("opponent", updatedRoom as TRoomState);
-    const winnerGameState = toGameState("owner", updatedRoom as TRoomState);
-
-    expect(loserGameState).toBeDefined();
-    expect(winnerGameState).toBeDefined();
-    // sent game state needs to include the rematch request status
-    expect(winnerGameState!.rematchRequest).toEqual({
+    expect(room.getPhase()).toBe(EGamePhase.Finished);
+    expect(room.getGameState("owner")?.rematchRequest).toEqual({
       requestorId: "opponent",
       status: "rejected",
-      name: updatedRoom?.players["opponent"]?.name ?? "",
-      seed: updatedRoom?.players["opponent"]?.seed ?? 0,
+      name: "opponent-name",
+      seed: 80,
     });
-    expect(loserGameState!.rematchRequest).toEqual({
+    expect(io._toSpy).toHaveBeenCalledWith("rematch_rejected", {
+      roomId: room.id,
       requestorId: "opponent",
       status: "rejected",
-      name: updatedRoom?.players["opponent"]?.name ?? "",
-      seed: updatedRoom?.players["opponent"]?.seed ?? 0,
     });
-
-    // rematch_accepted event
-    expect(mockedId._toSpy).toHaveBeenCalledWith("rematch_rejected", {
-      roomId,
-      status: "rejected",
-      requestorId: "opponent",
-    });
-
-    // player should be notified
-    expect(mockedId._toSpy).toHaveBeenCalledWith(
+    expect(io._toSpy).toHaveBeenCalledWith(
       "game_updated",
-      winnerGameState,
-    );
-    expect(mockedId._toSpy).toHaveBeenCalledWith(
-      "game_updated",
-      loserGameState,
+      expect.objectContaining({
+        id: room.id,
+        phase: EGamePhase.Finished,
+        rematchRequest: expect.objectContaining({ status: "rejected" }),
+      }),
     );
   });
 });
