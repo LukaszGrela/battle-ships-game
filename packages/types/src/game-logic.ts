@@ -8,7 +8,20 @@ export enum EGamePhase {
   Finished = "finished",
 }
 
-export type TPlacementValidationErrors = -1001 | -1002 | -1003;
+export type TInvalidXCoordinate = -101;
+export type TInvalidYCoordinate = -102;
+export type TInvalidRow = -103;
+export type TInvalidCell = -104;
+export type TUnknownError = -105;
+export type TGetCellFailure =
+  | TInvalidXCoordinate
+  | TInvalidYCoordinate
+  | TInvalidRow
+  | TInvalidCell
+  | TUnknownError;
+
+export type TPlacementValidationErrors =
+  -1001 | -1002 | -1003 | TInvalidXCoordinate | TInvalidYCoordinate;
 
 // When margin is needed this cell status can be used
 export type TCellStatusMargin = -2;

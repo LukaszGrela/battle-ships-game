@@ -1,21 +1,14 @@
 import {
   EGamePhase,
+  TCellStatus,
   TCellStatusMiss,
   TCellStatusShipDestroyed,
   TCellStatusShipHit,
+  TCellStatusShipId,
   TCoordinate,
   TShipPlacementOrientation,
 } from "./game-logic";
 import { TStringifiedEnum } from "./utils";
-
-export enum ECellStatus {
-  Margin = "margin",
-  Empty = "empty",
-  Ship = "ship",
-  Hit = "hit",
-  Miss = "miss",
-  Destroyed = "destroyed",
-}
 
 type TRoomId = string;
 
@@ -48,7 +41,7 @@ export interface IPlayer {
   owner?: boolean;
 }
 
-export type TBoard<S = ECellStatus> = S[][];
+export type TBoard<S = TCellStatus> = S[][];
 
 type TPlacedShipProps = {
   coords: TCoordinate;
@@ -85,12 +78,7 @@ type TFinishHistory = {
 export type TAttackHistory = {
   turn: TUserId;
   coords: TCoordinate;
-  result:
-    | ECellStatus.Hit
-    | ECellStatus.Miss
-    | TCellStatusMiss
-    | TCellStatusShipHit
-    | TCellStatusShipDestroyed;
+  result: TCellStatusMiss | TCellStatusShipHit | TCellStatusShipDestroyed;
   isSunk: boolean;
   size: number;
 };
@@ -138,7 +126,7 @@ export type TGameState = Omit<
   TRoomState,
   "boards" | "history" | "players" | "phase" | "ships" | "battles"
 > & {
-  myBoard: TBoard;
+  myBoard: TBoard<TCellStatus>;
   self: IPlayer;
 } & (
     | {
@@ -160,7 +148,7 @@ export type TGameState = Omit<
           >
         > & {};
         enemy: IPlayer;
-        enemyBoard: TBoard<Exclude<ECellStatus, ECellStatus.Ship>>;
+        enemyBoard: TBoard<Exclude<TCellStatus, TCellStatusShipId>>;
         enemyDestroyedShips: TShip[];
         /**
          * Enemy attack result.
@@ -173,7 +161,7 @@ export type TGameState = Omit<
         ships: TShip[];
         phase: TStringifiedEnum<EGamePhase.Finished> & {};
         enemy: IPlayer;
-        enemyBoard: TBoard;
+        enemyBoard: TBoard<TCellStatus>;
         enemyDestroyedShips: TShip[];
         rematchRequest?: TRematchRequest;
 
@@ -190,11 +178,11 @@ export type TStats = {
 export type TAttackResult =
   | {
       ok: true;
-      status: ECellStatus.Destroyed;
+      status: TCellStatusShipDestroyed;
       size: number;
     }
   | {
       ok: true;
-      status: ECellStatus.Hit | ECellStatus.Miss;
+      status: TCellStatusShipHit | TCellStatusMiss;
     }
   | { ok: false; message: string };
