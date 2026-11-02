@@ -5,7 +5,7 @@ import {
   IServerToClientEvents,
 } from "@repo/types";
 import ClientSessionServiceSingleton from "../services/client-session.service";
-import { emitRoomStateToPlayers2 } from "./emitRoomStateToPlayers";
+import { emitRoomStateToPlayers } from "./emitRoomStateToPlayers";
 import ActiveGameRegistrySingleton from "../services/active-game-registry";
 
 export const DEFAULT_RECONNECT_TIMEOUT_MS = 60_000;
@@ -46,7 +46,7 @@ export function expireDisconnectedPlayers(
     }
 
     if (warRoom.forfeit(session.id)) {
-      emitRoomStateToPlayers2(io, session.id, warRoom.id);
+      emitRoomStateToPlayers(io, session.id, warRoom.id);
     }
   }
 }
