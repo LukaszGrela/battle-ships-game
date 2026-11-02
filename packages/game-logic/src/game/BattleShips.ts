@@ -266,13 +266,11 @@ export class BattleShips
       !this.boards.has(player.id)
     ) {
       this.boards.set(player.id, new BattleShipsBoard(this.size));
-      const initiatedPlayer = initPlayer(player);
+      const initiatedPlayer = initPlayer(player, !hasPlayers);
       this.players.set(player.id, initiatedPlayer);
       if (!hasPlayers) {
         this.owner = player.id;
         this.turn = player.id;
-        initiatedPlayer.owner = true;
-        this.players.set(player.id, initiatedPlayer);
       }
 
       if (this.boards.size === this.maxPlayers) {
@@ -838,12 +836,23 @@ function normalizeShipId(
   return hitStatus;
 }
 
-function initPlayer(player: Omit<IPlayer, "ready">): IPlayer {
-  return {
+function initPlayer(
+  player: Omit<IPlayer, "ready">,
+  isOwner: boolean,
+): IPlayer {
+  const initializedPlayer: IPlayer = {
     ...player,
     ready: false,
     active: true,
   };
+
+  if (isOwner) {
+    initializedPlayer.owner = true;
+  } else {
+    delete initializedPlayer.owner;
+  }
+
+  return initializedPlayer;
 }
 
 function toShipId(fn: typeof getShip) {

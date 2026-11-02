@@ -2,6 +2,9 @@ import {
   EGamePhase,
   IPlayer,
   TAttackHistory,
+  TAttackResultInvalidPhase,
+  TAttackResultInvalidTurn,
+  TCellStatus,
   TCellStatusShipId,
   TGameState,
   TRematchRequest,
@@ -96,7 +99,7 @@ describe("BattleShips", () => {
   describe("players", () => {
     it("adds the first player as owner and initializes readiness and activity", () => {
       const game = new BattleShips(4);
-      const player = createPlayer("p1");
+      const player = createPlayer("p1", { owner: false });
 
       expect(game.addPlayer(player)).toBe(true);
       expect(game.getPhase()).toBe(EGamePhase.Waiting);
@@ -105,6 +108,34 @@ describe("BattleShips", () => {
         { ...player, active: true, ready: false, owner: true },
       ]);
       expect(serializedState(game).boards).toHaveLength(1);
+    });
+
+    it("resets stale player state and ownership when adding players to a new game", () => {
+      const game = new BattleShips(4);
+
+      expect(
+        game.addPlayer(
+          createPlayer("p1", { active: false, ready: true, owner: false }),
+        ),
+      ).toBe(true);
+      expect(
+        game.addPlayer(
+          createPlayer("p2", { active: false, ready: true, owner: true }),
+        ),
+      ).toBe(true);
+
+      expect(game.getPlayer("p1")).toMatchObject({
+        id: "p1",
+        active: true,
+        ready: false,
+        owner: true,
+      });
+      expect(game.getPlayer("p2")).toMatchObject({
+        id: "p2",
+        active: true,
+        ready: false,
+      });
+      expect(game.getPlayer("p2")?.owner).toBeUndefined();
     });
 
     it("rejects duplicate players and players beyond the two-player limit", () => {
@@ -362,8 +393,8 @@ describe("BattleShips", () => {
       const game = createPlacementGame();
       const events = vi.fn();
       game.subscribe(events);
-
-      expect(game.attack("p1", { x: 3, y: 3 })).toBe(0);
+      const invalidGamePhase: TAttackResultInvalidPhase = -1102;
+      expect(game.attack("p1", { x: 3, y: 3 })).toBe(invalidGamePhase);
       expect(events).toHaveBeenLastCalledWith({
         type: "BattleShips:error",
         payload: {
@@ -374,7 +405,9 @@ describe("BattleShips", () => {
 
       game.placeShips("p1", createPlacedFleet(1, 1, 1));
       game.placeShips("p2", createPlacedFleet(2, 3, 3));
-      expect(game.attack("p2", { x: 1, y: 1 })).toBe(0);
+
+      const invalidTurn: TAttackResultInvalidTurn = -1103;
+      expect(game.attack("p2", { x: 1, y: 1 })).toBe(invalidTurn);
       expect(events).toHaveBeenLastCalledWith({
         type: "BattleShips:error",
         payload: { message: "Not your turn." },
@@ -428,7 +461,9 @@ describe("BattleShips", () => {
       expect(events).toHaveBeenLastCalledWith({
         type: "BattleShips:phase_changed",
       });
-      expect(game.attack("p1", { x: 1, y: 1 })).toBe(0);
+
+      const invalidPhase: TAttackResultInvalidPhase = -1102;
+      expect(game.attack("p1", { x: 1, y: 1 })).toBe(invalidPhase);
     });
     it("finishes the game when one of the players forfeits", () => {
       const game = startSingleShipGame();
@@ -467,7 +502,9 @@ describe("BattleShips", () => {
       expect(events).toHaveBeenLastCalledWith({
         type: "BattleShips:phase_changed",
       });
-      expect(game.attack("p1", { x: 1, y: 1 })).toBe(0);
+
+      const invalidGamePhase: TAttackResultInvalidPhase = -1102;
+      expect(game.attack("p1", { x: 1, y: 1 })).toBe(invalidGamePhase);
     });
   });
 
@@ -534,7 +571,7 @@ describe("BattleShips", () => {
       (cell) => {
         const game = startTwoCellShipGame();
 
-        expect(game.identifyShip("p1", cell)).toBeUndefined();
+        expect(game.identifyShip("p1", cell as TCellStatus)).toBeUndefined();
       },
     );
 
@@ -878,13 +915,17 @@ describe("BattleShips", () => {
 
       expect(game.attack("lukasz", { x: 0, y: 0 })).toBe(0); // miss
       expect(game.getTurn()).toBe("marek");
-      expect(isDestroyedShipStatus(game.attack("marek", { x: 0, y: 0 }))).toBe(
-        true,
-      ); // hit, destroy
+      expect(
+        isDestroyedShipStatus(
+          game.attack("marek", { x: 0, y: 0 }) as TCellStatus,
+        ),
+      ).toBe(true); // hit, destroy
       expect(game.getTurn()).toBe("lukasz");
-      expect(isDestroyedShipStatus(game.attack("lukasz", { x: 3, y: 0 }))).toBe(
-        true,
-      ); // hit, destroy
+      expect(
+        isDestroyedShipStatus(
+          game.attack("lukasz", { x: 3, y: 0 }) as TCellStatus,
+        ),
+      ).toBe(true); // hit, destroy
       expect(game.getTurn()).toBe("marek");
       expect(game.attack("marek", { x: 3, y: 0 })).toBe(0); // miss
       expect(game.getTurn()).toBe("lukasz");
@@ -1071,24 +1112,32 @@ describe("BattleShips", () => {
       expect(game.getTurn()).toBe("marek");
       expect(game.attack("marek", { x: 0, y: 3 })).toBe(0); // miss
       expect(game.getTurn()).toBe("lukasz");
-      expect(isDestroyedShipStatus(game.attack("lukasz", { x: 0, y: 3 }))).toBe(
-        true,
-      ); // hit, destroy
+      expect(
+        isDestroyedShipStatus(
+          game.attack("lukasz", { x: 0, y: 3 }) as TCellStatus,
+        ),
+      ).toBe(true); // hit, destroy
       expect(game.getTurn()).toBe("marek");
-      expect(isDestroyedShipStatus(game.attack("marek", { x: 3, y: 3 }))).toBe(
-        true,
-      ); // hit, destroy
+      expect(
+        isDestroyedShipStatus(
+          game.attack("marek", { x: 3, y: 3 }) as TCellStatus,
+        ),
+      ).toBe(true); // hit, destroy
       expect(game.getTurn()).toBe("lukasz");
       expect(game.attack("lukasz", { x: 0, y: 2 })).toBe(0); // miss
       expect(game.getTurn()).toBe("marek");
       // log("fleetDestroyed", game.fleetDestroyed());
-      expect(isHitShipStatus(game.attack("marek", { x: 0, y: 2 }))).toBe(true); // hit
+      expect(
+        isHitShipStatus(game.attack("marek", { x: 0, y: 2 }) as TCellStatus),
+      ).toBe(true); // hit
       expect(game.getTurn()).toBe("lukasz");
       expect(game.attack("lukasz", { x: 1, y: 2 })).toBe(0); // miss
       expect(game.getTurn()).toBe("marek");
-      expect(isDestroyedShipStatus(game.attack("marek", { x: 1, y: 2 }))).toBe(
-        true,
-      ); // hit, destroy, winner, turn not changed
+      expect(
+        isDestroyedShipStatus(
+          game.attack("marek", { x: 1, y: 2 }) as TCellStatus,
+        ),
+      ).toBe(true); // hit, destroy, winner, turn not changed
       expect(game.getTurn()).toBe("marek");
       expect(game.getPhase()).toBe(EGamePhase.Finished);
 
