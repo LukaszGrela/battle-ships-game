@@ -6,7 +6,7 @@ import { emitStats } from "../utils/emitStats";
 import ActiveUsersServiceSingleton from "../services/users.service";
 import ClientSessionServiceSingleton from "../services/client-session.service";
 import { registerServerHandlers } from "./handlers/server.handlers";
-import { emitRoomStateToPlayers2 } from "../utils/emitRoomStateToPlayers";
+import { emitRoomStateToPlayers } from "../utils/emitRoomStateToPlayers";
 import ActiveGameRegistrySingleton from "../services/active-game-registry";
 
 export const factoryConnectHandler =
@@ -54,7 +54,7 @@ export const factoryConnectHandler =
         const warRoom = activeGameRegistry.getRoom(existing.gameId);
         if (warRoom && warRoom.activatePlayer(clientId)) {
           socket.emit("welcome", clientId);
-          emitRoomStateToPlayers2(io, clientId, existing.gameId);
+          emitRoomStateToPlayers(io, clientId, existing.gameId);
         }
       }
     } else {
