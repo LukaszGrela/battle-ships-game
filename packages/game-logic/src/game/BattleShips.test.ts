@@ -487,6 +487,8 @@ describe("BattleShips", () => {
         "p1",
         "p2",
       ]);
+      expect(state.boards[0]?.board).toBeDefined();
+      // eslint-disable-next-line @typescript-eslint/no-non-null-asserted-optional-chain
       expect(JSON.parse(state.boards[0]?.board!).board).toBeDefined();
     });
 
@@ -572,6 +574,34 @@ describe("BattleShips", () => {
         3.[-1, -1, -1,  2],
         ]
     */
+      // should have list of pending ships
+      expect(
+        (
+          game.getGameState("lukasz") as TGameState & {
+            phase: EGamePhase.Placement;
+          }
+        ).ships,
+      ).toEqual([
+        {
+          id: 1,
+          placed: false,
+          size: 1,
+          type: "pending",
+        },
+        {
+          id: 2,
+          placed: false,
+          size: 1,
+          type: "pending",
+        },
+        {
+          id: 3,
+          placed: false,
+          size: 2,
+          type: "pending",
+        },
+      ]);
+
       expect(
         game.placeShips("lukasz", [
           {
@@ -954,14 +984,17 @@ describe("BattleShips", () => {
       expect(stateFinishedMarek.enemyBoard).toEqual(lukaszBoardAfterGame);
 
       const shipHits = (state: typeof stateFinishedLukasz) =>
-        state.ships.map((ship) => [
-          ship.id,
-          "hits" in ship ? ship.hits : [],
-        ]);
+        state.ships.map((ship) => [ship.id, "hits" in ship ? ship.hits : []]);
       expect(shipHits(stateFinishedLukasz)).toEqual([
         [1, [{ x: 0, y: 0 }]],
         [2, [{ x: 3, y: 3 }]],
-        [3, [{ x: 0, y: 2 }, { x: 1, y: 2 }]],
+        [
+          3,
+          [
+            { x: 0, y: 2 },
+            { x: 1, y: 2 },
+          ],
+        ],
       ]);
       expect(shipHits(stateFinishedMarek)).toEqual([
         [1, [{ x: 3, y: 0 }]],

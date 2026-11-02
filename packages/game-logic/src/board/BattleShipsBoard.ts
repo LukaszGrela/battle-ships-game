@@ -14,10 +14,11 @@ import {
   TPlacementValidationErrors,
   TPlacedShip,
   TBoard,
+  TGetCellFailure,
 } from "@repo/types";
-import { Board, isCellFailure } from "./Board";
-import { TGetCellFailure } from "./cell";
+import { Board } from "./Board";
 import { isSunk } from "./isSunk";
+import { isValidPlacement } from "./isValidPlacement";
 
 const hitOffset: TCellStatusShipHitOffset = 100;
 const destroyOffset: TCellStatusShipDestroyedOffset = 1000;
@@ -103,7 +104,7 @@ export class BattleShipsBoard implements ISerializable {
   ): TCellStatusShipHit | TCellStatusShipDestroyed | TCellStatusMiss {
     const miss: TCellStatusMiss = 0;
     const current = this.getCell(attackCoords.x, attackCoords.y);
-    if (isCellFailure(current)) {
+    if (this.board.isCellFailure(current)) {
       // miss
       return miss;
     }
@@ -161,105 +162,20 @@ export class BattleShipsBoard implements ISerializable {
     );
   }
 
-  cellIsEmpty(coords: TCoordinate): boolean {
-    const cell = this.board.getCell(coords.x, coords.y);
-    const empty: TCellStatusEmpty = -1;
-
-    return !isCellFailure(cell) && cell === empty;
-  }
-
-  spaceForShipIsEmpty(
-    coords: TCoordinate,
-    ship: TShip,
-    orientation: TShipPlacementOrientation,
-  ): boolean {
-    const empty: TCellStatusEmpty = -1;
-    for (let offset = 0; offset < ship.size; offset++) {
-      const cell =
-        orientation === "horizontal"
-          ? this.board.getCell(coords.x + offset, coords.y)
-          : this.board.getCell(coords.x, coords.y + offset);
-      if (cell !== empty) return false;
-    }
-    return true;
-  }
-
-  checkBreathingSpace(
-    coords: TCoordinate,
-    ship: TShip,
-    orientation: TShipPlacementOrientation,
-  ): boolean {
-    const empty: TCellStatusEmpty = -1;
-    const validCell = (x: number, y: number): boolean => {
-      const cell = this.board.getCell(x, y);
-      if (isCellFailure(cell)) {
-        return x < 0 || x >= this.getSize() || y < 0 || y >= this.getSize();
-      }
-      return cell === empty;
-    };
-    const bow =
-      orientation === "horizontal"
-        ? { x: coords.x + ship.size, y: coords.y }
-        : { x: coords.x, y: coords.y + ship.size };
-
-    if (!validCell(bow.x, bow.y)) {
-      return false;
-    }
-
-    const stern =
-      orientation === "horizontal"
-        ? { x: coords.x - 1, y: coords.y }
-        : { x: coords.x, y: coords.y - 1 };
-
-    if (!validCell(stern.x, stern.y)) {
-      return false;
-    }
-
-    // Check port and starboard
-    for (let offset = 0; offset < ship.size; offset++) {
-      const port =
-        orientation === "horizontal"
-          ? { x: coords.x + offset, y: coords.y - 1 }
-          : { x: coords.x + 1, y: coords.y + offset };
-
-      if (!validCell(port.x, port.y)) {
-        return false;
-      }
-
-      const starboard =
-        orientation === "horizontal"
-          ? { x: coords.x + offset, y: coords.y + 1 }
-          : { x: coords.x - 1, y: coords.y + offset };
-      if (!validCell(starboard.x, starboard.y)) {
-        return false;
-      }
-    }
-
-    return true;
-  }
-
   isValidPlacement(
     coords: TCoordinate,
     ship: TShip,
     orientation: TShipPlacementOrientation,
   ): TPlacementValidationErrors | 1 {
-    // 1. clicked cell is empty
-    if (!this.cellIsEmpty(coords)) {
-      return -1001;
-    }
-    // 2. all cells from clicked cell horizontal or vertical to the ship size are empty
-    // 3. ship is within board bounds (outside bounds will not have empty status)
-    if (!this.spaceForShipIsEmpty(coords, ship, orientation)) {
-      return -1002;
-    }
+    const board = this.board.getBoard();
 
-    // 4. there is 1 cell space vertical and horizontal
-    if (!this.checkBreathingSpace(coords, ship, orientation)) {
-      return -1003;
-    }
-
-    // all good
-    return 1;
+    return isValidPlacement(
+      board,
+      coords,
+      ship,
+      orientation,
+      this.board.getSize(),
+    );
   }
 
   getShipById(shipId: TCellStatusShipId): TPlacedShip | undefined {
@@ -303,7 +219,7 @@ export class BattleShipsBoard implements ISerializable {
         placementCoords.y,
       );
 
-      if (isCellFailure(previousValue)) {
+      if (this.board.isCellFailure(previousValue)) {
         rollback();
         return false;
       }
@@ -314,7 +230,7 @@ export class BattleShipsBoard implements ISerializable {
         placementCoords.y,
         paint,
       );
-      if (isCellFailure(result)) {
+      if (this.board.isCellFailure(result)) {
         rollback();
         return false;
       }
@@ -368,14 +284,13 @@ export class BattleShipsBoard implements ISerializable {
     const coords = ship.coords;
     const orientation = ship.orientation;
     if (coords && orientation) {
-      const destroyed = false;
       for (let offset = 0; offset < ship.size; offset++) {
         const placementCoords =
           orientation === "horizontal"
             ? { x: coords.x + offset, y: coords.y }
             : { x: coords.x, y: coords.y + offset };
         const cell = this.getCell(placementCoords.x, placementCoords.y);
-        if (isCellFailure(cell) || isShipStatus(cell)) {
+        if (this.board.isCellFailure(cell) || isShipStatus(cell)) {
           return false;
         }
       }

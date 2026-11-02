@@ -3,8 +3,10 @@ import {
   ISerializable,
   TBoard,
   TCellStatusEmpty,
+  TGetCellFailure,
 } from "@repo/types";
-import { TGetCellFailure } from "./cell";
+import { getCell, setCell } from "./cell";
+import { isCellFailure } from "./isValidPlacement";
 
 const deserializeToken = Symbol("Board");
 
@@ -35,18 +37,7 @@ export class Board implements ISerializable {
   }
 
   getCell(x: number, y: number): TCellStatus | TGetCellFailure {
-    if (x < 0 || x >= this.size) return -101;
-    if (y < 0 || y >= this.size) return -102;
-
-    const row = this.board.at(y);
-    if (row == undefined) {
-      return -103;
-    }
-    const cell = row.at(x);
-    if (cell == undefined) {
-      return -104;
-    }
-    return cell;
+    return getCell(this.board, x, y, this.size);
   }
 
   setCell(
@@ -54,28 +45,19 @@ export class Board implements ISerializable {
     y: number,
     value: TCellStatus,
   ): TCellStatus | TGetCellFailure {
-    if (x < 0 || x >= this.size) return -101;
-    if (y < 0 || y >= this.size) return -102;
-
-    const row = this.board.at(y);
-    if (row == undefined) {
-      return -103;
-    }
-    const cell = row.at(x);
-    if (cell == undefined) {
-      return -104;
-    }
-
-    // update cell
-    row[x] = value;
-
-    return value;
+    return setCell(this.board, x, y, value, this.size);
   }
 
   clear() {
     this.board = Array.from({ length: this.size }, () =>
       Array.from({ length: this.size }, (): TCellStatusEmpty => -1),
     );
+  }
+
+  isCellFailure(
+    cellValue: TCellStatus | TGetCellFailure,
+  ): cellValue is TGetCellFailure {
+    return isCellFailure(cellValue);
   }
 
   getBoard(): TBoard<TCellStatus> {
@@ -135,9 +117,3 @@ export class Board implements ISerializable {
     return new Board(serialized, deserializeToken);
   };
 }
-
-export const isCellFailure = (
-  cell: TCellStatus | TGetCellFailure,
-): cell is TGetCellFailure => {
-  return cell <= -101 && cell >= -105;
-};

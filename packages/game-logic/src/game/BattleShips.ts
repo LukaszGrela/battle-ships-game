@@ -19,6 +19,7 @@ import {
   TAttackHistory,
   TGameTimeStamps,
   TGameState,
+  TCellStatusEmpty,
 } from "@repo/types";
 import { AVAILABLE_SHIPS } from "../constants";
 import {
@@ -28,9 +29,11 @@ import {
   isShipStatus,
 } from "../board/BattleShipsBoard";
 import { isSunk } from "../board/isSunk";
+import { getShip } from "../utils/getShip";
 
 const hitOffset: TCellStatusShipHitOffset = 100;
 const destroyOffset: TCellStatusShipDestroyedOffset = 1000;
+const empty: TCellStatusEmpty = -1;
 
 const deserializeToken = Symbol("BattleShips");
 
@@ -110,7 +113,7 @@ export class BattleShips
     }
   }
 
-  activatePlayer(playerId: string): boolean {
+  activatePlayer(playerId: string, flag = true): boolean {
     if (!this.players.has(playerId)) {
       this._publish({
         type: `${TAG}:error`,
@@ -123,7 +126,7 @@ export class BattleShips
 
     return this.updatePlayer({
       id: playerId,
-      active: true,
+      active: flag,
     });
   }
 
@@ -168,6 +171,7 @@ export class BattleShips
         myBoard: (myBoard?.getBoard() as never) ?? [],
       };
     } else if (phase === EGamePhase.Placement) {
+      const fleet = myBoard?.getFleet() ?? [];
       return {
         phase: EGamePhase.Placement,
         game_created: this.game_created,
@@ -178,7 +182,8 @@ export class BattleShips
         self,
         enemy,
         myBoard: (myBoard?.getBoard() as never) ?? [],
-        ships: myBoard?.getFleet() ?? [],
+        ships:
+          fleet.length > 0 ? fleet : this.availableShips.map(toShipId(getShip)),
       } as Omit<TGameState, "id" | "name">;
     } else {
       const enemyBoard = this.boards.get(enemy.id);
@@ -218,9 +223,9 @@ export class BattleShips
           ships: myBoard?.getFleet() ?? [],
           enemyBoard: enemyBoard?.getBoard().map((row) => {
             return row.map((cell) => {
-              // allow all but ECellStatus.Ship
+              // allow all but TCellStatusShipId <1..10>
               if (isShipStatus(cell)) {
-                return -1;
+                return empty;
               }
               return cell;
             });
@@ -606,6 +611,10 @@ export class BattleShips
     return undefined;
   }
 
+  getPlayersCount() {
+    return this.players.size;
+  }
+
   #validTurn(playerId: string): boolean {
     return this.turn === playerId;
   }
@@ -748,5 +757,11 @@ function initPlayer(player: Omit<IPlayer, "ready">): IPlayer {
     ...player,
     ready: false,
     active: true,
+  };
+}
+
+function toShipId(fn: typeof getShip) {
+  return (shipSize: number, index: number) => {
+    return fn(shipSize, index + 1);
   };
 }

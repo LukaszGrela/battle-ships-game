@@ -1,24 +1,19 @@
-import { ECellStatus, TBoard } from "@repo/types";
+import {
+  TBoard,
+  TCellStatus,
+  TGetCellFailure,
+  TInvalidXCoordinate,
+  TInvalidYCoordinate,
+} from "@repo/types";
 
-type TInvalidXCoordinate = -101;
-type TInvalidYCoordinate = -102;
-type TInvalidRow = -103;
-type TInvalidCell = -104;
-type TUnknownError = -105;
-export type TGetCellFailure =
-  | TInvalidXCoordinate
-  | TInvalidYCoordinate
-  | TInvalidRow
-  | TInvalidCell
-  | TUnknownError;
-
-export function getCell<S = ECellStatus>(
+export function getCell<S = TCellStatus>(
   board: TBoard<S>,
   x: number,
   y: number,
+  size = 10,
 ): S | TGetCellFailure {
-  if (x < 0 || x > 9) return -101;
-  if (y < 0 || y > 9) return -102;
+  const coordsCheck = checkCoordsWithinBoard(x, y, size);
+  if (coordsCheck !== 1) return coordsCheck;
 
   const row = board.at(y);
   if (row == undefined) {
@@ -31,14 +26,15 @@ export function getCell<S = ECellStatus>(
   return cell;
 }
 
-export function setCell<S = ECellStatus>(
+export function setCell<S = TCellStatus>(
   board: TBoard<S>,
   x: number,
   y: number,
   value: S,
-): 1 | TGetCellFailure {
-  if (x < 0 || x > 9) return -101;
-  if (y < 0 || y > 9) return -102;
+  size = 10,
+): S | TGetCellFailure {
+  const coordsCheck = checkCoordsWithinBoard(x, y, size);
+  if (coordsCheck !== 1) return coordsCheck;
 
   const row = board.at(y);
   if (row == undefined) {
@@ -51,6 +47,17 @@ export function setCell<S = ECellStatus>(
 
   // update cell
   row[x] = value;
+
+  return value;
+}
+
+export function checkCoordsWithinBoard(
+  x: number,
+  y: number,
+  size = 10,
+): TInvalidXCoordinate | TInvalidYCoordinate | 1 {
+  if (x < 0 || x >= size) return -101;
+  if (y < 0 || y >= size) return -102;
 
   return 1;
 }

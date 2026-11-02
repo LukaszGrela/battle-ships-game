@@ -1,13 +1,16 @@
 import {
-  ECellStatus,
   TBoard,
+  TCellStatus,
+  TCellStatusEmpty,
   TCoordinate,
   TShip,
   TShipPlacementOrientation,
 } from "@repo/types";
 import { setCell } from "./cell";
 
-export function placeShip<S = ECellStatus>(
+const empty: TCellStatusEmpty = -1;
+
+export function placeShip<S = TCellStatus>(
   board: TBoard<S>,
   coords: TCoordinate,
   ship: TShip,
@@ -23,7 +26,7 @@ export function placeShip<S = ECellStatus>(
   }
 }
 
-export function removeShip<S = ECellStatus>(
+export function removeShip<S = TCellStatus>(
   board: TBoard<S>,
   coords: TCoordinate,
   ship: TShip,
@@ -35,11 +38,6 @@ export function removeShip<S = ECellStatus>(
         ? { x: coords.x + offset, y: coords.y }
         : { x: coords.x, y: coords.y + offset };
 
-    setCell<S>(
-      board,
-      placementCoords.x,
-      placementCoords.y,
-      ECellStatus.Empty as S,
-    );
+    setCell<S>(board, placementCoords.x, placementCoords.y, empty as S);
   }
 }

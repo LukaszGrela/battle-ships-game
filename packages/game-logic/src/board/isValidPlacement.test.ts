@@ -1,16 +1,26 @@
-import { ECellStatus, TBoard, TShip } from "@repo/types";
+import {
+  TBoard,
+  TCellStatus,
+  TCellStatusEmpty,
+  TInvalidXCoordinate,
+  TInvalidYCoordinate,
+  TPlacementValidationErrors,
+  TShip,
+} from "@repo/types";
 import {
   cellIsEmpty,
   checkBreathingSpace,
+  isCellFailure,
   isValidPlacement,
   spaceForShipIsEmpty,
 } from "./isValidPlacement";
 import { placeShip } from "./placeShip";
+import { setCell } from "./cell";
 
-const createBoard = (size: number): TBoard<ECellStatus> =>
-  Array.from({ length: size }, () =>
-    Array.from({ length: size }, () => ECellStatus.Empty),
-  );
+const empty: TCellStatusEmpty = -1;
+
+const createBoard = (size: number): TBoard<TCellStatus> =>
+  Array.from({ length: size }, () => Array.from({ length: size }, () => empty));
 
 const ship: TShip = {
   id: 1,
@@ -23,7 +33,7 @@ describe("isValidPlacement helpers", () => {
   describe("cellIsEmpty", () => {
     it("returns true only for an empty in-bounds cell", () => {
       const board = createBoard(3);
-      board[1]![1] = ECellStatus.Ship;
+      board[1]![1] = 1;
 
       expect(cellIsEmpty(board, { x: 0, y: 0 })).toBe(true);
       expect(cellIsEmpty(board, { x: 1, y: 1 })).toBe(false);
@@ -40,7 +50,7 @@ describe("isValidPlacement helpers", () => {
         spaceForShipIsEmpty(board, { x: 1, y: 1 }, ship, "horizontal"),
       ).toBe(true);
 
-      board[1]![2] = ECellStatus.Ship;
+      board[1]![2] = 1;
       expect(
         spaceForShipIsEmpty(board, { x: 1, y: 1 }, ship, "horizontal"),
       ).toBe(false);
@@ -53,7 +63,7 @@ describe("isValidPlacement helpers", () => {
         true,
       );
 
-      board[2]![1] = ECellStatus.Ship;
+      board[2]![1] = 1;
       expect(spaceForShipIsEmpty(board, { x: 1, y: 1 }, ship, "vertical")).toBe(
         false,
       );
@@ -73,8 +83,15 @@ describe("isValidPlacement helpers", () => {
 
   describe("checkBreathingSpace", () => {
     it("accepts clear horizontal ship ends and adjacent sides", () => {
+      const size = 5;
       expect(
-        checkBreathingSpace(createBoard(5), { x: 1, y: 2 }, ship, "horizontal"),
+        checkBreathingSpace(
+          createBoard(size),
+          { x: 1, y: 2 },
+          ship,
+          "horizontal",
+          size,
+        ),
       ).toBe(true);
     });
 
@@ -84,17 +101,25 @@ describe("isValidPlacement helpers", () => {
       ["port", { x: 1, y: 1 }],
       ["starboard", { x: 2, y: 3 }],
     ] as const)("rejects an occupied horizontal %s cell", (_name, coords) => {
-      const board = createBoard(5);
-      board[coords.y]![coords.x] = ECellStatus.Ship;
+      const size = 5;
+      const board = createBoard(size);
+      board[coords.y]![coords.x] = 1;
 
       expect(
-        checkBreathingSpace(board, { x: 1, y: 2 }, ship, "horizontal"),
+        checkBreathingSpace(board, { x: 1, y: 2 }, ship, "horizontal", size),
       ).toBe(false);
     });
 
     it("accepts clear vertical ship ends and adjacent sides", () => {
+      const size = 5;
       expect(
-        checkBreathingSpace(createBoard(5), { x: 2, y: 1 }, ship, "vertical"),
+        checkBreathingSpace(
+          createBoard(size),
+          { x: 2, y: 1 },
+          ship,
+          "vertical",
+          size,
+        ),
       ).toBe(true);
     });
 
@@ -104,60 +129,118 @@ describe("isValidPlacement helpers", () => {
       ["port", { x: 3, y: 1 }],
       ["starboard", { x: 1, y: 2 }],
     ] as const)("rejects an occupied vertical %s cell", (_name, coords) => {
-      const board = createBoard(5);
-      board[coords.y]![coords.x] = ECellStatus.Ship;
+      const size = 5;
+      const board = createBoard(size);
+      board[coords.y]![coords.x] = 1;
 
-      expect(checkBreathingSpace(board, { x: 2, y: 1 }, ship, "vertical")).toBe(
-        false,
-      );
+      expect(
+        checkBreathingSpace(board, { x: 2, y: 1 }, ship, "vertical", size),
+      ).toBe(false);
     });
 
     it("allows breathing-space coordinates outside the board", () => {
+      const size = 3;
       expect(
-        checkBreathingSpace(createBoard(3), { x: 0, y: 1 }, ship, "horizontal"),
+        checkBreathingSpace(
+          createBoard(size),
+          { x: 0, y: 1 },
+          ship,
+          "horizontal",
+          size,
+        ),
       ).toBe(true);
     });
   });
 
   describe("isValidPlacement", () => {
+    it.each([
+      // ["top row", { x: 1, y: 0 }, "horizontal"],
+      ["bottom row", { x: 1, y: 4 }, "horizontal"],
+      // ["left column", { x: 0, y: 1 }, "vertical"],
+      // ["right column", { x: 4, y: 1 }, "vertical"],
+    ] as const)("allows placement on the %s", (_edge, coords, orientation) => {
+      const size = 5;
+      const board = createBoard(size);
+
+      expect(isValidPlacement(board, coords, ship, orientation, size)).toBe(1);
+    });
+
     it("returns 1 for a valid placement", () => {
+      const size = 5;
       expect(
-        isValidPlacement(createBoard(5), { x: 1, y: 2 }, ship, "horizontal"),
+        isValidPlacement(
+          createBoard(size),
+          { x: 1, y: 2 },
+          ship,
+          "horizontal",
+          size,
+        ),
       ).toBe(1);
     });
 
-    it("returns -1 when the starting cell is occupied or out of bounds", () => {
-      const board = createBoard(5);
-      board[2]![1] = ECellStatus.Ship;
+    it("returns -1001 when the starting cell is occupied", () => {
+      const size = 5;
+      const board = createBoard(size);
+      board[2]![1] = 1;
 
-      expect(isValidPlacement(board, { x: 1, y: 2 }, ship, "horizontal")).toBe(
-        -1,
-      );
-      expect(isValidPlacement(board, { x: -1, y: 2 }, ship, "horizontal")).toBe(
-        -1,
-      );
+      const cellNotEmpty: TPlacementValidationErrors = -1001;
+      expect(
+        isValidPlacement(board, { x: 1, y: 2 }, ship, "horizontal", size),
+      ).toBe(cellNotEmpty);
+
+      const invalidXCoord: TInvalidXCoordinate = -101;
+      expect(
+        isValidPlacement(board, { x: -1, y: 2 }, ship, "horizontal", size),
+      ).toBe(invalidXCoord);
+    });
+    it("returns -101 | -102 when the coords are out of bounds", () => {
+      const size = 5;
+      const board = createBoard(size);
+
+      const invalidXCoord: TInvalidXCoordinate = -101;
+      expect(
+        isValidPlacement(board, { x: -1, y: 2 }, ship, "horizontal", size),
+      ).toBe(invalidXCoord);
+
+      expect(
+        isValidPlacement(board, { x: 6, y: 2 }, ship, "horizontal", size),
+      ).toBe(invalidXCoord);
+
+      const invalidYCoord: TInvalidYCoordinate = -102;
+      expect(
+        isValidPlacement(board, { x: 2, y: -1 }, ship, "horizontal", size),
+      ).toBe(invalidYCoord);
+
+      expect(
+        isValidPlacement(board, { x: 1, y: 6 }, ship, "horizontal", size),
+      ).toBe(invalidYCoord);
     });
 
-    it("returns -2 when the ship does not fit or overlaps another ship", () => {
-      const board = createBoard(5);
+    it("returns -1002 when the ship does not fit or overlaps another ship", () => {
+      const size = 5;
+      const board = createBoard(size);
 
-      expect(isValidPlacement(board, { x: 4, y: 2 }, ship, "horizontal")).toBe(
-        -2,
-      );
+      const noSpaceForShip: TPlacementValidationErrors = -1002;
+      expect(
+        isValidPlacement(board, { x: 4, y: 2 }, ship, "horizontal", size),
+      ).toBe(noSpaceForShip);
 
-      board[2]![2] = ECellStatus.Ship;
-      expect(isValidPlacement(board, { x: 1, y: 2 }, ship, "horizontal")).toBe(
-        -2,
-      );
+      board[2]![2] = 1;
+      expect(
+        isValidPlacement(board, { x: 1, y: 2 }, ship, "horizontal", size),
+      ).toBe(noSpaceForShip);
     });
 
-    it("returns -3 when the ship has no required breathing space", () => {
-      const board = createBoard(5);
-      board[1]![1] = ECellStatus.Ship;
+    it("returns -1003 when the ship has no required breathing space", () => {
+      const size = 5;
+      const board = createBoard(size);
+      board[1]![1] = 1;
 
-      expect(isValidPlacement(board, { x: 1, y: 2 }, ship, "horizontal")).toBe(
-        -3,
-      );
+      const noBreathingSpace: TPlacementValidationErrors = -1003;
+
+      expect(
+        isValidPlacement(board, { x: 1, y: 2 }, ship, "horizontal", size),
+      ).toBe(noBreathingSpace);
     });
     it("validates correct ship list", () => {
       const ships = [
@@ -226,6 +309,47 @@ describe("isValidPlacement helpers", () => {
         }
       });
       expect(placed).toBe(ships.length);
+    });
+  });
+
+  describe("isCellFailure", () => {
+    it("recognizes all cell failure codes", () => {
+      for (const failure of [-101, -102, -103, -104, -105] as const) {
+        expect(isCellFailure(failure)).toBe(true);
+      }
+    });
+
+    it("does not treat valid cell values or unrelated numbers as failures", () => {
+      for (const value of [-2, -1, 0, 1, 101, 1001] as const) {
+        expect(isCellFailure(value)).toBe(false);
+      }
+    });
+  });
+
+  describe("battle ships board tests", () => {
+    it("exposes empty-cell, ship-span, and breathing-space checks", () => {
+      const size = 5;
+      const board = createBoard(size);
+      const coords = { x: 1, y: 2 };
+
+      expect(cellIsEmpty(board, coords, size)).toBe(true);
+      expect(spaceForShipIsEmpty(board, coords, ship, "horizontal", size)).toBe(
+        true,
+      );
+      expect(checkBreathingSpace(board, coords, ship, "horizontal", size)).toBe(
+        true,
+      );
+
+      setCell(board, 2, 2, 101, size);
+      expect(cellIsEmpty(board, { x: 2, y: 2 }, size)).toBe(false);
+      expect(spaceForShipIsEmpty(board, coords, ship, "horizontal", size)).toBe(
+        false,
+      );
+      setCell(board, 1, 1, 101, size);
+      expect(checkBreathingSpace(board, coords, ship, "horizontal", size)).toBe(
+        false,
+      );
+      expect(cellIsEmpty(board, { x: -1, y: 0 }, size)).toBe(false);
     });
   });
 });

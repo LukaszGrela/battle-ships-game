@@ -1,8 +1,10 @@
-import { ECellStatus, TBoard } from "@repo/types";
+import { TBoard, TCellStatus, TCellStatusEmpty } from "@repo/types";
 
-export function createEmptyBoard<S = ECellStatus>(
+const empty:TCellStatusEmpty = -1;
+
+export function createEmptyBoard<S = TCellStatus>(
   size = 10,
-  fill: S = ECellStatus.Miss as S,
+  fill: S = empty as S,
 ): TBoard<S> {
   return Array(size)
     .fill(null)

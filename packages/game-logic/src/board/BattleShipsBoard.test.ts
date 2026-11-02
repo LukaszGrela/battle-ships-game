@@ -38,9 +38,7 @@ describe("BattleShipsBoard", () => {
         hits: [],
       });
       expect(board.placeShip(ship, coords)).toBe(false);
-      expect(
-        board.placeShip({ ...ship, id: 2 }, { x: 2, y: 2 }),
-      ).toBe(false);
+      expect(board.placeShip({ ...ship, id: 2 }, { x: 2, y: 2 })).toBe(false);
       expect(board.placeShip(ship, { x: 4, y: 2 })).toBe(false);
       expect(board.fleetCount()).toBe(1);
     });
@@ -228,28 +226,19 @@ describe("BattleShipsBoard", () => {
 
     it("distinguishes occupied start, occupied ship span, and blocked breathing space", () => {
       const occupiedStart = new BattleShipsBoard(5);
-      occupiedStart.placeShip(
-        { ...ship, id: 2 },
-        { x: 1, y: 2 },
-      );
-      expect(occupiedStart.isValidPlacement({ x: 1, y: 2 }, ship, "horizontal")).toBe(
-        -1001,
-      );
+      occupiedStart.placeShip({ ...ship, id: 2 }, { x: 1, y: 2 });
+      expect(
+        occupiedStart.isValidPlacement({ x: 1, y: 2 }, ship, "horizontal"),
+      ).toBe(-1001);
 
       const occupiedSpan = new BattleShipsBoard(5);
-      occupiedSpan.placeShip(
-        { ...ship, id: 2 },
-        { x: 2, y: 2 },
-      );
-      expect(occupiedSpan.isValidPlacement({ x: 1, y: 2 }, ship, "horizontal")).toBe(
-        -1002,
-      );
+      occupiedSpan.placeShip({ ...ship, id: 2 }, { x: 2, y: 2 });
+      expect(
+        occupiedSpan.isValidPlacement({ x: 1, y: 2 }, ship, "horizontal"),
+      ).toBe(-1002);
 
       const blockedBreathingSpace = new BattleShipsBoard(5);
-      blockedBreathingSpace.placeShip(
-        { ...ship, id: 2 },
-        { x: 1, y: 1 },
-      );
+      blockedBreathingSpace.placeShip({ ...ship, id: 2 }, { x: 1, y: 1 });
       expect(
         blockedBreathingSpace.isValidPlacement(
           { x: 1, y: 2 },
@@ -257,22 +246,6 @@ describe("BattleShipsBoard", () => {
           "horizontal",
         ),
       ).toBe(-1003);
-    });
-
-    it("exposes empty-cell, ship-span, and breathing-space checks", () => {
-      const board = new BattleShipsBoard(5);
-      const coords = { x: 1, y: 2 };
-
-      expect(board.cellIsEmpty(coords)).toBe(true);
-      expect(board.spaceForShipIsEmpty(coords, ship, "horizontal")).toBe(true);
-      expect(board.checkBreathingSpace(coords, ship, "horizontal")).toBe(true);
-
-      board.resolveAttack({ x: 2, y: 2 });
-      expect(board.cellIsEmpty({ x: 2, y: 2 })).toBe(false);
-      expect(board.spaceForShipIsEmpty(coords, ship, "horizontal")).toBe(false);
-      board.resolveAttack({ x: 1, y: 1 });
-      expect(board.checkBreathingSpace(coords, ship, "horizontal")).toBe(false);
-      expect(board.cellIsEmpty({ x: -1, y: 0 })).toBe(false);
     });
   });
 
