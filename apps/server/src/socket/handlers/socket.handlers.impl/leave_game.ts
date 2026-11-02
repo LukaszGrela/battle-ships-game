@@ -1,16 +1,15 @@
-import { IClientToServerEvents, IServerToClientEvents } from "@repo/types";
+import {
+  EGamePhase,
+  IClientToServerEvents,
+  IServerToClientEvents,
+} from "@repo/types";
 import { Server, Socket } from "socket.io";
-import RoomService from "../../../services/room.service";
 import ClientSessionServiceSingleton from "../../../services/client-session.service";
 import { emitStats } from "../../../utils/emitStats";
-import { emitRoomStateToPlayers } from "../../../utils/emitRoomStateToPlayers";
-import { finishRoomByForfeit } from "../../../utils/finishRoomByForfeit";
-import {
-  destroyWarRoom,
-  transitionToWaiting,
-} from "../../../utils/gameLifeCycle";
-import { getOtherPlayer } from "../../../utils/getOtherPlayer";
-import { getPlayerById } from "../../../utils/getPlayerById";
+import { emitRoomStateToPlayers2 } from "../../../utils/emitRoomStateToPlayers";
+import { storeGameId } from "../../../utils/storeGameId";
+import ActiveGameRegistrySingleton from "../../../services/active-game-registry";
+import { warRoomNames } from "../../../services/WarRoomName.service";
 
 type TLeaveGameHandler = IClientToServerEvents["leave_game"];
 
@@ -20,8 +19,9 @@ export const factoryLeaveGameHandler = (
 ): TLeaveGameHandler => {
   return () => {
     const session = ClientSessionServiceSingleton.getInstance();
-    const clientId = socket.handshake.auth.clientId;
-    const roomService = RoomService.getInstance();
+    const clientId = socket.handshake.auth.clientId as string;
+    const activeGameRegistry = ActiveGameRegistrySingleton.getInstance();
+
     const clientSession = session.readSession(clientId);
     if (!clientSession || !clientSession.gameId) {
       socket.emit(
@@ -31,32 +31,34 @@ export const factoryLeaveGameHandler = (
       return;
     }
 
-    let room = roomService.getRoom(clientSession.gameId);
-    console.log("[leave_game]", "room", room?.phase, room?.players);
-    if (room) {
-      if (room.phase === "waiting") {
-        destroyWarRoom(clientId);
-        socket.emit("game_updated", null);
-      } else if (room.phase === "placement") {
-        transitionToWaiting(room.id, clientId);
-        socket.emit("game_updated", null);
-      } else if (room.phase === "playing") {
-        room = finishRoomByForfeit(room.id, clientId);
-        if (room) {
-          emitRoomStateToPlayers(io, room);
-        }
-      } else if (room.phase === "finished") {
-        // notify opponent that the player has left the game, in case they are waiting for a rematch or something
-        const opponentId = getOtherPlayer(clientId, room.players);
-        const self = getPlayerById(clientId, room.players);
+    const warRoom = activeGameRegistry.getRoom(clientSession.gameId);
 
-        if (opponentId) {
-          const opponentSession = session.readSession(opponentId.id);
-          if (
-            opponentId.active &&
-            opponentSession &&
-            opponentSession.socketId
-          ) {
+    if (warRoom) {
+      const phase = warRoom.getPhase();
+      if (phase === EGamePhase.Waiting) {
+        if (activeGameRegistry.deleteRoom(clientSession.gameId)) {
+          warRoomNames.releaseRoom(warRoom.name);
+          storeGameId(clientId, undefined);
+        }
+        socket.emit("game_updated", null);
+      } else if (phase === EGamePhase.Placement) {
+        if (warRoom.removePlayer(clientId)) {
+          storeGameId(clientId, undefined);
+        }
+        socket.emit("game_updated", null);
+      } else if (phase === EGamePhase.Playing) {
+        if (warRoom.forfeit(clientId)) {
+          warRoomNames.releaseRoom(warRoom.name);
+          emitRoomStateToPlayers2(io, clientId, warRoom.id);
+        }
+      } else if (phase === EGamePhase.Finished) {
+        // notify opponent that the player has left the game, in case they are waiting for a rematch or something
+        const self = warRoom.getPlayer(clientId);
+        const opponent = warRoom.getOpponent(clientId);
+
+        if (opponent) {
+          const opponentSession = session.readSession(opponent.id);
+          if (opponent.active && opponentSession && opponentSession.socketId) {
             io.to(opponentSession.socketId).emit(
               "player_left",
               self && {
@@ -67,33 +69,28 @@ export const factoryLeaveGameHandler = (
             );
           }
         }
-
-        if (room.players[clientId]) {
-          room.players[clientId]!.active = false;
-          roomService.saveRoom(room);
-        }
-
+        //
+        warRoom.deactivatePlayer(clientId);
         // clear session for leaving player players
         session.clearSessionGame(clientId);
-
         return;
       } else {
-        if (room.players[clientId]) {
-          room.players[clientId]!.active = false;
-          roomService.saveRoom(room);
-        }
-        clientSession.gameId = undefined;
-        session.updateSession(clientId, clientSession);
+        warRoom.deactivatePlayer(clientId);
+        const opponent = warRoom.getOpponent(clientId);
+        if (opponent) warRoom.deactivatePlayer(opponent.id);
 
-        emitRoomStateToPlayers(io, room);
+        emitRoomStateToPlayers2(io, clientId, warRoom.id);
+        storeGameId(clientId, undefined);
+        activeGameRegistry.deleteRoom(clientSession.gameId);
+        socket.emit("game_updated", null);
       }
     } else {
-      clientSession.gameId = undefined;
-      session.updateSession(clientId, clientSession);
+      storeGameId(clientId, undefined);
+
       socket.emit("error", "No game to leave");
     }
 
-    io.emit("open_games", roomService.getOpenGames());
+    io.emit("open_games", activeGameRegistry.getOpenGames());
     emitStats(io);
   };
 };

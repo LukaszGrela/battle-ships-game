@@ -1,44 +1,77 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
-import { EGamePhase } from "@repo/types";
-import RoomServiceSingleton from "../../../services/room.service";
+import { afterEach, describe, expect, it } from "vitest";
+import { EGamePhase, IPlayer } from "@repo/types";
+import ActiveGameRegistrySingleton from "../../../services/active-game-registry";
 import ClientSessionServiceSingleton from "../../../services/client-session.service";
-import {
-  createWarRoom,
-  transitionToFinished,
-  transitionToPlacement,
-  transitionToPlaying,
-} from "../../../utils/gameLifeCycle";
+import { WarRoom } from "../../../services/WarRoom";
 import { factoryLeaveGameHandler } from "./leave_game";
 import { createIo, createSocket } from "./__tests/utils";
 
-const roomService = RoomServiceSingleton.getInstance();
+const activeGames = ActiveGameRegistrySingleton.getInstance();
 const sessionService = ClientSessionServiceSingleton.getInstance();
 
-const cleanup = (...roomIds: string[]) => {
-  roomIds.forEach((roomId) => roomService.deleteRoom(roomId));
+const createPlayer = (
+  id: string,
+  name: string,
+  owner = false,
+  seed = id === "owner" ? 42 : 7,
+): IPlayer => ({
+  id,
+  name,
+  active: true,
+  ready: false,
+  owner,
+  seed,
+});
+
+const createWaitingRoom = (id: string) => {
+  const room = new WarRoom(id, `Room ${id}`, {
+    ...createPlayer("owner", "Captain Black", true),
+  });
+  activeGames.addRoom(id, room);
+  return room;
+};
+
+const createPlacementRoom = (id: string) => {
+  const room = createWaitingRoom(id);
+  room.addPlayer(createPlayer("opponent", "Captain Red"));
+  return room;
+};
+
+const createPlayingRoom = (id: string) => {
+  const room = createPlacementRoom(id);
+  const game = (room as any).currentGame;
+  game.phase = EGamePhase.Playing;
+  game.updatePlayer({ id: "owner", active: true, ready: true });
+  game.updatePlayer({ id: "opponent", active: true, ready: true });
+  return room;
+};
+
+const linkSessionToRoom = (clientId: string, roomId: string) => {
+  const session = sessionService.readSession(clientId);
+  if (!session) {
+    throw new Error(`Missing session for ${clientId}`);
+  }
+
+  session.gameId = roomId;
+  sessionService.updateSession(clientId, session);
+};
+
+const cleanup = () => {
+  activeGames.listRooms().forEach(({ id }) => activeGames.deleteRoom(id));
   ["owner", "opponent", "third"].forEach((id) =>
     sessionService.deleteSession(id),
   );
 };
 
 describe("leave_game handler", () => {
-  afterEach(() => {
-    roomService.listRooms().forEach((room) => roomService.deleteRoom(room.id));
-    ["owner", "opponent", "third"].forEach((id) =>
-      sessionService.deleteSession(id),
-    );
-  });
+  afterEach(cleanup);
 
   it("destroys a waiting room and clears the owner session when the player leaves early", () => {
+    const room = createWaitingRoom("leave-waiting");
     const ownerSession = sessionService.createSession("owner", "owner-socket");
     ownerSession.name = "Captain Black";
     sessionService.updateSession("owner", ownerSession);
-
-    const room = createWarRoom(
-      { id: "leave-waiting", name: "Waiting Room" },
-      "owner",
-    );
-    expect(room).toBeDefined();
+    linkSessionToRoom("owner", room.id);
 
     const io = createIo();
     const socket = createSocket("owner");
@@ -46,15 +79,14 @@ describe("leave_game handler", () => {
 
     handler();
 
-    expect(roomService.hasRoom("leave-waiting")).toBe(false);
+    expect(activeGames.hasRoom("leave-waiting")).toBe(false);
     expect(sessionService.readSession("owner")?.gameId).toBeUndefined();
     expect(socket.emit).toHaveBeenCalledWith("game_updated", null);
     expect(io.emit).toHaveBeenCalledWith("open_games", expect.any(Array));
-
-    cleanup("leave-waiting");
   });
 
   it("moves a placement room back to waiting when the player leaves", () => {
+    const room = createPlacementRoom("leave-placement");
     const ownerSession = sessionService.createSession("owner", "owner-socket");
     ownerSession.name = "Captain Black";
     sessionService.updateSession("owner", ownerSession);
@@ -64,14 +96,8 @@ describe("leave_game handler", () => {
     );
     opponentSession.name = "Captain Red";
     sessionService.updateSession("opponent", opponentSession);
-
-    const room = createWarRoom(
-      { id: "leave-placement", name: "Placement Room" },
-      "owner",
-    );
-    expect(room).toBeDefined();
-    const placementRoom = transitionToPlacement(room!.id, "opponent");
-    expect(placementRoom).toBeDefined();
+    linkSessionToRoom("owner", room.id);
+    linkSessionToRoom("opponent", room.id);
 
     const io = createIo();
     const socket = createSocket("owner");
@@ -79,15 +105,15 @@ describe("leave_game handler", () => {
 
     handler();
 
-    const updatedRoom = roomService.getRoom(room!.id)!;
-    expect(updatedRoom.phase).toBe(EGamePhase.Waiting);
-    expect(updatedRoom.players).not.toHaveProperty("owner");
+    expect(room.getPhase()).toBe(EGamePhase.Waiting);
+    expect(room.getPlayer("owner")).toBeUndefined();
+    expect(room.getPlayer("opponent")?.owner).toBe(true);
+    expect(sessionService.readSession("owner")?.gameId).toBeUndefined();
     expect(socket.emit).toHaveBeenCalledWith("game_updated", null);
-
-    cleanup(room!.id);
   });
 
   it("forfeits the game when a player leaves during play", () => {
+    const room = createPlayingRoom("leave-playing");
     const ownerSession = sessionService.createSession("owner", "owner-socket");
     ownerSession.name = "Captain Black";
     sessionService.updateSession("owner", ownerSession);
@@ -97,32 +123,8 @@ describe("leave_game handler", () => {
     );
     opponentSession.name = "Captain Red";
     sessionService.updateSession("opponent", opponentSession);
-
-    const room = createWarRoom(
-      { id: "leave-playing", name: "Playing Room" },
-      "owner",
-    );
-    expect(room).toBeDefined();
-    const placementRoom = transitionToPlacement(room!.id, "opponent");
-    expect(placementRoom).toBeDefined();
-
-    const roomState = roomService.getRoom(room!.id)!;
-    if (roomState.players.opponent) {
-      roomState.players.opponent.ready = true;
-    }
-    roomService.saveRoom(roomState);
-
-    const playingRoom = transitionToPlaying(room!.id, "owner", [
-      {
-        id: 1,
-        size: 2,
-        type: "placed",
-        coords: { x: 0, y: 0 },
-        orientation: "horizontal",
-        hits: [],
-      },
-    ]);
-    expect(playingRoom).toBeDefined();
+    linkSessionToRoom("owner", room.id);
+    linkSessionToRoom("opponent", room.id);
 
     const io = createIo();
     const socket = createSocket("owner");
@@ -130,18 +132,25 @@ describe("leave_game handler", () => {
 
     handler();
 
-    const finishedRoom = roomService.getRoom(room!.id)!;
-    expect(finishedRoom.phase).toBe(EGamePhase.Finished);
-    expect(finishedRoom.result).toEqual({ owner: "lost", opponent: "win" });
+    expect(room.getPhase()).toBe(EGamePhase.Finished);
+    expect(room.getPlayer("owner")?.active).toBe(false);
+    expect(room.getPlayer("opponent")?.active).toBe(true);
+    expect(sessionService.readSession("owner")?.gameId).toBe(room.id);
     expect(io._toSpy).toHaveBeenCalledWith(
       "game_updated",
-      expect.objectContaining({ phase: EGamePhase.Finished, id: room!.id }),
+      expect.objectContaining({ phase: EGamePhase.Finished, id: room.id }),
     );
-
-    cleanup(room!.id);
   });
 
-  it("does nothing when the player already left a finished game", () => {
+  it("notifies the opponent and clears the leaving player's session when a finished game is abandoned", () => {
+    const room = createWaitingRoom("leave-finished");
+    const opponent = createPlayer("opponent", "Captain Red");
+    room.addPlayer(opponent);
+    const game = (room as any).currentGame;
+    game.phase = EGamePhase.Finished;
+    game.updatePlayer({ id: "owner", active: true, ready: true });
+    game.updatePlayer({ id: "opponent", active: true, ready: true });
+
     const ownerSession = sessionService.createSession("owner", "owner-socket");
     ownerSession.name = "Captain Black";
     sessionService.updateSession("owner", ownerSession);
@@ -150,29 +159,10 @@ describe("leave_game handler", () => {
       "opponent-socket",
     );
     opponentSession.name = "Captain Red";
+    opponentSession.socketId = "opponent-socket";
     sessionService.updateSession("opponent", opponentSession);
-
-    const room = createWarRoom(
-      { id: "leave-finished", name: "Finished Room" },
-      "owner",
-    );
-    expect(room).toBeDefined();
-    const placementRoom = transitionToPlacement(room!.id, "opponent");
-    expect(placementRoom).toBeDefined();
-
-    const roomState = roomService.getRoom(room!.id)!;
-    if (roomState.players.opponent) {
-      roomState.players.opponent.ready = true;
-    }
-    if (roomState.players.owner) {
-      roomState.players.owner.ready = true;
-    }
-    roomState.phase = EGamePhase.Playing;
-    roomService.saveRoom(roomState);
-
-    const finishedRoom = transitionToFinished(room!.id, "owner");
-    expect(finishedRoom).toBeDefined();
-    // finished room does not clear sessions (leaving does)
+    linkSessionToRoom("owner", room.id);
+    linkSessionToRoom("opponent", room.id);
 
     const io = createIo();
     const socket = createSocket("owner");
@@ -180,13 +170,16 @@ describe("leave_game handler", () => {
 
     handler();
 
-    expect(roomService.getRoom(room!.id)?.phase).toBe(EGamePhase.Finished);
+    expect(room.getPhase()).toBe(EGamePhase.Finished);
+    expect(sessionService.readSession("owner")?.gameId).toBeUndefined();
     expect(socket.emit).not.toHaveBeenCalledWith(
       "game_updated",
       expect.anything(),
     );
     expect(io.emit).not.toHaveBeenCalledWith("open_games", expect.anything());
-
-    cleanup(room!.id);
+    expect(io._toSpy).toHaveBeenCalledWith(
+      "player_left",
+      expect.objectContaining({ id: "owner", name: "Captain Black" }),
+    );
   });
 });

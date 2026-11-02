@@ -5,14 +5,13 @@ import {
 } from "@repo/types";
 import { nanoid } from "nanoid";
 import { Server, Socket } from "socket.io";
-import RoomService from "../../../services/room.service";
 import ClientSessionServiceSingleton from "../../../services/client-session.service";
 import { emitStats } from "../../../utils/emitStats";
-import {
-  createWarRoom,
-  transitionToPlacement,
-} from "../../../utils/gameLifeCycle";
-import { emitRoomStateToPlayers } from "../../../utils/emitRoomStateToPlayers";
+import { emitRoomStateToPlayers2 } from "../../../utils/emitRoomStateToPlayers";
+import { WarRoom } from "../../../services/WarRoom";
+import ActiveGameRegistrySingleton from "../../../services/active-game-registry";
+import { playerHasAnotherActiveGame } from "../../../utils/playerHasAnotherActiveGame";
+import { storeGameId } from "../../../utils/storeGameId";
 
 type TJoinGameHandler = IClientToServerEvents["join_game"];
 
@@ -23,7 +22,8 @@ export const factoryJoinGameHandler = (
   return (roomIdentifier) => {
     const session = ClientSessionServiceSingleton.getInstance();
     const clientId = socket.handshake.auth.clientId;
-    const roomService = RoomService.getInstance();
+    const activeGameRegistry = ActiveGameRegistrySingleton.getInstance();
+
     const roomId: Pick<TRoomIdentity, "id" | "name"> =
       typeof roomIdentifier === "string"
         ? { name: roomIdentifier, id: nanoid() }
@@ -35,68 +35,97 @@ export const factoryJoinGameHandler = (
       return;
     }
 
-    let room = roomService.getRoom(roomId.id);
-    console.group("[join_game]");
-    console.log("clientId", clientSession);
-    console.log("socket.id", socket.id);
-    console.groupEnd();
-    if (!room) {
-      room = createWarRoom(roomId, clientId);
-      if (!room) {
-        socket.emit("error", "Failed to create room");
-      }
-      console.log("[join_game] created room", room?.ships);
-      io.emit("open_games", roomService.getOpenGames());
-      emitStats(io);
-    } else if (Object.keys(room.players).length < 2) {
-      room = transitionToPlacement(room.id, clientId);
-      if (!room) {
-        socket.emit("error", "Failed to transition room to placement phase");
-      } else {
-        console.log("[join_game] joined room, advance to placement");
-        // notify other player about opponent joining
-        // client id is the new player
-        // opponent is the existing player to be notified
-        const userToNotifyId = Object.keys(room.players).find(
-          (id) => id !== clientId,
-        );
-        const player = Object.values(room.players).find(
-          (needle) => needle.id === clientId,
-        );
+    let warRoom = activeGameRegistry.getRoom(roomId.id);
 
-        clientSession = session.readSession(clientId);
-        if (userToNotifyId && player && clientSession) {
-          const userToNotifySession = session.readSession(userToNotifyId);
-          if (userToNotifySession) {
-            io.to(userToNotifySession.socketId).emit("opponent_connected", {
-              name: clientSession.name,
-              seed: clientSession.seed,
-              owner: player.owner,
-              ready: player.ready,
-            });
-          }
-        } else {
-          console.error("[join_game] opponent not found, invalid state", {
-            room,
-            clientId,
-          });
-          socket.emit("error", "Internal server error");
+    if (!warRoom) {
+      const firstPlayer = {
+        id: clientId,
+        active: true,
+        ready: false,
+        owner: true,
+        name: clientSession.name,
+        seed: clientSession.seed,
+      };
+
+      if (!playerHasAnotherActiveGame(clientId)) {
+        warRoom = new WarRoom(roomId.id, roomId.name, firstPlayer);
+        activeGameRegistry.addRoom(roomId.id, warRoom);
+
+        if (storeGameId(firstPlayer.id, roomId.id)) {
+          clientSession = session.readSession(clientId);
         }
+
+        io.emit("open_games", activeGameRegistry.getOpenGames());
+        emitStats(io);
+      } else {
+        socket.emit(
+          "error",
+          "Failed to create room, player has another active game.",
+        );
+      }
+    } else if (warRoom && warRoom.playersCount < 2) {
+      if (!playerHasAnotherActiveGame(clientId)) {
+        const opponent = {
+          id: clientId,
+          active: true,
+          ready: false,
+
+          name: clientSession.name,
+          seed: clientSession.seed,
+        };
+
+        if (!warRoom?.addPlayer(opponent)) {
+          socket.emit("error", "Failed to join room.");
+        } else {
+          clientSession = session.readSession(clientId);
+          // added 2nd player, game transitioned into placement
+          const self = warRoom.getPlayer(clientId);
+          const playerToNotify = warRoom.getOpponent(clientId);
+
+          if (clientSession && self && playerToNotify) {
+            // set session's game id
+            if (storeGameId(clientSession.id, warRoom.id)) {
+              clientSession = session.readSession(clientId);
+            }
+
+            const opponentSession = session.readSession(playerToNotify?.id);
+            if (opponentSession && clientSession) {
+              io.to(opponentSession.socketId).emit("opponent_connected", {
+                name: clientSession.name,
+                seed: clientSession.seed,
+                owner: self.owner,
+                ready: self.ready,
+              });
+            }
+          } else {
+            socket.emit("error", "Internal server error");
+          }
+        }
+      } else {
+        socket.emit(
+          "error",
+          "Failed to join room, player has another active game.",
+        );
       }
 
-      io.emit("open_games", roomService.getOpenGames());
+      io.emit("open_games", activeGameRegistry.getOpenGames());
       emitStats(io);
     } else {
       socket.emit("error", "Room full");
-      io.emit("open_games", roomService.getOpenGames());
+      io.emit("open_games", activeGameRegistry.getOpenGames());
       emitStats(io);
       return;
     }
 
-    if (room) {
+    if (
+      warRoom &&
+      warRoom.activatePlayer(clientId) &&
+      clientSession &&
+      clientSession.gameId
+    ) {
       socket.join(roomId.id);
       socket.emit("welcome", clientId);
-      emitRoomStateToPlayers(io, room);
+      emitRoomStateToPlayers2(io, clientId, clientSession.gameId);
     }
   };
 };
