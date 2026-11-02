@@ -569,6 +569,36 @@ export class BattleShips
     return 0;
   }
 
+  forfeit(forfeitingPlayerId: string): boolean {
+    if (
+      this.getPhase() === EGamePhase.Playing &&
+      this.players.has(forfeitingPlayerId)
+    ) {
+      // Implementation for forfeiting logic
+      const loser = this.getPlayer(forfeitingPlayerId);
+      const winner = this.getOpponent(forfeitingPlayerId);
+
+      if (loser?.active && winner?.active) {
+        this.history.push({
+          finish: true,
+          whoWon: winner.id,
+          byForfeit: true
+        });
+        this.game_finished = new Date().toISOString();
+        // deactivate losing side
+        this.updatePlayer({
+          id: loser.id,
+          active: false,
+        });
+        //
+        this.#setPhase(EGamePhase.Finished);
+
+        return true;
+      }
+    }
+    return false;
+  }
+
   getResult(): Record<string, "win" | "lost"> {
     if (this.getPhase() === EGamePhase.Finished) {
       return Array.from(this.players.values()).reduce((result, player) => {

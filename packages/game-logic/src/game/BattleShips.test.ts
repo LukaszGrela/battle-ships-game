@@ -428,6 +428,45 @@ describe("BattleShips", () => {
       });
       expect(game.attack("p1", { x: 1, y: 1 })).toBe(0);
     });
+    it("finishes the game when one of the players forfeits", () => {
+      const game = startSingleShipGame();
+      const events = vi.fn();
+      game.subscribe(events);
+
+      expect(game.attack("p1", { x: 0, y: 0 })).toBe(0);
+
+      expect(game.getPhase()).toBe(EGamePhase.Playing);
+      expect(game.getTurn()).toBe("p2");
+      //
+
+      expect(game.forfeit("p1")).toBe(true);
+      //
+      expect(serializedState(game).game_finished).toEqual(expect.any(String));
+      expect(serializedState(game).history).toEqual([
+        {
+          init: true,
+        },
+        {
+          coords: {
+            x: 0,
+            y: 0,
+          },
+          isSunk: false,
+          result: 0,
+          size: 0,
+          turn: "p1",
+        },
+        {
+          byForfeit: true,
+          finish: true,
+          whoWon: "p2",
+        },
+      ]);
+      expect(events).toHaveBeenLastCalledWith({
+        type: "BattleShips:phase_changed",
+      });
+      expect(game.attack("p1", { x: 1, y: 1 })).toBe(0);
+    });
   });
 
   describe("events", () => {

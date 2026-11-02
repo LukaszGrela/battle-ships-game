@@ -73,6 +73,7 @@ type TInitHistory = {
 type TFinishHistory = {
   finish: true;
   whoWon: string;
+  byForfeit?: boolean;
 };
 
 export type TAttackHistory = {
