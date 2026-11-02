@@ -9,7 +9,7 @@ import { Server, Socket } from "socket.io";
 import ClientSessionServiceSingleton from "../../../services/client-session.service";
 import { dataTampered } from "./data_tampered";
 import ActiveGameRegistrySingleton from "../../../services/active-game-registry";
-import { emitRoomStateToPlayers2 } from "../../../utils/emitRoomStateToPlayers";
+import { emitRoomStateToPlayers } from "../../../utils/emitRoomStateToPlayers";
 
 type TPlaceShipsHandler = IClientToServerEvents["place_ships"];
 
@@ -47,7 +47,7 @@ export const factoryPlaceShipsHandler = (
       // Ships placed successfully
       if (warRoom.getPhase() === EGamePhase.Playing) {
         // notify both players about game start
-        emitRoomStateToPlayers2(io, clientId, warRoom.id);
+        emitRoomStateToPlayers(io, clientId, warRoom.id);
       } else {
         // waiting for other player
         // opponent is not ready, just place ships, mark player as ready, and ...
@@ -71,7 +71,7 @@ export const factoryPlaceShipsHandler = (
         }
 
         // notify player about game state update
-        emitRoomStateToPlayers2(io, clientId, warRoom.id, opponent.id);
+        emitRoomStateToPlayers(io, clientId, warRoom.id, opponent.id);
       }
     }
   };

@@ -7,7 +7,7 @@ import { DisconnectReason, Server, Socket } from "socket.io";
 import ActiveUsersServiceSingleton from "../../../services/users.service";
 import ClientSessionServiceSingleton from "../../../services/client-session.service";
 import { emitStats } from "../../../utils/emitStats";
-import { emitRoomStateToPlayers2 } from "../../../utils/emitRoomStateToPlayers";
+import { emitRoomStateToPlayers } from "../../../utils/emitRoomStateToPlayers";
 import ActiveGameRegistrySingleton from "../../../services/active-game-registry";
 import { warRoomNames } from "../../../services/WarRoomName.service";
 import { storeGameId } from "../../../utils/storeGameId";
@@ -81,7 +81,7 @@ export const factoryDisconnectHandler =
         if (remainingPlayerId) {
           const freshRoom = activeGameRegistry.getRoom(clientSession.gameId);
           if (freshRoom) {
-            emitRoomStateToPlayers2(io, remainingPlayerId, freshRoom.id);
+            emitRoomStateToPlayers(io, remainingPlayerId, freshRoom.id);
           }
         }
         socket.emit("game_updated", null);
@@ -108,7 +108,7 @@ export const factoryDisconnectHandler =
           freshRoom.getPlayer(clientId)?.id ??
           clientSession.id;
 
-        emitRoomStateToPlayers2(io, remainingPlayerId, freshRoom.id);
+        emitRoomStateToPlayers(io, remainingPlayerId, freshRoom.id);
       }
     }
     io.emit("open_games", activeGameRegistry.getOpenGames());

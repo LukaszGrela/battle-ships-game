@@ -6,7 +6,7 @@ import {
 import { Server, Socket } from "socket.io";
 import ClientSessionServiceSingleton from "../../../services/client-session.service";
 import { emitStats } from "../../../utils/emitStats";
-import { emitRoomStateToPlayers2 } from "../../../utils/emitRoomStateToPlayers";
+import { emitRoomStateToPlayers } from "../../../utils/emitRoomStateToPlayers";
 import { storeGameId } from "../../../utils/storeGameId";
 import ActiveGameRegistrySingleton from "../../../services/active-game-registry";
 import { warRoomNames } from "../../../services/WarRoomName.service";
@@ -49,7 +49,7 @@ export const factoryLeaveGameHandler = (
       } else if (phase === EGamePhase.Playing) {
         if (warRoom.forfeit(clientId)) {
           warRoomNames.releaseRoom(warRoom.name);
-          emitRoomStateToPlayers2(io, clientId, warRoom.id);
+          emitRoomStateToPlayers(io, clientId, warRoom.id);
         }
       } else if (phase === EGamePhase.Finished) {
         // notify opponent that the player has left the game, in case they are waiting for a rematch or something
@@ -79,7 +79,7 @@ export const factoryLeaveGameHandler = (
         const opponent = warRoom.getOpponent(clientId);
         if (opponent) warRoom.deactivatePlayer(opponent.id);
 
-        emitRoomStateToPlayers2(io, clientId, warRoom.id);
+        emitRoomStateToPlayers(io, clientId, warRoom.id);
         storeGameId(clientId, undefined);
         activeGameRegistry.deleteRoom(clientSession.gameId);
         socket.emit("game_updated", null);

@@ -14,7 +14,7 @@ import {
 import ClientSessionServiceSingleton from "../../../services/client-session.service";
 import { emitStats } from "../../../utils/emitStats";
 import { dataTampered } from "./data_tampered";
-import { emitRoomStateToPlayers2 } from "../../../utils/emitRoomStateToPlayers";
+import { emitRoomStateToPlayers } from "../../../utils/emitRoomStateToPlayers";
 import ActiveGameRegistrySingleton from "../../../services/active-game-registry";
 
 type TAttackCoordinateHandler = IClientToServerEvents["attack_coordinate"];
@@ -86,6 +86,6 @@ export const factoryAttackCoordinateHandler = (
     }
 
     emitStats(io);
-    emitRoomStateToPlayers2(io, clientSession.id, warRoom.id);
+    emitRoomStateToPlayers(io, clientSession.id, warRoom.id);
   };
 };

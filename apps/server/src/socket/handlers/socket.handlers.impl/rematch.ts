@@ -1,7 +1,7 @@
 import { IClientToServerEvents, IServerToClientEvents } from "@repo/types";
 import { Server, Socket } from "socket.io";
 import ClientSessionServiceSingleton from "../../../services/client-session.service";
-import { emitRoomStateToPlayers2 } from "../../../utils/emitRoomStateToPlayers";
+import { emitRoomStateToPlayers } from "../../../utils/emitRoomStateToPlayers";
 import ActiveGameRegistrySingleton from "../../../services/active-game-registry";
 
 type TRequestRematchHandler = IClientToServerEvents["request_rematch"];
@@ -114,7 +114,7 @@ export const factoryAcceptRematchHandler = (
         status: "accepted",
       });
 
-      emitRoomStateToPlayers2(io, clientId, warRoom.id);
+      emitRoomStateToPlayers(io, clientId, warRoom.id);
     }
   };
 };
@@ -157,7 +157,7 @@ export const factoryRejectRematchHandler = (
         });
       }
 
-      emitRoomStateToPlayers2(io, clientId, warRoom.id);
+      emitRoomStateToPlayers(io, clientId, warRoom.id);
     }
   };
 };

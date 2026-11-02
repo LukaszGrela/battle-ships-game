@@ -7,7 +7,7 @@ import { nanoid } from "nanoid";
 import { Server, Socket } from "socket.io";
 import ClientSessionServiceSingleton from "../../../services/client-session.service";
 import { emitStats } from "../../../utils/emitStats";
-import { emitRoomStateToPlayers2 } from "../../../utils/emitRoomStateToPlayers";
+import { emitRoomStateToPlayers } from "../../../utils/emitRoomStateToPlayers";
 import { WarRoom } from "../../../services/WarRoom";
 import ActiveGameRegistrySingleton from "../../../services/active-game-registry";
 import { playerHasAnotherActiveGame } from "../../../utils/playerHasAnotherActiveGame";
@@ -125,7 +125,7 @@ export const factoryJoinGameHandler = (
     ) {
       socket.join(roomId.id);
       socket.emit("welcome", clientId);
-      emitRoomStateToPlayers2(io, clientId, clientSession.gameId);
+      emitRoomStateToPlayers(io, clientId, clientSession.gameId);
     }
   };
 };

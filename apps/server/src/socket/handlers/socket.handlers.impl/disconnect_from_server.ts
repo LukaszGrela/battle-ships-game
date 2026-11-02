@@ -7,7 +7,7 @@ import { Socket, Server } from "socket.io";
 import ClientSessionServiceSingleton from "../../../services/client-session.service";
 import ActiveGameRegistrySingleton from "../../../services/active-game-registry";
 import { warRoomNames } from "../../../services/WarRoomName.service";
-import { emitRoomStateToPlayers2 } from "../../../utils/emitRoomStateToPlayers";
+import { emitRoomStateToPlayers } from "../../../utils/emitRoomStateToPlayers";
 
 type THandler = IClientToServerEvents["disconnect_from_server"];
 
@@ -38,7 +38,7 @@ export const factoryGetDisconnectFromServerHandler = (
           ) {
             // forfeit the game
             warRoomNames.releaseRoom(warRoom.name);
-            emitRoomStateToPlayers2(io, clientId, warRoom.id);
+            emitRoomStateToPlayers(io, clientId, warRoom.id);
           }
         }
       }
