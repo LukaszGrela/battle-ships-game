@@ -1,17 +1,66 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
-import { ECellStatus, EGamePhase, TShip } from "@repo/types";
-import RoomServiceSingleton from "../../../services/room.service";
+import { afterEach, describe, expect, it } from "vitest";
+import {
+  EGamePhase,
+  IPlayer,
+  TCellStatusEmpty,
+  TCellStatusShipId,
+  TShip,
+} from "@repo/types";
+import ActiveGameRegistrySingleton from "../../../services/active-game-registry";
 import ClientSessionServiceSingleton from "../../../services/client-session.service";
-import { createWarRoom } from "../../../utils/gameLifeCycle";
+import { WarRoom } from "../../../services/WarRoom";
 import { factoryPlaceShipsHandler } from "./place_ships";
 import { createIo, createSocket } from "./__tests/utils";
 
-const roomService = RoomServiceSingleton.getInstance();
+const empty: TCellStatusEmpty = -1;
+
+const activeGames = ActiveGameRegistrySingleton.getInstance();
 const sessionService = ClientSessionServiceSingleton.getInstance();
 
-const createValidShips = (): (TShip & { type: "pending" })[] => [
+const createPlayer = (id: string, name: string, owner = false): IPlayer => ({
+  id,
+  name,
+  active: true,
+  ready: false,
+  owner,
+  seed: id === "owner" ? 42 : 7,
+});
+
+const createPlacementRoom = (id: string, name: string) => {
+  const ownerSession = sessionService.createSession("owner", "owner-socket");
+  ownerSession.name = "Captain Black";
+  sessionService.updateSession("owner", ownerSession);
+
+  const opponentSession = sessionService.createSession(
+    "opponent",
+    "opponent-socket",
+  );
+  opponentSession.name = "Captain Red";
+  sessionService.updateSession("opponent", opponentSession);
+
+  const room = new WarRoom(
+    id,
+    name,
+    createPlayer("owner", "Captain Black", true),
+  );
+  room.addPlayer(createPlayer("opponent", "Captain Red"));
+  activeGames.addRoom(id, room);
+
+  for (const playerId of ["owner", "opponent"]) {
+    const session = sessionService.readSession(playerId)!;
+    session.gameId = id;
+    sessionService.updateSession(playerId, session);
+  }
+
+  return room;
+};
+
+const createValidShips = (): (TShip & {
+  type: "pending";
+  id: TCellStatusShipId;
+})[] => [
   {
-    id: 0,
+    id: 1,
     size: 5,
     type: "pending",
     placed: false,
@@ -19,16 +68,8 @@ const createValidShips = (): (TShip & { type: "pending" })[] => [
     orientation: "horizontal",
   },
   {
-    id: 1,
-    size: 4,
-    type: "pending",
-    placed: false,
-    coords: { x: 0, y: 1 },
-    orientation: "horizontal",
-  },
-  {
     id: 2,
-    size: 3,
+    size: 4,
     type: "pending",
     placed: false,
     coords: { x: 0, y: 2 },
@@ -39,96 +80,54 @@ const createValidShips = (): (TShip & { type: "pending" })[] => [
     size: 3,
     type: "pending",
     placed: false,
-    coords: { x: 0, y: 3 },
+    coords: { x: 0, y: 4 },
     orientation: "horizontal",
   },
   {
     id: 4,
+    size: 3,
+    type: "pending",
+    placed: false,
+    coords: { x: 0, y: 6 },
+    orientation: "horizontal",
+  },
+  {
+    id: 5,
     size: 2,
     type: "pending",
     placed: false,
-    coords: { x: 0, y: 4 },
+    coords: { x: 0, y: 8 },
     orientation: "horizontal",
   },
 ];
 
-const createBoardWithOpenCells = () =>
-  Array.from({ length: 10 }, () =>
-    Array.from({ length: 10 }, () => ECellStatus.Empty),
-  );
-
 describe("place_ships handler", () => {
   afterEach(() => {
-    roomService.listRooms().forEach((room) => roomService.deleteRoom(room.id));
+    activeGames.listRooms().forEach(({ id }) => activeGames.deleteRoom(id));
     ["owner", "opponent", "third"].forEach((id) =>
       sessionService.deleteSession(id),
     );
   });
 
   it("marks a player ready and stores only valid placed ships when the opponent is not ready yet", () => {
-    const ownerSession = sessionService.createSession("owner", "owner-socket");
-    ownerSession.name = "Captain Black";
-    sessionService.updateSession("owner", ownerSession);
-    const opponentSession = sessionService.createSession(
-      "opponent",
-      "opponent-socket",
-    );
-    opponentSession.name = "Captain Red";
-    sessionService.updateSession("opponent", opponentSession);
-
-    const room = createWarRoom(
-      { id: "place-room-ready", name: "Ready Room" },
-      "owner",
-    );
-    expect(room).toBeDefined();
+    const room = createPlacementRoom("place-room-ready", "Ready Room");
 
     const io = createIo();
     const socket = createSocket("owner");
     const handler = factoryPlaceShipsHandler(io, socket);
 
-    const roomWithOpponent = roomService.getRoom(room!.id)!;
-    roomWithOpponent.players.opponent = {
-      id: "opponent",
-      name: "Captain Red",
-      seed: 42,
-      active: true,
-      ready: false,
-      owner: false,
-    };
-    roomWithOpponent.boards.opponent = createBoardWithOpenCells();
-    roomWithOpponent.boards.owner = createBoardWithOpenCells();
-    roomWithOpponent.phase = EGamePhase.Placement;
-    roomWithOpponent.ships.owner = roomWithOpponent.ships.owner ?? [
-      { id: 0, size: 5, type: "pending", placed: false },
-      { id: 1, size: 4, type: "pending", placed: false },
-      { id: 2, size: 3, type: "pending", placed: false },
-      { id: 3, size: 3, type: "pending", placed: false },
-      { id: 4, size: 2, type: "pending", placed: false },
-    ];
-    roomWithOpponent.ships.opponent = roomWithOpponent.ships.opponent ?? [
-      { id: 0, size: 5, type: "pending", placed: false },
-      { id: 1, size: 4, type: "pending", placed: false },
-      { id: 2, size: 3, type: "pending", placed: false },
-      { id: 3, size: 3, type: "pending", placed: false },
-      { id: 4, size: 2, type: "pending", placed: false },
-    ];
-    roomService.saveRoom(roomWithOpponent);
-
     const payload = createValidShips();
     handler(payload);
 
-    const updatedRoom = roomService.getRoom(room!.id)!;
-    expect(updatedRoom.phase).toBe(EGamePhase.Placement);
-    expect(updatedRoom.players.owner?.ready).toBe(true);
-    expect(updatedRoom.ships.owner).toHaveLength(5);
-    expect(
-      updatedRoom.ships.owner?.every((ship) => ship.type === "placed"),
-    ).toBe(true);
-    expect(socket.emit).toHaveBeenCalledWith(
+    const gameState = room.getGameState("owner");
+    expect(room.getPhase()).toBe(EGamePhase.Placement);
+    expect(room.getPlayer("owner")?.ready).toBe(true);
+    expect(gameState?.myBoard[0]?.slice(0, 5)).toEqual([1, 1, 1, 1, 1]);
+    expect(io._toSpy).toHaveBeenCalledWith(
       "game_updated",
       expect.objectContaining({
         phase: EGamePhase.Placement,
-        id: room!.id,
+        id: room.id,
       }),
     );
     expect(io._toSpy).toHaveBeenCalledWith(
@@ -141,123 +140,41 @@ describe("place_ships handler", () => {
   });
 
   it("writes each placed ship onto the board at its coordinates", () => {
-    const ownerSession = sessionService.createSession("owner", "owner-socket");
-    ownerSession.name = "Captain Black";
-    sessionService.updateSession("owner", ownerSession);
-    const opponentSession = sessionService.createSession(
-      "opponent",
-      "opponent-socket",
+    const room = createPlacementRoom(
+      "place-room-board-check",
+      "Board Check Room",
     );
-    opponentSession.name = "Captain Red";
-    sessionService.updateSession("opponent", opponentSession);
-
-    const room = createWarRoom(
-      { id: "place-room-board-check", name: "Board Check Room" },
-      "owner",
-    );
-    expect(room).toBeDefined();
 
     const io = createIo();
     const socket = createSocket("owner");
     const handler = factoryPlaceShipsHandler(io, socket);
-
-    const roomWithOpponent = roomService.getRoom(room!.id)!;
-    roomWithOpponent.players.opponent = {
-      id: "opponent",
-      name: "Captain Red",
-      seed: 42,
-      active: true,
-      ready: false,
-      owner: false,
-    };
-    roomWithOpponent.boards.opponent = createBoardWithOpenCells();
-    roomWithOpponent.boards.owner = createBoardWithOpenCells();
-    roomWithOpponent.phase = EGamePhase.Placement;
-    roomWithOpponent.ships.owner = [
-      { id: 0, size: 2, type: "pending", placed: false },
-    ];
-    roomWithOpponent.ships.opponent = [
-      { id: 0, size: 2, type: "pending", placed: false },
-    ];
-    roomService.saveRoom(roomWithOpponent);
-
-    handler([
-      {
-        id: 0,
-        size: 2,
-        type: "pending",
-        placed: false,
-        coords: { x: 1, y: 1 },
-        orientation: "vertical",
-      },
-    ]);
-
-    const updatedRoom = roomService.getRoom(room!.id)!;
-    expect(updatedRoom.boards?.owner?.[1]?.[1]).toBe(0);
-    expect(updatedRoom.boards?.owner?.[2]?.[1]).toBe(0);
-    expect(updatedRoom.boards?.owner?.[1]?.[1]).not.toBe(ECellStatus.Empty);
-    expect(updatedRoom.boards?.owner?.[2]?.[1]).not.toBe(ECellStatus.Empty);
-  });
-
-  it("transitions to playing when both players are already ready and broadcasts the game state to both sockets", () => {
-    const ownerSession = sessionService.createSession("owner", "owner-socket");
-    ownerSession.name = "Captain Black";
-    sessionService.updateSession("owner", ownerSession);
-    const opponentSession = sessionService.createSession(
-      "opponent",
-      "opponent-socket",
-    );
-    opponentSession.name = "Captain Red";
-    sessionService.updateSession("opponent", opponentSession);
-
-    const room = createWarRoom(
-      { id: "place-room-playing", name: "Battle Room" },
-      "owner",
-    );
-    expect(room).toBeDefined();
-
-    const io = createIo();
-    const socket = createSocket("owner");
-    const handler = factoryPlaceShipsHandler(io, socket);
-
-    const roomWithOpponent = roomService.getRoom(room!.id)!;
-    roomWithOpponent.players.opponent = {
-      id: "opponent",
-      name: "Captain Red",
-      seed: 42,
-      active: true,
-      ready: true,
-      owner: false,
-    };
-    roomWithOpponent.boards.opponent = createBoardWithOpenCells();
-    roomWithOpponent.boards.owner = createBoardWithOpenCells();
-    roomWithOpponent.phase = EGamePhase.Placement;
-    roomWithOpponent.ships.owner = [
-      { id: 0, size: 5, type: "pending", placed: false },
-      { id: 1, size: 4, type: "pending", placed: false },
-      { id: 2, size: 3, type: "pending", placed: false },
-      { id: 3, size: 3, type: "pending", placed: false },
-      { id: 4, size: 2, type: "pending", placed: false },
-    ];
-    roomWithOpponent.ships.opponent = [
-      { id: 0, size: 5, type: "pending", placed: false },
-      { id: 1, size: 4, type: "pending", placed: false },
-      { id: 2, size: 3, type: "pending", placed: false },
-      { id: 3, size: 3, type: "pending", placed: false },
-      { id: 4, size: 2, type: "pending", placed: false },
-    ];
-    roomService.saveRoom(roomWithOpponent);
 
     handler(createValidShips());
 
-    const updatedRoom = roomService.getRoom(room!.id)!;
-    expect(updatedRoom.phase).toBe(EGamePhase.Playing);
-    expect(updatedRoom.game_started).not.toBeNull();
+    const ownerBoard = room.getGameState("owner")?.myBoard;
+    expect(ownerBoard?.[0]?.[0]).toBe(1);
+    expect(ownerBoard?.[0]?.[1]).toBe(1);
+    expect(ownerBoard?.[0]?.[4]).toBe(1);
+    expect(ownerBoard?.[0]?.[5]).toBe(empty);
+  });
+
+  it("transitions to playing when both players are already ready and broadcasts the game state to both sockets", () => {
+    const room = createPlacementRoom("place-room-playing", "Battle Room");
+    expect(room.placeShips("opponent", createValidShips())).toBe(true);
+
+    const io = createIo();
+    const socket = createSocket("owner");
+    const handler = factoryPlaceShipsHandler(io, socket);
+
+    handler(createValidShips());
+
+    expect(room.getPhase()).toBe(EGamePhase.Playing);
+    expect(room.getTimeStamps().game_started).not.toBeNull();
     expect(io._toSpy).toHaveBeenCalledWith(
       "game_updated",
       expect.objectContaining({
         phase: EGamePhase.Playing,
-        id: room!.id,
+        id: room.id,
       }),
     );
   });
