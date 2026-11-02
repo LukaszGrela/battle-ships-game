@@ -21,6 +21,18 @@ describe("services", () => {
       expect(usersService.countUsers()).toBe(2);
     });
 
+    it("iterates over each active user", () => {
+      const usersService = createUsersService();
+      usersService.setUser("socket-1");
+      usersService.setUser("socket-2");
+      usersService.setUser("socket-1");
+      const visitedUsers: string[] = [];
+
+      usersService.forEach((userId) => visitedUsers.push(userId));
+
+      expect(visitedUsers).toEqual(["socket-1", "socket-2"]);
+    });
+
     it("removes an active user", () => {
       const usersService = createUsersService();
       usersService.setUser("socket-1");
