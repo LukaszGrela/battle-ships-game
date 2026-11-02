@@ -1,5 +1,5 @@
 import { createEmptyBoard, placeShip } from "@repo/game-logic";
-import { ECellStatus, EGamePhase, TRoomState, TShip } from "@repo/types";
+import { EGamePhase, TRoomState, TShip } from "@repo/types";
 import { vi } from "vitest";
 
 export const createSocket = (clientId: string, socketId?: string) => {
@@ -127,9 +127,9 @@ export const createFinishedGameRoom = (
   room.history.push({
     coords: { x: 0, y: 0 },
     isSunk: true,
-    result: ECellStatus.Hit,
+    result: 101,
     turn: "owner",
-    size: 1
+    size: 1,
   });
 
   room.history.push({ finish: true, whoWon: "owner" });

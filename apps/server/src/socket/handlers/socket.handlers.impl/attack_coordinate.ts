@@ -1,23 +1,21 @@
 import {
-  ECellStatus,
+  EGamePhase,
   IClientToServerEvents,
   IServerToClientEvents,
-  TAttackHistory,
-  TRoomState,
+  TCellStatusMiss,
+  TCellStatusShipHit,
 } from "@repo/types";
 import { Server, Socket } from "socket.io";
-import { isSunk } from "@repo/game-logic";
-import RoomService from "../../../services/room.service";
+import {
+  isAttackResultFailure,
+  isCellFailure,
+  isDestroyedShipStatus,
+} from "@repo/game-logic";
 import ClientSessionServiceSingleton from "../../../services/client-session.service";
-import { getOtherPlayer } from "../../../utils/getOtherPlayer";
 import { emitStats } from "../../../utils/emitStats";
 import { dataTampered } from "./data_tampered";
-import { emitRoomStateToPlayers } from "../../../utils/emitRoomStateToPlayers";
-import {
-  transitionToFinished,
-  TUpdateRoomWithNewTurnDataStatus,
-  updateRoomWithNewTurnData,
-} from "../../../utils/gameLifeCycle";
+import { emitRoomStateToPlayers2 } from "../../../utils/emitRoomStateToPlayers";
+import ActiveGameRegistrySingleton from "../../../services/active-game-registry";
 
 type TAttackCoordinateHandler = IClientToServerEvents["attack_coordinate"];
 
@@ -33,12 +31,20 @@ export const factoryAttackCoordinateHandler = (
       dataTampered(io, socket);
       return;
     }
-    const roomService = RoomService.getInstance();
-    let room: TRoomState | undefined | TUpdateRoomWithNewTurnDataStatus =
-      roomService.getRoom(clientSession.gameId);
+    const activeGameRegistry = ActiveGameRegistrySingleton.getInstance();
 
-    if (!room || room.turn !== clientId || room.phase !== "playing") {
-      console.error("Not your turn", room?.turn, room?.phase, room);
+    const warRoom = activeGameRegistry.getRoom(clientSession.gameId);
+    if (
+      !warRoom ||
+      warRoom.getTurn() !== clientId ||
+      warRoom.getPhase() !== EGamePhase.Playing
+    ) {
+      console.error(
+        "Not your turn",
+        warRoom?.getTurn(),
+        warRoom?.getPhase(),
+        warRoom,
+      );
       socket.emit("error", "Not your turn or game not active");
       callback?.({
         ok: false,
@@ -46,11 +52,13 @@ export const factoryAttackCoordinateHandler = (
       });
       return;
     }
-
-    room = updateRoomWithNewTurnData(room.id, clientId, coord);
-
-    if (!room || typeof room === "number") {
-      if (room === -7) {
+    const result = warRoom.attack(clientSession.id, coord);
+    if (
+      result == undefined ||
+      isAttackResultFailure(result) ||
+      isCellFailure(result)
+    ) {
+      if (result === -1101) {
         console.error("Cell already attacked", coord);
         callback?.({
           ok: false,
@@ -60,54 +68,24 @@ export const factoryAttackCoordinateHandler = (
         dataTampered(io, socket);
       }
       return;
-    }
-
-    const opponent = getOtherPlayer(clientId, room.players);
-    if (!opponent) {
-      return;
-    }
-
-    const enemyFleet = room.ships[opponent.id];
-    const enemyHasShips = enemyFleet?.some((ship) => !isSunk(ship));
-
-    const historyEntry = room.history.at(-1) as TAttackHistory;
-    console.log(
-      "[factoryAttackCoordinateHandler]",
-      "historyEntry",
-      historyEntry,
-    );
-    const callbackStatus = !historyEntry.isSunk
-      ? historyEntry.result
-      : ECellStatus.Destroyed;
-
-    console.log(
-      "[factoryAttackCoordinateHandler]",
-      "callbackStatus",
-      callbackStatus,
-    );
-
-    if (callbackStatus === ECellStatus.Destroyed) {
-      callback?.({
-        ok: true,
-        status: callbackStatus,
-        size: historyEntry.size,
-      });
     } else {
-      callback?.({
-        ok: true,
-        status: callbackStatus as ECellStatus.Hit | ECellStatus.Miss,
-      });
-    }
-
-    if (!enemyHasShips) {
-      room = transitionToFinished(room.id, clientId);
-      if (!room) {
-        return;
+      //
+      if (isDestroyedShipStatus(result)) {
+        const ship = warRoom.identifyShip(clientSession.id, result);
+        callback?.({
+          ok: true,
+          status: result,
+          size: ship?.size ?? 0,
+        });
+      } else {
+        callback?.({
+          ok: true,
+          status: result as TCellStatusShipHit | TCellStatusMiss,
+        });
       }
-
-      emitStats(io);
     }
 
-    emitRoomStateToPlayers(io, room);
+    emitStats(io);
+    emitRoomStateToPlayers2(io, clientSession.id, warRoom.id);
   };
 };

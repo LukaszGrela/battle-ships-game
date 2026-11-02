@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { ECellStatus, EGamePhase, TRoomState, TShip } from "@repo/types";
+import { EGamePhase } from "@repo/types";
 import RoomServiceSingleton from "../../../services/room.service";
 import ClientSessionServiceSingleton from "../../../services/client-session.service";
 import { factoryAttackCoordinateHandler } from "./attack_coordinate";
@@ -63,15 +63,15 @@ describe("attack_coordinate handler", () => {
 
     const updatedRoom = roomService.getRoom(roomId)!;
     expect(updatedRoom.turn).toBe("opponent");
-    expect(updatedRoom.boards.opponent?.[3]?.[2]).toBe(ECellStatus.Hit);
+    expect(updatedRoom.boards.opponent?.[3]?.[2]).toBe(101);
     expect(updatedRoom.history.at(-1)).toMatchObject({
       turn: "owner",
-      result: ECellStatus.Hit,
+      result: 101,
     });
 
     expect(callback).toHaveBeenCalledWith({
       ok: true,
-      status: ECellStatus.Hit,
+      status: 101,
     });
 
     expect(io._toSpy).toHaveBeenCalledWith(
@@ -179,7 +179,7 @@ describe("attack_coordinate handler", () => {
 
     expect(callback).toHaveBeenCalledWith({
       ok: true,
-      status: ECellStatus.Destroyed,
+      status: 1001,
       size: 1,
     });
 
