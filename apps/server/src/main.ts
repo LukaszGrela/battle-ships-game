@@ -1,4 +1,5 @@
 import { Server } from "socket.io";
+import { instrument } from "@socket.io/admin-ui";
 import { createServer } from "node:http";
 import { IClientToServerEvents, IServerToClientEvents } from "@repo/types";
 import { factoryConnectHandler } from "./socket";
@@ -15,9 +16,9 @@ const io = new Server<IClientToServerEvents, IServerToClientEvents>(
   {
     cors: {
       // only while in DEV!
-      origin: "*",
+      origin: ["https://admin.socket.io"],
       methods: ["GET", "POST"],
-      credentials: false,
+      credentials: true,
     },
   },
 );
@@ -27,6 +28,11 @@ io.on("connection", factoryConnectHandler(io));
 setInterval(() => {
   expireDisconnectedPlayers(io);
 }, 5_000);
+
+instrument(io, {
+  auth: false,
+  mode: "development",
+});
 
 // io.listen(PORT);
 httpServer.listen(PORT, "0.0.0.0", () => {
