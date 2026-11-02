@@ -1,57 +1,82 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
-import { EGamePhase } from "@repo/types";
-import RoomServiceSingleton from "../../../services/room.service";
-import ClientSessionServiceSingleton from "../../../services/client-session.service";
-import { factoryAttackCoordinateHandler } from "./attack_coordinate";
-import { placeShip } from "@repo/game-logic";
+import { afterEach, describe, expect, it } from "vitest";
 import {
-  createGameRoom,
-  createIo,
-  createPlacedShip,
-  createSocket,
-} from "./__tests/utils";
+  EGamePhase,
+  IPlayer,
+  TCellStatusShipId,
+  TShip,
+} from "@repo/types";
+import ActiveGameRegistrySingleton from "../../../services/active-game-registry";
+import ClientSessionServiceSingleton from "../../../services/client-session.service";
+import { WarRoom } from "../../../services/WarRoom";
+import { factoryAttackCoordinateHandler } from "./attack_coordinate";
+import { createIo, createSocket } from "./__tests/utils";
 
-const roomService = RoomServiceSingleton.getInstance();
+const activeGames = ActiveGameRegistrySingleton.getInstance();
 const sessionService = ClientSessionServiceSingleton.getInstance();
 
-const cleanup = (...roomIds: string[]) => {
-  roomIds.forEach((roomId) => roomService.deleteRoom(roomId));
-  ["owner", "opponent"].forEach((id) => sessionService.deleteSession(id));
+const createPlayer = (id: string, owner = false): IPlayer => ({
+  id,
+  name: id === "owner" ? "Captain Black" : "Captain Red",
+  active: true,
+  ready: false,
+  owner,
+  seed: id === "owner" ? 42 : 7,
+});
+
+const createFleet = (): (TShip & {
+  type: "pending";
+  id: TCellStatusShipId;
+})[] =>
+  [5, 4, 3, 3, 2].map((size, index) => ({
+    id: (index + 1) as TCellStatusShipId,
+    size,
+    type: "pending",
+    placed: true,
+    coords: { x: 0, y: index * 2 },
+    orientation: "horizontal",
+  }));
+
+const shipCells = [
+  ...Array.from({ length: 5 }, (_, x) => ({ x, y: 0 })),
+  ...Array.from({ length: 4 }, (_, x) => ({ x, y: 2 })),
+  ...Array.from({ length: 3 }, (_, x) => ({ x, y: 4 })),
+  ...Array.from({ length: 3 }, (_, x) => ({ x, y: 6 })),
+  ...Array.from({ length: 2 }, (_, x) => ({ x, y: 8 })),
+];
+
+const createPlayingRoom = (roomId: string, firstTurn = "owner") => {
+  const room = new WarRoom(roomId, "Attack Room", createPlayer("owner", true));
+  room.addPlayer(createPlayer("opponent"));
+  expect(room.placeShips("owner", createFleet())).toBe(true);
+  expect(room.placeShips("opponent", createFleet())).toBe(true);
+  if (firstTurn === "opponent") {
+    room.attack("owner", { x: 9, y: 9 });
+  }
+  activeGames.addRoom(room.id, room);
+  return room;
+};
+
+const createSessionsForRoom = (roomId: string) => {
+  for (const [id, socketId] of [
+    ["owner", "owner-socket"],
+    ["opponent", "opponent-socket"],
+  ]) {
+    const session = sessionService.createSession(id!, socketId!, roomId);
+    session.gameId = roomId;
+    sessionService.updateSession(id!, session);
+  }
 };
 
 describe("attack_coordinate handler", () => {
   afterEach(() => {
-    roomService.listRooms().forEach((room) => roomService.deleteRoom(room.id));
-    ["owner", "opponent"].forEach((id) => sessionService.deleteSession(id));
+    activeGames.listRooms().forEach(({ id }) => activeGames.deleteRoom(id));
+  ["owner", "opponent"].forEach((id) => sessionService.deleteSession(id));
   });
 
   it("applies a valid hit, flips the turn, and emits the updated game state", () => {
     const roomId = "attack-hit";
-    const room = createGameRoom(
-      roomId,
-      "owner",
-      "Attack Room",
-      EGamePhase.Playing,
-    )!;
-
-    placeShip(
-      room.boards.opponent!,
-      { x: 2, y: 3 },
-      createPlacedShip(9),
-      "horizontal",
-    );
-
-    roomService.saveRoom(room);
-
-    sessionService.createSession("owner", "owner-socket");
-    sessionService.createSession("opponent", "opponent-socket");
-
-    const ownerSession = sessionService.readSession("owner")!;
-    ownerSession.gameId = roomId;
-    sessionService.updateSession("owner", ownerSession);
-    const opponentSession = sessionService.readSession("opponent")!;
-    opponentSession.gameId = roomId;
-    sessionService.updateSession("opponent", opponentSession);
+    const room = createPlayingRoom(roomId);
+    createSessionsForRoom(roomId);
 
     const io = createIo();
     const socket = createSocket("owner");
@@ -59,15 +84,10 @@ describe("attack_coordinate handler", () => {
 
     const callback = vi.fn();
 
-    handler({ x: 2, y: 3 }, callback);
+    handler({ x: 0, y: 0 }, callback);
 
-    const updatedRoom = roomService.getRoom(roomId)!;
-    expect(updatedRoom.turn).toBe("opponent");
-    expect(updatedRoom.boards.opponent?.[3]?.[2]).toBe(101);
-    expect(updatedRoom.history.at(-1)).toMatchObject({
-      turn: "owner",
-      result: 101,
-    });
+    expect(room.getTurn()).toBe("opponent");
+    expect(room.getGameState("opponent")?.myBoard[0]?.[0]).toBe(101);
 
     expect(callback).toHaveBeenCalledWith({
       ok: true,
@@ -82,28 +102,12 @@ describe("attack_coordinate handler", () => {
       }),
     );
 
-    cleanup(roomId);
   });
 
   it("rejects an attack when it is not the player's turn", () => {
     const roomId = "attack-not-your-turn";
-    const room = createGameRoom(
-      roomId,
-      "opponent",
-      "Attack Room",
-      EGamePhase.Playing,
-    );
-    roomService.saveRoom(room);
-
-    sessionService.createSession("owner", "owner-socket");
-    sessionService.createSession("opponent", "opponent-socket");
-
-    const ownerSession = sessionService.readSession("owner")!;
-    ownerSession.gameId = roomId;
-    sessionService.updateSession("owner", ownerSession);
-    const opponentSession = sessionService.readSession("opponent")!;
-    opponentSession.gameId = roomId;
-    sessionService.updateSession("opponent", opponentSession);
+    createPlayingRoom(roomId, "opponent");
+    createSessionsForRoom(roomId);
 
     const io = createIo();
     const socket = createSocket("owner");
@@ -127,64 +131,34 @@ describe("attack_coordinate handler", () => {
       expect.anything(),
     );
 
-    cleanup(roomId);
   });
 
   it("finishes the match when the enemy fleet is sunk", () => {
     const roomId = "attack-finish";
-    const room = createGameRoom(
-      roomId,
-      "owner",
-      "Attack Room",
-      EGamePhase.Playing,
-    );
+    const room = createPlayingRoom(roomId);
+    createSessionsForRoom(roomId);
 
-    placeShip(
-      room.boards.opponent!,
-      { x: 0, y: 0 },
-      createPlacedShip(9),
-      "horizontal",
-    );
-
-    room.ships.opponent = [
-      {
-        id: 9,
-        size: 1,
-        type: "placed",
-        coords: { x: 0, y: 0 },
-        orientation: "horizontal",
-        hits: [],
-      },
-    ];
-    roomService.saveRoom(room);
-
-    sessionService.createSession("owner", "owner-socket");
-    sessionService.createSession("opponent", "opponent-socket");
-
-    const ownerSession = sessionService.readSession("owner")!;
-    ownerSession.gameId = roomId;
-    sessionService.updateSession("owner", ownerSession);
-    const opponentSession = sessionService.readSession("opponent")!;
-    opponentSession.gameId = roomId;
-    sessionService.updateSession("opponent", opponentSession);
+    for (const [index, cell] of shipCells.slice(0, -1).entries()) {
+      expect(room.attack("owner", cell)).toBeGreaterThan(100);
+      expect(room.attack("opponent", { x: 9, y: index % 10 })).toBe(0);
+    }
 
     const io = createIo();
     const socket = createSocket("owner");
     const handler = factoryAttackCoordinateHandler(io, socket);
 
     const callback = vi.fn();
-    handler({ x: 0, y: 0 }, callback);
-
-    const updatedRoom = roomService.getRoom(roomId)!;
+    const finalCell = shipCells.at(-1)!;
+    handler(finalCell, callback);
 
     expect(callback).toHaveBeenCalledWith({
       ok: true,
-      status: 1001,
-      size: 1,
+      status: 1005,
+      size: 2,
     });
 
-    expect(updatedRoom.phase).toBe(EGamePhase.Finished);
-    expect(updatedRoom.result).toEqual({ owner: "win", opponent: "lost" });
+    expect(room.getPhase()).toBe(EGamePhase.Finished);
+    expect(room.getGameState("owner")?.result).toEqual({ owner: "win", opponent: "lost" });
     expect(io._toSpy).toHaveBeenCalledWith(
       "game_updated",
       expect.objectContaining({
@@ -193,6 +167,5 @@ describe("attack_coordinate handler", () => {
       }),
     );
 
-    cleanup(roomId);
   });
 });
