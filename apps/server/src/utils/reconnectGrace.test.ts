@@ -1,18 +1,46 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { EGamePhase } from "@repo/types";
+import {
+  EGamePhase,
+  IPlayer,
+  TCellStatusShipId,
+  TShip,
+} from "@repo/types";
 import ClientSessionServiceSingleton from "../services/client-session.service";
-import RoomServiceSingleton from "../services/room.service";
+import ActiveGameRegistrySingleton from "../services/active-game-registry";
+import { WarRoom } from "../services/WarRoom";
 import {
   expireDisconnectedPlayers,
   getReconnectTimeoutMs,
 } from "./reconnectGrace";
 
 const sessionService = ClientSessionServiceSingleton.getInstance();
-const roomService = RoomServiceSingleton.getInstance();
+const activeGames = ActiveGameRegistrySingleton.getInstance();
+
+const createPlayer = (id: string, owner = false): IPlayer => ({
+  id,
+  name: id === "owner" ? "Owner" : "Opponent",
+  active: true,
+  ready: false,
+  owner,
+  seed: id === "owner" ? 1 : 2,
+});
+
+const createFleet = (): (TShip & {
+  type: "pending";
+  id: TCellStatusShipId;
+})[] =>
+  [5, 4, 3, 3, 2].map((size, index) => ({
+    id: (index + 1) as TCellStatusShipId,
+    size,
+    type: "pending",
+    placed: true,
+    coords: { x: 0, y: index * 2 },
+    orientation: "horizontal",
+  }));
 
 describe("reconnectGrace", () => {
   afterEach(() => {
-    roomService.listRooms().forEach((room) => roomService.deleteRoom(room.id));
+    activeGames.listRooms().forEach(({ id }) => activeGames.deleteRoom(id));
     sessionService
       .listSessions()
       .forEach((session) => sessionService.deleteSession(session.id));
@@ -34,44 +62,12 @@ describe("reconnectGrace", () => {
     sessionService.updateSession("owner", owner);
     sessionService.updateSession("opponent", opponent);
 
-    roomService.saveRoom({
-      id: "room-1",
-      name: "Grace Room",
-      game_created: "2026-09-28T00:00:00.000Z",
-      game_started: "2026-09-28T00:01:00.000Z",
-      game_finished: null,
-      history: [],
-      result: {},
-      phase: EGamePhase.Playing,
-      players: {
-        owner: {
-          id: "owner",
-          name: "Owner",
-          active: true,
-          ready: true,
-          owner: true,
-          seed: 1,
-        },
-        opponent: {
-          id: "opponent",
-          name: "Opponent",
-          active: true,
-          ready: true,
-          owner: false,
-          seed: 2,
-        },
-      },
-      boards: {
-        owner: [],
-        opponent: [],
-      },
-      ships: {
-        owner: [],
-        opponent: [],
-      },
-      turn: "owner",
-      battles: [],
-    });
+    const room = new WarRoom("room-1", "Grace Room", createPlayer("owner", true));
+    room.addPlayer(createPlayer("opponent"));
+    expect(room.placeShips("owner", createFleet())).toBe(true);
+    expect(room.placeShips("opponent", createFleet())).toBe(true);
+    expect(room.getPhase()).toBe(EGamePhase.Playing);
+    activeGames.addRoom(room.id, room);
 
     const io = {
       to: vi.fn().mockReturnValue({ emit: vi.fn() }),
@@ -80,10 +76,11 @@ describe("reconnectGrace", () => {
 
     expireDisconnectedPlayers(io);
 
-    const updatedRoom = roomService.getRoom("room-1");
-    expect(updatedRoom?.phase).toBe(EGamePhase.Finished);
-    expect(updatedRoom?.result).toEqual({ owner: "lost", opponent: "win" });
-    expect(sessionService.readSession("owner")?.gameId).toBeUndefined();
-    expect(sessionService.readSession("opponent")?.gameId).toBeUndefined();
+    expect(room.getPhase()).toBe(EGamePhase.Finished);
+    expect(room.getPlayer("owner")?.active).toBe(false);
+    expect(io.to).toHaveBeenCalledWith("owner-socket");
+    expect(io.to).toHaveBeenCalledWith("opponent-socket");
+    expect(owner.gameId).toBe(room.id);
+    expect(opponent.gameId).toBe(room.id);
   });
 });

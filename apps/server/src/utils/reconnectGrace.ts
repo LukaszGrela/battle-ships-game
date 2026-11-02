@@ -1,9 +1,12 @@
 import { Server } from "socket.io";
-import { IClientToServerEvents, IServerToClientEvents } from "@repo/types";
+import {
+  EGamePhase,
+  IClientToServerEvents,
+  IServerToClientEvents,
+} from "@repo/types";
 import ClientSessionServiceSingleton from "../services/client-session.service";
-import RoomServiceSingleton from "../services/room.service";
-import { emitRoomStateToPlayers } from "./emitRoomStateToPlayers";
-import { finishRoomByForfeit } from "./finishRoomByForfeit";
+import { emitRoomStateToPlayers2 } from "./emitRoomStateToPlayers";
+import ActiveGameRegistrySingleton from "../services/active-game-registry";
 
 export const DEFAULT_RECONNECT_TIMEOUT_MS = 60_000;
 
@@ -21,7 +24,8 @@ export function expireDisconnectedPlayers(
   io: Server<IClientToServerEvents, IServerToClientEvents>,
 ): void {
   const sessions = ClientSessionServiceSingleton.getInstance();
-  const rooms = RoomServiceSingleton.getInstance();
+  const activeGameRegistry = ActiveGameRegistrySingleton.getInstance();
+
   const timeoutMs = getReconnectTimeoutMs();
   const now = Date.now();
 
@@ -34,15 +38,15 @@ export function expireDisconnectedPlayers(
       continue;
     }
 
-    const room = rooms.getRoom(session.gameId);
-    if (!room || room.phase !== "playing") {
+    const warRoom = activeGameRegistry.getRoom(session.gameId);
+
+    if (!warRoom || warRoom.getPhase() !== EGamePhase.Playing) {
       sessions.clearSessionGame(session.id);
       continue;
     }
 
-    const updatedRoom = finishRoomByForfeit(room.id, session.id);
-    if (updatedRoom) {
-      emitRoomStateToPlayers(io, updatedRoom);
+    if (warRoom.forfeit(session.id)) {
+      emitRoomStateToPlayers2(io, session.id, warRoom.id);
     }
   }
 }
