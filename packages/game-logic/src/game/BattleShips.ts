@@ -343,8 +343,13 @@ export class BattleShips
         this.players.set(lastPlayer.id, lastPlayer);
 
         if (this.phase === EGamePhase.Placement) {
-          // clear board
+          // Reset the remaining player's placement state before returning to waiting.
           this.boards.get(lastPlayer.id)?.clear();
+          this.updatePlayer({
+            id: lastPlayer.id,
+            active: true,
+            ready: false,
+          });
           // transition to waiting
           this.#setPhase(EGamePhase.Waiting);
         }
