@@ -67,7 +67,7 @@ ol {
   border: var(--root-border-width, 6px) solid transparent;
   border-radius: var(--root-border-radius, 1rem);
 
-  min-height: calc(100vh - calc(2 * var(--root-margin, 1rem)));
+  min-height: calc(100dvh - calc(2 * var(--root-margin, 1rem)));
   width: calc(100vw - calc(2 * var(--root-margin, 1rem)));
   box-sizing: border-box;
 

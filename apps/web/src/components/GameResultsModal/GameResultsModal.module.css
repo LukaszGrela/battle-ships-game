@@ -8,9 +8,9 @@
   .GameResultsModal {
     --modal-margin: 0;
     --modal-max-width: 100vw;
-    --modal-max-height: 100vh;
+    --modal-max-height: 100dvh;
     --modal-dialog-width: 100vw;
-    --modal-dialog-height: 100vh;
+    --modal-dialog-height: 100dvh;
     --modal-dialog-radius: 0;
   }
   .GameResultsModal_panel {
