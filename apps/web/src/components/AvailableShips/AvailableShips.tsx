@@ -18,9 +18,19 @@ export const AvailableShips: FC<{
   const handleVerticalCheckbox: React.ChangeEventHandler<
     HTMLInputElement,
     HTMLInputElement
-  > = (e) => {
-    setVertical(!!e.target.checked);
-  };
+  > = useCallback(
+    (e) => {
+      const vert = !!e.target.checked;
+      setVertical(vert);
+      if (selected) {
+        onSelection({
+          ...selected,
+          orientation: vert ? "vertical" : "horizontal",
+        });
+      }
+    },
+    [onSelection, selected],
+  );
 
   const handleClick = useCallback(
     (ship: TShip) => () => {
