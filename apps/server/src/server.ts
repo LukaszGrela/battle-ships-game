@@ -14,13 +14,18 @@ export function createGameServer({
   instrumentAdminUi = true,
   reconnectSweepIntervalMs = 5_000,
 }: IGameServerOptions = {}) {
+  const origin = [];
+  if (instrumentAdminUi) {
+    origin.push("https://admin.socket.io");
+  }
   const httpServer = createServer();
+
   const io = new Server<IClientToServerEvents, IServerToClientEvents>(
     httpServer,
     {
       cors: {
         // only while in DEV!
-        origin: ["https://admin.socket.io"],
+        origin,
         methods: ["GET", "POST"],
         credentials: true,
       },
