@@ -42,8 +42,27 @@ export const factoryLeaveGameHandler = (
         }
         socket.emit("game_updated", null);
       } else if (phase === EGamePhase.Placement) {
+        const opponent = warRoom.getOpponent(clientId);
+        const self = warRoom.getPlayer(clientId);
         if (warRoom.removePlayer(clientId)) {
           storeGameId(clientId, undefined);
+          if (opponent) {
+            const opponentSession = session.readSession(opponent.id);
+            if (opponentSession?.socketId) {
+              io.to(opponentSession.socketId).emit(
+                "player_left",
+                self && {
+                  id: self.id,
+                  name: self.name,
+                  seed: self.seed,
+                },
+              );
+              io.to(opponentSession.socketId).emit(
+                "game_updated",
+                warRoom.getGameState(opponent.id),
+              );
+            }
+          }
         }
         socket.emit("game_updated", null);
       } else if (phase === EGamePhase.Playing) {

@@ -107,9 +107,29 @@ describe("leave_game handler", () => {
 
     expect(room.getPhase()).toBe(EGamePhase.Waiting);
     expect(room.getPlayer("owner")).toBeUndefined();
-    expect(room.getPlayer("opponent")?.owner).toBe(true);
+    expect(room.getPlayer("opponent")).toMatchObject({
+      id: "opponent",
+      owner: true,
+      active: true,
+      ready: false,
+    });
     expect(sessionService.readSession("owner")?.gameId).toBeUndefined();
+    expect(sessionService.readSession("opponent")?.gameId).toBe(room.id);
     expect(socket.emit).toHaveBeenCalledWith("game_updated", null);
+    expect(io._toSpy).toHaveBeenCalledWith("player_left", {
+      id: "owner",
+      name: "Captain Black",
+      seed: 42,
+    });
+    expect(io._toSpy).toHaveBeenCalledWith(
+      "game_updated",
+      expect.objectContaining({
+        id: room.id,
+        name: room.name,
+        phase: EGamePhase.Waiting,
+        self: expect.objectContaining({ id: "opponent", owner: true }),
+      }),
+    );
   });
 
   it("forfeits the game when a player leaves during play", () => {
