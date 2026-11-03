@@ -478,6 +478,7 @@ describe("BattleShips", () => {
 
       expect(game.forfeit("p1")).toBe(true);
       //
+      expect(game.getResult()).toEqual({ p1: "lost", p2: "win" });
       expect(serializedState(game).game_finished).toEqual(expect.any(String));
       expect(serializedState(game).history).toEqual([
         {

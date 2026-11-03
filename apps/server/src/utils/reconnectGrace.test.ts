@@ -67,10 +67,14 @@ describe("reconnectGrace", () => {
     expect(room.placeShips("owner", createFleet())).toBe(true);
     expect(room.placeShips("opponent", createFleet())).toBe(true);
     expect(room.getPhase()).toBe(EGamePhase.Playing);
+    // The disconnect handler deactivates the player while the grace timer runs.
+    expect(room.deactivatePlayer("owner")).toBe(true);
+    expect(room.getPlayer("owner")?.active).toBe(false);
     activeGames.addRoom(room.id, room);
 
+    const emit = vi.fn();
     const io = {
-      to: vi.fn().mockReturnValue({ emit: vi.fn() }),
+      to: vi.fn().mockReturnValue({ emit }),
       emit: vi.fn(),
     } as any;
 
@@ -78,8 +82,20 @@ describe("reconnectGrace", () => {
 
     expect(room.getPhase()).toBe(EGamePhase.Finished);
     expect(room.getPlayer("owner")?.active).toBe(false);
+    expect(room.getGameState("opponent")?.result).toEqual({
+      owner: "lost",
+      opponent: "win",
+    });
     expect(io.to).toHaveBeenCalledWith("owner-socket");
     expect(io.to).toHaveBeenCalledWith("opponent-socket");
+    expect(emit).toHaveBeenCalledWith(
+      "game_updated",
+      expect.objectContaining({
+        id: room.id,
+        phase: EGamePhase.Finished,
+        result: { owner: "lost", opponent: "win" },
+      }),
+    );
     expect(owner.gameId).toBe(room.id);
     expect(opponent.gameId).toBe(room.id);
   });

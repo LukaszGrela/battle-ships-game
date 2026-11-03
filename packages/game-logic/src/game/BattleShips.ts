@@ -603,11 +603,12 @@ export class BattleShips
       this.getPhase() === EGamePhase.Playing &&
       this.players.has(forfeitingPlayerId)
     ) {
-      // Implementation for forfeiting logic
       const loser = this.getPlayer(forfeitingPlayerId);
       const winner = this.getOpponent(forfeitingPlayerId);
 
-      if (loser?.active && winner?.active) {
+      // A disconnected player is deactivated during the reconnect grace period,
+      // but must still be allowed to forfeit when that period expires.
+      if (loser && winner?.active) {
         this.history.push({
           finish: true,
           whoWon: winner.id,
@@ -651,6 +652,17 @@ export class BattleShips
 
   getResult(): Record<string, "win" | "lost"> {
     if (this.getPhase() === EGamePhase.Finished) {
+      const finish = this.history.at(-1);
+      if (finish && "finish" in finish && finish.byForfeit) {
+        return Array.from(this.players.values()).reduce(
+          (result, player) => ({
+            ...result,
+            [player.id]: player.id === finish.whoWon ? "win" : "lost",
+          }),
+          {},
+        );
+      }
+
       return Array.from(this.players.values()).reduce((result, player) => {
         if (this.boards.has(player.id)) {
           return {

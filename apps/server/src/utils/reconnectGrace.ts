@@ -44,8 +44,15 @@ export function expireDisconnectedPlayers(
       sessions.clearSessionGame(session.id);
       continue;
     }
-
     if (warRoom.forfeit(session.id)) {
+      console.log(
+        "[expireDisconnectedPlayers]",
+        "Session",
+        session.id,
+        "in room",
+        warRoom?.id,
+        "has forfeited",
+      );
       emitRoomStateToPlayers(io, session.id, warRoom.id);
     }
   }
