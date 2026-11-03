@@ -7,8 +7,9 @@ import { useImmer } from "use-immer";
 import { AppLayout } from "../components/AppLayout/AppLayout";
 import { useGameStore } from "../store/useGameStore";
 import {
-  ECellStatus,
   TBoard,
+  TCellStatus,
+  TCellStatusEmpty,
   TCoordinate,
   TPlacedShip,
   TShip,
@@ -18,6 +19,7 @@ import { AvailableShips } from "../components/AvailableShips/AvailableShips";
 import { TInteractivityProps } from "../components/Board";
 import {
   getCell,
+  isCellFailure,
   isValidPlacement,
   placeShip,
   removeShip,
@@ -29,24 +31,14 @@ import {
   TGameHeaderAllowedState,
 } from "../components/GameHeader/GameHeader";
 
+const empty: TCellStatusEmpty = -1;
+
 export const GamePlacement: FC = () => {
   const { gameState } = useGameStore();
 
-  const [placementBoard, updatePlacementBoard] = useImmer<
-    TBoard<ECellStatus | number>
-  >(gameState?.myBoard ?? []);
-
-  const myBoard = useMemo((): TBoard<ECellStatus> => {
-    console.log("Rebuild myBoard");
-    return placementBoard.map((row) =>
-      row.map((col) => {
-        if (typeof col === "number") {
-          return ECellStatus.Ship;
-        }
-        return col;
-      }),
-    );
-  }, [placementBoard]);
+  const [placementBoard, updatePlacementBoard] = useImmer<TBoard>(
+    gameState?.myBoard ?? [],
+  );
 
   const [availableShips, setAvailableShips] = useImmer(
     (gameState && gameState.phase === "placement" && gameState.ships) || [],
@@ -56,8 +48,8 @@ export const GamePlacement: FC = () => {
 
   const rotateShipUnderPointer = useCallback(
     (
-      cell: number | ECellStatus,
-      placementBoardDraft: Draft<TBoard<number | ECellStatus>>,
+      cell: TCellStatus,
+      placementBoardDraft: Draft<TBoard>,
       // TODO: to implement rotate around point
       _coords: TCoordinate,
     ) => {
@@ -91,13 +83,13 @@ export const GamePlacement: FC = () => {
           // restore original
           placeShip(placementBoardDraft, ship.coords, ship, ship.orientation!);
 
-          if (validationResult == -1) {
+          if (validationResult == -1001) {
             console.warn("Cell not empty");
           }
-          if (validationResult == -2) {
+          if (validationResult == -1002) {
             console.warn("Not enough space for ship (or out of bounds)");
           }
-          if (validationResult == -3) {
+          if (validationResult == -1003) {
             console.warn("Another boat next to it");
           }
         }
@@ -123,7 +115,8 @@ export const GamePlacement: FC = () => {
           // whats under the pointer?
 
           const cell = getCell(draft, coords.x, coords.y);
-          if (cell != ECellStatus.Empty) {
+
+          if (!isCellFailure(cell) && cell != empty) {
             rotateShipUnderPointer(cell, draft, coords);
           }
           return;
@@ -142,6 +135,7 @@ export const GamePlacement: FC = () => {
           shipToPlace,
           shipToPlace.orientation!,
         );
+        console.log("validationResult", validationResult);
         if (validationResult === 1) {
           placeShip(draft, coords, shipToPlace, shipToPlace.orientation!);
           setAvailableShips((draftShips) => {
@@ -158,13 +152,13 @@ export const GamePlacement: FC = () => {
           // deselect
           onShipSelected(null);
         } else {
-          if (validationResult == -1) {
+          if (validationResult == -1001) {
             console.warn("Cell not empty");
           }
-          if (validationResult == -2) {
+          if (validationResult == -1002) {
             console.warn("Not enough space for ship (or out of bounds)");
           }
-          if (validationResult == -3) {
+          if (validationResult == -1003) {
             console.warn("Another boat next to it");
           }
         }
@@ -233,7 +227,7 @@ export const GamePlacement: FC = () => {
       <section className={gameStyles.Game_layout}>
         <div>
           <ShipsBoard
-            board={myBoard}
+            board={placementBoard}
             owner={!!gameState?.self.owner}
 
             ships={availableShips as TPlacedShip[]}

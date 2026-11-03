@@ -23,7 +23,9 @@ export const OpenGames: FC<{ className?: string }> = ({ className }) => {
             <li key={warRoomName.id} className={styles.listItem}>
               <div className={styles.listItem_name}>{warRoomName.name}</div>
               <div className={styles.listItem_date}>
-                {new Date(warRoomName.game_created).toDateString()}
+                {warRoomName.game_created
+                  ? new Date(warRoomName.game_created).toDateString()
+                  : ""}
               </div>
               <div className={styles.listItem_action}>
                 <div className={styles.listItem_action_content}>

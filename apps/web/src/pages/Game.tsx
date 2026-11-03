@@ -4,9 +4,11 @@ import { AppLayout } from "../components/AppLayout/AppLayout";
 import { useGameStore } from "../store/useGameStore";
 import { TInteractivityProps } from "../components/Board";
 import {
-  ECellStatus,
   TAttackResult,
+  TCellStatusShipDestroyed,
   TCoordinate,
+  TGameState,
+  THistoryEntry,
   TPlacedShip,
 } from "@repo/types";
 import { socket } from "../socket";
@@ -18,18 +20,38 @@ import {
 import { OpponentTurnModal } from "../components/OpponentTurnModal";
 import { AttackModal } from "../components/AttackModal/AttackModal";
 import { TurnIndicator } from "../components/TurnIndicator/TurnIndicator";
+import { isDestroyedShipStatus } from "@repo/game-logic";
+
+const isDestroyedAttackResult = (
+  result: TAttackResult,
+): result is Extract<
+  TAttackResult,
+  { ok: true; status: TCellStatusShipDestroyed; size: number }
+> => result.ok && isDestroyedShipStatus(result.status);
+
+const isPlayingGameState = (
+  gameState: TGameState | null,
+): gameState is TGameState & { phase: "playing" } => {
+  return !!(gameState && gameState.phase === "playing");
+};
+
+const isInitAttackHistory = (
+  test: THistoryEntry | null | undefined,
+): test is Extract<THistoryEntry, { init: true }> => {
+  return (
+    !!test && Object.hasOwn(test, "init") && (test as { init: boolean }).init
+  );
+};
 
 export const Game: FC = () => {
   const { gameState, selfId } = useGameStore();
 
-  const myTurn = gameState?.turn === selfId;
+  const playingState = isPlayingGameState(gameState) ? gameState : null;
 
-  const currentAttack = useMemo(
-    () =>
-      !!(gameState && gameState.phase === "playing" && gameState.lastAttack) ===
-      false,
-    [gameState],
-  );
+  const myTurn = gameState?.turn === selfId;
+  const lastAttack = playingState?.lastAttack;
+  const currentAttack = useMemo(() => !!lastAttack === false, [lastAttack]);
+
   const [attacking, setAttacking] = useState(false);
   const [attackResult, setAttackResult] = useState<TAttackResult | null>(null);
   const handleAttack = useCallback(async (coords: TCoordinate) => {
@@ -61,20 +83,22 @@ export const Game: FC = () => {
     }, [gameState?.phase, myTurn, handleAttack]);
 
   useEffect(() => {
-    if (gameState && gameState.phase === "playing" && gameState.lastAttack) {
-      const { lastAttack } = gameState;
+    if (lastAttack) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setAttacking(true);
       const attackResult: TAttackResult = {
         ok: true,
-        status: lastAttack.isSunk
-          ? ECellStatus.Destroyed
-          : (lastAttack.result as ECellStatus.Hit | ECellStatus.Miss),
+        status: lastAttack.result,
         size: lastAttack.size,
       };
       setAttackResult(attackResult);
     }
-  }, [gameState]);
+  }, [lastAttack]);
+
+  const shipSize =
+    attackResult && isDestroyedAttackResult(attackResult)
+      ? attackResult.size
+      : 0;
 
   return (
     <AppLayout
@@ -123,15 +147,9 @@ export const Game: FC = () => {
 
       <AttackModal
         attack={currentAttack}
-        open={attacking}
+        open={attacking && !isInitAttackHistory(lastAttack)}
         result={attackResult && attackResult.ok ? attackResult.status : null}
-        shipSize={
-          attackResult &&
-          attackResult.ok &&
-          attackResult.status === ECellStatus.Destroyed
-            ? attackResult.size
-            : 0
-        }
+        shipSize={shipSize}
         onClose={() => {
           setAttacking(false);
           setAttackResult(null);

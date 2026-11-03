@@ -1,4 +1,4 @@
-import { TCoordinate, ECellStatus } from "@repo/types";
+import { TCoordinate, TCellStatus } from "@repo/types";
 
 export type TInteractiveCell = {
   isInteractive: true;
@@ -14,7 +14,7 @@ export type TInteractivityProps = TInteractiveCell | TStaticCell;
 
 export type TProps = {
   className?: string;
-  board: ECellStatus[][];
+  board: TCellStatus[][];
   disabled?: boolean;
   /**
    * Number of row/columns to pad around the grid
@@ -27,7 +27,7 @@ export type TProps = {
 } & TInteractivityProps;
 
 export type TCell = {
-  status: ECellStatus;
+  status: TCellStatus;
   coords: TCoordinate;
   disabled?: boolean;
 

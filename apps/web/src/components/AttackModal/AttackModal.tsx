@@ -2,12 +2,13 @@ import styles from "./AttackModal.module.css";
 
 import { FC, useMemo } from "react";
 import { Modal } from "../Modal";
-import { ECellStatus } from "@repo/types";
+import { TCellStatus } from "@repo/types";
 import { Waves } from "../Waves";
 import { getSpriteStyle } from "../../assets/getSpriteStyle";
 import { DECOR_SPRITES } from "../../assets/decorations";
 import { EXPLOSION_ATLAS, EXPLOSION_SPRITES } from "../../assets/explosions";
 import { SPLASH_ATLAS, SPLASH_SPRITES } from "../../assets/splashes";
+import { isDestroyedShipStatus } from "@repo/game-logic";
 
 function pick<T>(arr: readonly T[]): T {
   return arr[Math.floor(Math.random() * arr.length)] as T;
@@ -50,16 +51,16 @@ const MESSAGES = {
 } as const;
 
 const Title: FC<{
-  result: null | ECellStatus;
+  result: null | TCellStatus;
   className?: string;
   attack: boolean;
 }> = ({ result, className, attack }) => {
   const title = useMemo(() => {
     const side = attack ? "attack" : "defend";
-    switch (result) {
-      case ECellStatus.Miss:
+    switch (true) {
+      case result === 0:
         return pick(MESSAGES.miss[side]);
-      case ECellStatus.Destroyed:
+      case result && isDestroyedShipStatus(result):
         return pick(MESSAGES.destroyed[side]);
       case null:
         return pick(MESSAGES.waiting[side]);
@@ -84,13 +85,13 @@ export const AttackModal: FC<{
   attack: boolean;
   open: boolean;
   onClose: () => void;
-  result: ECellStatus | null;
+  result: TCellStatus | null;
   shipSize: number;
 }> = ({ open, onClose, result, shipSize, attack }) => {
   const sprite = DECOR_SPRITES["cannon"];
   const resultSprite = useMemo(
     () =>
-      !result || result === ECellStatus.Miss
+      result == undefined || result === 0
         ? SPLASH_ATLAS[pick(SPLASH_SPRITES)]
         : EXPLOSION_ATLAS[pick(EXPLOSION_SPRITES)],
     [result],
@@ -110,21 +111,22 @@ export const AttackModal: FC<{
       <Title result={result} className={styles.title} attack={attack} />
 
       <div className={styles.body}>
-        {result !== ECellStatus.Destroyed && (
-          <div
-            // className={styles.decor}
-            aria-hidden={true}
-            style={getSpriteStyle(sprite, 128)}
-          />
-        )}
+        {result == undefined ||
+          (!isDestroyedShipStatus(result) && (
+            <div
+              // className={styles.decor}
+              aria-hidden={true}
+              style={getSpriteStyle(sprite, 128)}
+            />
+          ))}
 
-        {result != null && result !== ECellStatus.Destroyed && resultSprite && (
+        {result != null && !isDestroyedShipStatus(result) && resultSprite && (
           <div
             aria-hidden={true}
             style={getSpriteStyle(
               resultSprite,
               64,
-              result === ECellStatus.Miss
+              result === 0
                 ? 'url("/assets/splashes-sprites.png")'
                 : 'url("/assets/explosions-sprites.png")',
               64,
@@ -134,17 +136,13 @@ export const AttackModal: FC<{
           />
         )}
 
-        {result === ECellStatus.Destroyed && (
+        {result != undefined && isDestroyedShipStatus(result) && (
           <DestroyedShipImage size={shipSize} />
         )}
       </div>
 
       {result !== null && (
-        <Waves
-          className={styles.timeout}
-          timeout
-          onDrained={onClose}
-        />
+        <Waves className={styles.timeout} timeout onDrained={onClose} />
       )}
     </Modal>
   );

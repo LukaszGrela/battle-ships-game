@@ -2,13 +2,13 @@ import styles from "./BoardGrid.module.css";
 import { FC, useMemo } from "react";
 import { TInteractivityProps, TProps } from "./types";
 import { Cell } from "./Cell";
-import { ECellStatus } from "@repo/types";
+import { TCellStatus } from "@repo/types";
 import { paddedGrid, seedRandom } from "@repo/game-logic";
 
 type TMargin = { type: "margin" };
 type TCell = {
   type: "cell";
-  cellData: ECellStatus;
+  cellData: TCellStatus;
 };
 
 type TGridData = {
@@ -25,7 +25,7 @@ export const Grid: FC<
   const inert = interactiveProps.disabled;
 
   const flatBoard: Array<TGridData> = useMemo(() => {
-    const paddedCopy = paddedGrid<ECellStatus, ECellStatus | TMargin>(
+    const paddedCopy = paddedGrid<TCellStatus, TCellStatus | TMargin>(
       board,
       pad,
       () => ({ type: "margin", x: -1, y: -1 }),
@@ -63,7 +63,7 @@ export const Grid: FC<
             <Cell
               key={`${x}:${y}`}
               coords={{ x, y }}
-              status={ECellStatus.Margin}
+              status={-2}
 
               lastColumn={x === columnsLength - 1 ? "" : undefined}
               lastRow={y === rowsLength - 1 ? "" : undefined}
