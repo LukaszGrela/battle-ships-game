@@ -9,7 +9,6 @@ class ActiveUsersServiceSingleton {
   public static getInstance(): IActiveUsersService {
     // console.log(TAG, 'ActiveUsersService.getInstance');
     if (!ActiveUsersServiceSingleton.#instance) {
-      console.log("[room.service]new ActiveUsersService()");
       ActiveUsersServiceSingleton.#instance = new ActiveUsersService();
     }
 

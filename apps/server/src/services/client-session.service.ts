@@ -12,7 +12,6 @@ class ClientSessionServiceSingleton {
   public static getInstance(): IClientSessionService {
     // console.log(TAG, 'ClientSessionService.getInstance');
     if (!ClientSessionServiceSingleton.#instance) {
-      console.log("[room.service]new ClientSessionService()");
       ClientSessionServiceSingleton.#instance = new ClientSessionService();
     }
 

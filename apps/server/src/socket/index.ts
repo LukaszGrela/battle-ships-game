@@ -68,7 +68,7 @@ export const factoryConnectHandler =
 
     const activeOpenGames = activeGameRegistry.getOpenGames();
 
-    console.log("open_games", activeOpenGames);
+    console.log("[factoryConnectHandler]", "open_games", activeOpenGames);
     // in the lobby - send open games
     io.emit("open_games", activeOpenGames);
 
@@ -88,9 +88,13 @@ export const factoryConnectHandler =
     }
 
     console.log(
+      "[factoryConnectHandler]",
       "[STATS] active users",
+      "Count users",
       ActiveUsersServiceSingleton.getInstance().countUsers(),
+      "Sessions",
       ClientSessionServiceSingleton.getInstance().listSessions(),
+      "Active Sessions",
       ClientSessionServiceSingleton.getInstance()
         .listSessions()
         .filter(({ disconnectedAt }) => !disconnectedAt).length,

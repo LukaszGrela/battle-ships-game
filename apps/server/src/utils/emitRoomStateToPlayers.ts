@@ -13,7 +13,7 @@ export function emitRoomStateToPlayers(
 
   const warRoom = activeGameRegistry.getRoom(roomId);
 
-  console.log("[emitRoomStateToPlayers2] warRoom", warRoom?.name);
+  console.log("[emitRoomStateToPlayers] warRoom", warRoom?.name);
   if (!warRoom) return;
 
   const player = warRoom.getPlayer(playerId);
@@ -22,14 +22,13 @@ export function emitRoomStateToPlayers(
   const session = ClientSessionServiceSingleton.getInstance();
 
   function updatePlayer(currentPlayerId?: string) {
-    console.log("[emitRoomStateToPlayers2] updatePlayer()", currentPlayerId);
+    console.log("[emitRoomStateToPlayers] updatePlayer()", currentPlayerId);
 
     if (!currentPlayerId || currentPlayerId === playerIdToSkip) {
       return;
     }
     const playerSession = session.readSession(currentPlayerId);
     if (playerSession) {
-      console.log("game_updated", warRoom!.getGameState(currentPlayerId));
       io.to(playerSession.socketId).emit(
         "game_updated",
         warRoom!.getGameState(currentPlayerId),

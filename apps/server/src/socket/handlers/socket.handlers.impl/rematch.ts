@@ -15,11 +15,13 @@ const warRoomFinder = (
   const activeGameRegistry = ActiveGameRegistrySingleton.getInstance();
   const warRoomIdent = activeGameRegistry.findFinishedRoomForPlayer(clientId);
   if (!warRoomIdent) {
+    console.log("[warRoomFinder] No finished game to rematch");
     socket.emit("error", "No finished game to rematch");
     return;
   }
   const warRoom = activeGameRegistry.getRoom(warRoomIdent.id);
   if (!warRoom) {
+    console.log("[warRoomFinder] Finished game not found");
     socket.emit("error", "No finished game to rematch");
     return;
   }
@@ -42,15 +44,11 @@ export const factoryRequestRematchHandler = (
     if (warRoom) {
       const rematchResult = warRoom.requestRematch(clientId);
 
-      console.log(
-        "[factoryRequestRematchHandler]",
-        "room",
-        warRoom.id,
-        "rematchRequestResult",
-        rematchResult,
-      );
-
       if (rematchResult < 1) {
+        console.log(
+          "[factoryRequestRematchHandler] Failed to request rematch",
+          rematchResult,
+        );
         // failure
         socket.emit("error", "Rematch request rejected");
       } else {
@@ -91,6 +89,10 @@ export const factoryAcceptRematchHandler = (
     if (warRoom) {
       const acceptStatus = warRoom.acceptRematch(clientId);
       if (acceptStatus < 1) {
+        console.log(
+          "[factoryAcceptRematchHandler] Failed to accept rematch",
+          acceptStatus,
+        );
         socket.emit("error", "Rematch cannot be accepted");
         return;
       }
@@ -137,7 +139,10 @@ export const factoryRejectRematchHandler = (
       const rejectResult = warRoom.rejectRematch(clientId);
 
       if (rejectResult < 1) {
-        console.log("Failed to reject rematch", rejectResult);
+        console.log(
+          "[factoryRejectRematchHandler] Failed to reject rematch",
+          rejectResult,
+        );
         socket.emit("error", "Rematch cannot be rejected");
         return;
       }

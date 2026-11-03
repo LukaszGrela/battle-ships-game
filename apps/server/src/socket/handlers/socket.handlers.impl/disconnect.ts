@@ -52,6 +52,12 @@ export const factoryDisconnectHandler =
 
     if (warRoom) {
       const phase = warRoom.getPhase();
+      console.log(
+        "[factoryDisconnectHandler] phase",
+        phase,
+        warRoom.id,
+        warRoom.name,
+      );
       if (phase === EGamePhase.Playing) {
         clientSession.disconnectedAt = Date.now();
         sessions.updateSession(clientId, clientSession);
@@ -59,11 +65,6 @@ export const factoryDisconnectHandler =
         warRoom.deactivatePlayer(clientId);
       } else if (phase === EGamePhase.Placement) {
         if (warRoom.playersCount === 1) {
-          console.log(
-            "[on disconnect] placement, single user, delete",
-            warRoom.id,
-            warRoom.name,
-          );
           if (activeGameRegistry.deleteRoom(clientSession.gameId)) {
             warRoomNames.releaseRoom(warRoom.name);
             storeGameId(clientId, undefined);
@@ -86,11 +87,6 @@ export const factoryDisconnectHandler =
         }
         socket.emit("game_updated", null);
       } else if (phase === EGamePhase.Waiting) {
-        console.log(
-          "[on disconnect] waiting, delete",
-          warRoom.id,
-          warRoom.name,
-        );
         if (activeGameRegistry.deleteRoom(clientSession.gameId)) {
           warRoomNames.releaseRoom(warRoom.name);
           storeGameId(clientId, undefined);

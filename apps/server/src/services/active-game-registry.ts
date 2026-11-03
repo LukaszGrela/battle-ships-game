@@ -12,7 +12,6 @@ class ActiveGameRegistrySingleton {
   public static getInstance(): IActiveGameRegistry {
     // console.log(TAG, 'ActiveGameRegistry.getInstance');
     if (!ActiveGameRegistrySingleton.#instance) {
-      console.log("[room.service]new ActiveGameRegistry()");
       ActiveGameRegistrySingleton.#instance = new ActiveGameRegistry();
     }
 
