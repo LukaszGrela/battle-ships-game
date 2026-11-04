@@ -4,33 +4,84 @@ import { Server } from "socket.io";
 import { IClientToServerEvents, IServerToClientEvents } from "@repo/types";
 import { factoryConnectHandler } from "./socket";
 import { expireDisconnectedPlayers } from "./utils/reconnectGrace";
+import {
+  createSocketSecurity,
+  type ISocketSecurityLogger,
+  type ISocketSecurityOptions,
+} from "./security/guards";
 
 export interface IGameServerOptions {
   instrumentAdminUi?: boolean;
   reconnectSweepIntervalMs?: number;
+  /** Signs/verifies the Socket.IO session token. Defaults to SESSION_SECRET. */
+  sessionSecret?: string;
+  /** Browser origins allowed to connect. Fail-closed: defaults to the dev list. */
+  allowedOrigins?: ISocketSecurityOptions["allowedOrigins"];
+  maxConnectionsPerIp?: number;
+  /** Enable only behind a proxy you control (nginx / Cloudflare / ALB). */
+  trustProxy?: boolean;
+  logger?: ISocketSecurityLogger;
 }
+
+const DEV_ORIGINS = [
+  "http://localhost:3000",
+  "http://localhost:4173",
+  "http://localhost:5173",
+];
+
+/** admin.socket.io is a real browser origin: it needs CORS *and* the engine check. */
+const ADMIN_ORIGIN = "https://admin.socket.io";
 
 export function createGameServer({
   instrumentAdminUi = true,
   reconnectSweepIntervalMs = 5_000,
+  sessionSecret = process.env.SESSION_SECRET,
+  allowedOrigins,
+  maxConnectionsPerIp,
+  trustProxy,
+  logger,
 }: IGameServerOptions = {}) {
-  const origin = [];
-  if (instrumentAdminUi) {
-    origin.push("https://admin.socket.io");
+  const isProd = process.env.NODE_ENV === "production";
+
+  if (!sessionSecret) {
+    throw new Error("SESSION_SECRET is required by createGameServer()");
   }
+  if (isProd && instrumentAdminUi) {
+    throw new Error("Admin UI instrumentation must be disabled in production");
+  }
+
+  // Fail closed: a missing origin list is an empty list, never "*".
+  const allowed = allowedOrigins ?? (isProd ? [] : DEV_ORIGINS);
+  const origins: (string | RegExp)[] = [
+    ...(Array.isArray(allowed) ? allowed : []),
+    ...(instrumentAdminUi ? [ADMIN_ORIGIN] : []),
+  ];
+
+  const security = createSocketSecurity({
+    sessionSecret,
+    // Engine-level origin check: also covers the WebSocket upgrade, where CORS
+    // does nothing at all. The `cors` block below only guards the polling XHR.
+    allowedOrigins: allowed,
+    maxConnectionsPerIp,
+    trustProxy,
+    logger,
+  });
+
   const httpServer = createServer();
 
-  const io = new Server<IClientToServerEvents, IServerToClientEvents>(
-    httpServer,
-    {
-      cors: {
-        // only while in DEV!
-        origin,
-        methods: ["GET", "POST"],
-        credentials: true,
-      },
+  const io = new Server<IClientToServerEvents, IServerToClientEvents>(httpServer, {
+    cors: {
+      origin: origins,
+      methods: ["GET", "POST"],
+      credentials: true,
     },
-  );
+    // Payload cap, no permessage-deflate, origin + per-IP handshake limits.
+    // All of it runs before any application code.
+    ...security.engineOptions,
+  });
+
+  // Installed first, so auth + rate limiting precede every game handler.
+  security.install(io);
 
   io.on("connection", factoryConnectHandler(io));
 
@@ -41,6 +92,7 @@ export function createGameServer({
 
   if (instrumentAdminUi) {
     instrument(io, {
+      // `auth: false` means no credentials at all on the admin namespace.
       auth: false,
       mode: "development",
     });
@@ -51,6 +103,7 @@ export function createGameServer({
     io,
     close: async () => {
       clearInterval(reconnectSweep);
+      security.dispose();
       await new Promise<void>((resolve) => io.close(() => resolve()));
     },
   };
