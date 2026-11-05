@@ -10,6 +10,7 @@ import ClientSessionServiceSingleton from "../../../services/client-session.serv
 import { dataTampered } from "./data_tampered";
 import ActiveGameRegistrySingleton from "../../../services/active-game-registry";
 import { emitRoomStateToPlayers } from "../../../utils/emitRoomStateToPlayers";
+import { getSession } from "../../../security/auth";
 
 type TPlaceShipsHandler = IClientToServerEvents["place_ships"];
 
@@ -19,7 +20,9 @@ export const factoryPlaceShipsHandler = (
 ): TPlaceShipsHandler => {
   return (ships: (TShip & { type: "pending" })[]) => {
     const session = ClientSessionServiceSingleton.getInstance();
-    const clientId = socket.handshake.auth.clientId;
+
+    const clientId = getSession(socket).playerId;
+
     const clientSession = session.readSession(clientId);
     if (!clientSession || !clientSession.gameId) {
       dataTampered(io, socket);

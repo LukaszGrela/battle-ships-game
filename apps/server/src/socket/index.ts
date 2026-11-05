@@ -8,20 +8,16 @@ import ClientSessionServiceSingleton from "../services/client-session.service";
 import { registerServerHandlers } from "./handlers/server.handlers";
 import { emitRoomStateToPlayers } from "../utils/emitRoomStateToPlayers";
 import ActiveGameRegistrySingleton from "../services/active-game-registry";
+import { getSession } from "../security/auth";
 
 export const factoryConnectHandler =
   (io: Server<IClientToServerEvents, IServerToClientEvents>) =>
   (socket: Socket<IClientToServerEvents, IServerToClientEvents>) => {
     const sessions = ClientSessionServiceSingleton.getInstance();
-    const clientId = socket.handshake.auth.clientId;
-
+    const clientId = getSession(socket).playerId;
     console.log("[factoryConnectHandler]", clientId, sessions);
 
-    // check valid connection
-    if (!clientId || typeof clientId !== "string") {
-      socket.disconnect(true);
-      return;
-    }
+
 
     // register listener
     registerRoomHandlers(io, socket);

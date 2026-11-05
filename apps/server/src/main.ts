@@ -10,6 +10,8 @@ if (!Number.isInteger(PORT) || PORT < 1 || PORT > 65535) {
 
 const { httpServer } = createGameServer({
   instrumentAdminUi: !isProduction,
+  logger: !isProduction ? { warn: console.warn } : undefined,
+  allowedOrigins: isProduction ? [process.env.ALLOWED_ORIGIN ?? ""] : undefined,
 });
 
 // io.listen(PORT);

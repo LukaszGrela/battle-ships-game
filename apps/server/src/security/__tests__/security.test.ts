@@ -10,11 +10,11 @@ import {
 describe("TokenBucket", () => {
   it("allows a burst up to capacity, then rejects", () => {
     const bucket = new TokenBucket({ capacity: 3, refillPerSecond: 0 });
-    expect([bucket.tryRemove(), bucket.tryRemove(), bucket.tryRemove()]).toEqual([
-      true,
-      true,
-      true,
-    ]);
+    expect([
+      bucket.tryRemove(),
+      bucket.tryRemove(),
+      bucket.tryRemove(),
+    ]).toEqual([true, true, true]);
     expect(bucket.tryRemove()).toBe(false);
   });
 
@@ -32,7 +32,13 @@ describe("TokenBucket", () => {
 });
 
 describe("SocketRateLimiter", () => {
-  const options = { ...DEFAULT_SOCKET_RATE_LIMIT, burst: 5, perSecond: 0, eventBurst: 2, eventPerSecond: 0 };
+  const options = {
+    ...DEFAULT_SOCKET_RATE_LIMIT,
+    burst: 5,
+    perSecond: 0,
+    eventBurst: 2,
+    eventPerSecond: 0,
+  };
 
   it("trips the per-event bucket when one event is spammed", () => {
     const limiter = new SocketRateLimiter(options);
@@ -56,7 +62,10 @@ describe("SocketRateLimiter", () => {
     const limiter = new SocketRateLimiter(options);
     for (let i = 0; i < 5; i += 1) limiter.consume(`event:${i}`);
 
-    expect(limiter.consume("event:other")).toMatchObject({ allowed: false, scope: "global" });
+    expect(limiter.consume("event:other")).toMatchObject({
+      allowed: false,
+      scope: "global",
+    });
   });
 
   it("reports a disconnect only after the violation budget is spent", () => {
@@ -94,17 +103,19 @@ describe("session tokens", () => {
   const secret = "test-secret";
 
   it("round-trips a valid payload", () => {
-    const token = signSession({ playerId: "p1", clientId: "c1" }, secret, 60);
-    expect(verifySession(token, secret)).toMatchObject({ playerId: "p1", clientId: "c1" });
+    const token = signSession({ playerId: "p1" }, secret, 60);
+    expect(verifySession(token, secret)).toMatchObject({ playerId: "p1" });
   });
 
   it("rejects a tampered payload", () => {
     const token = signSession({ playerId: "p1" }, secret, 60);
     const [version, , signature] = token.split(".");
-    const forged = Buffer.from(JSON.stringify({ playerId: "admin", iat: 0, exp: 9e9 })).toString(
-      "base64url",
-    );
-    expect(verifySession(`${version}.${forged}.${signature}`, secret)).toBeNull();
+    const forged = Buffer.from(
+      JSON.stringify({ playerId: "admin", iat: 0, exp: 9e9 }),
+    ).toString("base64url");
+    expect(
+      verifySession(`${version}.${forged}.${signature}`, secret),
+    ).toBeNull();
   });
 
   it("rejects a token signed with another secret", () => {

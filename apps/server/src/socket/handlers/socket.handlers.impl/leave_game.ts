@@ -10,6 +10,7 @@ import { emitRoomStateToPlayers } from "../../../utils/emitRoomStateToPlayers";
 import { storeGameId } from "../../../utils/storeGameId";
 import ActiveGameRegistrySingleton from "../../../services/active-game-registry";
 import { warRoomNames } from "../../../services/WarRoomName.service";
+import { getSession } from "../../../security/auth";
 
 type TLeaveGameHandler = IClientToServerEvents["leave_game"];
 
@@ -19,7 +20,9 @@ export const factoryLeaveGameHandler = (
 ): TLeaveGameHandler => {
   return () => {
     const session = ClientSessionServiceSingleton.getInstance();
-    const clientId = socket.handshake.auth.clientId as string;
+
+    const clientId = getSession(socket).playerId;
+
     const activeGameRegistry = ActiveGameRegistrySingleton.getInstance();
 
     const clientSession = session.readSession(clientId);

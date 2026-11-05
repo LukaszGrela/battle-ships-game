@@ -11,6 +11,7 @@ import { emitRoomStateToPlayers } from "../../../utils/emitRoomStateToPlayers";
 import ActiveGameRegistrySingleton from "../../../services/active-game-registry";
 import { warRoomNames } from "../../../services/WarRoomName.service";
 import { storeGameId } from "../../../utils/storeGameId";
+import { getSession } from "../../../security/auth";
 
 type TDisconnectHandler = (reason: DisconnectReason) => void;
 
@@ -21,7 +22,7 @@ export const factoryDisconnectHandler =
   ): TDisconnectHandler =>
   (reason: DisconnectReason) => {
     const sessions = ClientSessionServiceSingleton.getInstance();
-    const clientId = socket.handshake.auth.clientId as string | undefined;
+    const clientId = getSession(socket).playerId;
 
     const clientSession = sessions.readSession(clientId ?? "");
 

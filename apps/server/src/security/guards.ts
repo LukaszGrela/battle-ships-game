@@ -1,6 +1,10 @@
 import type { IncomingMessage } from "node:http";
 import { Server, type Socket } from "socket.io";
-import { createSessionAuthMiddleware, getSession } from "./auth";
+import {
+  createSessionAuthMiddleware,
+  getSession,
+  takeIssuedToken,
+} from "./auth";
 import {
   DEFAULT_SOCKET_RATE_LIMIT,
   IpLimiter,
@@ -18,6 +22,8 @@ export type TTransport = "websocket" | "polling";
 export interface ISocketSecurityOptions {
   /** Same secret used to sign the session token. */
   sessionSecret: string;
+  /** Token lifetime, renewed on every successful connect. Default: 30 days. */
+  sessionTtlSeconds?: number;
   /**
    * Browser origins allowed to open a socket. Checked in `allowRequest`, i.e. it
    * also covers the WebSocket upgrade, which CORS does not protect.
@@ -101,7 +107,8 @@ export function createSocketSecurity(options: ISocketSecurityOptions) {
 
   const engineOptions = {
     maxHttpBufferSize: options.maxHttpBufferSize ?? 64 * 1024,
-    transports: options.transports ?? (["websocket", "polling"] as TTransport[]),
+    transports:
+      options.transports ?? (["websocket", "polling"] as TTransport[]),
     // Compression of attacker-controlled input: zip-bomb + CPU burn for free.
     perMessageDeflate: false,
 
@@ -141,7 +148,12 @@ export function createSocketSecurity(options: ISocketSecurityOptions) {
   function install(io: Server): void {
     // 1. Authentication before `connection`: a rejected client never allocates a
     //    socket, a room membership or a reconnect-grace slot.
-    io.use(createSessionAuthMiddleware(options.sessionSecret));
+    io.use(
+      createSessionAuthMiddleware(
+        options.sessionSecret,
+        options.sessionTtlSeconds,
+      ),
+    );
 
     io.on("connection", (socket: Socket) => {
       const ip = resolveIp(
@@ -154,6 +166,12 @@ export function createSocketSecurity(options: ISocketSecurityOptions) {
       const limiter = new SocketRateLimiter(rateLimitOptions);
       const { playerId } = getSession(socket);
       let dropped = 0;
+
+      // Hand the (renewed) credential to the client. This listener is registered
+      // before the game's `connection` handler, so the token always arrives
+      // before `session_created` / `session_restored`.
+      const issuedToken = takeIssuedToken(socket);
+      if (issuedToken) socket.emit("session_token", issuedToken);
 
       // 2. Per-packet rate limiting. `socket.use` runs *before* your handlers and
       //    can drop a packet; `onAny` only observes, which is too late - the
@@ -215,6 +233,9 @@ export function createSocketSecurity(options: ISocketSecurityOptions) {
     install,
     dispose: () => ipLimiter.dispose(),
     /** Snapshot for a /metrics endpoint - watch the rejected counters climbing. */
-    stats: () => ({ trackedIps: ipLimiter.size, connectedIps: connectionsPerIp.size }),
+    stats: () => ({
+      trackedIps: ipLimiter.size,
+      connectedIps: connectionsPerIp.size,
+    }),
   };
 }

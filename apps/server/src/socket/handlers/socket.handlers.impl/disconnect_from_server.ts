@@ -8,6 +8,7 @@ import ClientSessionServiceSingleton from "../../../services/client-session.serv
 import ActiveGameRegistrySingleton from "../../../services/active-game-registry";
 import { warRoomNames } from "../../../services/WarRoomName.service";
 import { emitRoomStateToPlayers } from "../../../utils/emitRoomStateToPlayers";
+import { getSession } from "../../../security/auth";
 
 type THandler = IClientToServerEvents["disconnect_from_server"];
 
@@ -17,7 +18,8 @@ export const factoryGetDisconnectFromServerHandler = (
 ): THandler => {
   return function getDisconnectFromServerHandler() {
     const sessions = ClientSessionServiceSingleton.getInstance();
-    const clientId = socket.handshake.auth.clientId as string | undefined;
+
+    const clientId = getSession(socket).playerId;
 
     const clientSession = sessions.readSession(clientId ?? "");
 

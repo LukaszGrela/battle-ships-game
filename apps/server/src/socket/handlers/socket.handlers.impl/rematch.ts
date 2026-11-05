@@ -3,6 +3,7 @@ import { Server, Socket } from "socket.io";
 import ClientSessionServiceSingleton from "../../../services/client-session.service";
 import { emitRoomStateToPlayers } from "../../../utils/emitRoomStateToPlayers";
 import ActiveGameRegistrySingleton from "../../../services/active-game-registry";
+import { getSession } from "../../../security/auth";
 
 type TRequestRematchHandler = IClientToServerEvents["request_rematch"];
 type TAcceptRematchHandler = IClientToServerEvents["accept_rematch"];
@@ -34,11 +35,7 @@ export const factoryRequestRematchHandler = (
   socket: Socket<IClientToServerEvents, IServerToClientEvents>,
 ): TRequestRematchHandler => {
   return () => {
-    const clientId = socket.handshake.auth.clientId as string | undefined;
-    if (!clientId) {
-      socket.emit("error", "Invalid session");
-      return;
-    }
+    const clientId = getSession(socket).playerId;
 
     const warRoom = warRoomFinder(socket, clientId);
     if (warRoom) {
@@ -79,11 +76,7 @@ export const factoryAcceptRematchHandler = (
   socket: Socket<IClientToServerEvents, IServerToClientEvents>,
 ): TAcceptRematchHandler => {
   return () => {
-    const clientId = socket.handshake.auth.clientId as string | undefined;
-    if (!clientId) {
-      socket.emit("error", "Invalid session");
-      return;
-    }
+    const clientId = getSession(socket).playerId;
 
     const warRoom = warRoomFinder(socket, clientId);
     if (warRoom) {
@@ -126,11 +119,7 @@ export const factoryRejectRematchHandler = (
   socket: Socket<IClientToServerEvents, IServerToClientEvents>,
 ): TRejectRematchHandler => {
   return () => {
-    const clientId = socket.handshake.auth.clientId as string | undefined;
-    if (!clientId) {
-      socket.emit("error", "Invalid session");
-      return;
-    }
+    const clientId = getSession(socket).playerId;
 
     const warRoom = warRoomFinder(socket, clientId);
 

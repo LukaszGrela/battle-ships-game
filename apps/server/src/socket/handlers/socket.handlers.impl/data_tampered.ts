@@ -1,13 +1,14 @@
 import { IClientToServerEvents, IServerToClientEvents } from "@repo/types";
 import { Server, Socket } from "socket.io";
 import ClientSessionServiceSingleton from "../../../services/client-session.service";
+import { getSession } from "../../../security/auth";
 
 export const dataTampered = (
   io: Server<IClientToServerEvents, IServerToClientEvents>,
   socket: Socket<IClientToServerEvents, IServerToClientEvents>,
 ) => {
   const session = ClientSessionServiceSingleton.getInstance();
-  const clientId = socket.handshake.auth.clientId;
+  const clientId = getSession(socket).playerId;
   const clientSession = session.readSession(clientId);
 
   console.group("[dataTampered]");

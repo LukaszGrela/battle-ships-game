@@ -13,6 +13,10 @@ import ActiveGameRegistrySingleton from "./services/active-game-registry";
 import ClientSessionServiceSingleton from "./services/client-session.service";
 import { createGameServer } from "./server.js";
 
+
+export const TEST_SESSION_SECRET =
+  "test-only-secret-do-not-use-anywhere-else-0123456789";
+
 const activeGames = ActiveGameRegistrySingleton.getInstance();
 const sessions = ClientSessionServiceSingleton.getInstance();
 
@@ -152,6 +156,7 @@ describe("main Socket.IO E2E", () => {
     "plays a full game, accepts and finishes a rematch, then lets both players leave",
     async () => {
       const server = createGameServer({
+        sessionSecret: TEST_SESSION_SECRET,
         instrumentAdminUi: false,
         reconnectSweepIntervalMs: 60_000,
       });

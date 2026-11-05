@@ -20,13 +20,21 @@ export interface IGameServerOptions {
   maxConnectionsPerIp?: number;
   /** Enable only behind a proxy you control (nginx / Cloudflare / ALB). */
   trustProxy?: boolean;
+  /**
+   * Overrides the per-socket event buckets. Test-only in practice: every test
+   * client shares 127.0.0.1, so an ordinary connect/disconnect loop trips the
+   * production limits and fails as an unrelated `connect_error`.
+   */
+  rateLimit?: ISocketSecurityOptions["rateLimit"];
+  /** Overrides the per-IP handshake bucket and ban. Same caveat as `rateLimit`. */
+  ipLimit?: ISocketSecurityOptions["ipLimit"];
   logger?: ISocketSecurityLogger;
 }
 
 const DEV_ORIGINS = [
   "http://localhost:3000",
-  "http://localhost:4173",
-  "http://localhost:5173",
+  "http://localhost:3002",
+  "http://192.168.1.49:3000",
 ];
 
 /** admin.socket.io is a real browser origin: it needs CORS *and* the engine check. */
@@ -39,6 +47,8 @@ export function createGameServer({
   allowedOrigins,
   maxConnectionsPerIp,
   trustProxy,
+  rateLimit,
+  ipLimit,
   logger,
 }: IGameServerOptions = {}) {
   const isProd = process.env.NODE_ENV === "production";
@@ -64,21 +74,26 @@ export function createGameServer({
     allowedOrigins: allowed,
     maxConnectionsPerIp,
     trustProxy,
+    rateLimit,
+    ipLimit,
     logger,
   });
 
   const httpServer = createServer();
 
-  const io = new Server<IClientToServerEvents, IServerToClientEvents>(httpServer, {
-    cors: {
-      origin: origins,
-      methods: ["GET", "POST"],
-      credentials: true,
+  const io = new Server<IClientToServerEvents, IServerToClientEvents>(
+    httpServer,
+    {
+      cors: {
+        origin: origins,
+        methods: ["GET", "POST"],
+        credentials: true,
+      },
+      // Payload cap, no permessage-deflate, origin + per-IP handshake limits.
+      // All of it runs before any application code.
+      ...security.engineOptions,
     },
-    // Payload cap, no permessage-deflate, origin + per-IP handshake limits.
-    // All of it runs before any application code.
-    ...security.engineOptions,
-  });
+  );
 
   // Installed first, so auth + rate limiting precede every game handler.
   security.install(io);

@@ -16,6 +16,7 @@ import { emitStats } from "../../../utils/emitStats";
 import { dataTampered } from "./data_tampered";
 import { emitRoomStateToPlayers } from "../../../utils/emitRoomStateToPlayers";
 import ActiveGameRegistrySingleton from "../../../services/active-game-registry";
+import { getSession } from "../../../security/auth";
 
 type TAttackCoordinateHandler = IClientToServerEvents["attack_coordinate"];
 
@@ -25,7 +26,9 @@ export const factoryAttackCoordinateHandler = (
 ): TAttackCoordinateHandler => {
   return (coord, callback) => {
     const session = ClientSessionServiceSingleton.getInstance();
-    const clientId = socket.handshake.auth.clientId;
+
+    const clientId = getSession(socket).playerId;
+    
     const clientSession = session.readSession(clientId);
     if (!clientSession || !clientSession.gameId) {
       dataTampered(io, socket);
