@@ -52,6 +52,28 @@ const cleanup = () => {
   });
 };
 
+/**
+ * `createSessionAuthMiddleware` normally fills `socket.data.session` during the
+ * handshake. Calling `factoryConnectHandler(io)(socket)` directly skips that
+ * step, so the mock has to seed it — `getSession()` reads `socket.data.session`
+ * and throws if the auth middleware never ran.
+ *
+ * `issuedToken` / `isNewPlayer` are deliberately absent: they are consumed by
+ * the security layer, not by the connection handler.
+ */
+const createMockSocket = (socketId: string, playerId: string) => {
+  const now = Math.floor(Date.now() / 1000);
+
+  return {
+    id: socketId,
+    // No longer read by the handler; kept because a real socket always has one.
+    handshake: { auth: {} },
+    data: { session: { playerId, iat: now, exp: now + 60 } },
+    emit: vi.fn(),
+    disconnect: vi.fn(),
+  } as any;
+};
+
 describe("factoryConnectHandler", () => {
   beforeEach(() => {
     vi.spyOn(console, "log").mockImplementation(() => undefined);
@@ -63,33 +85,15 @@ describe("factoryConnectHandler", () => {
     vi.clearAllMocks();
   });
 
-  it("disconnects invalid connections without registering handlers", () => {
-    const io = { emit: vi.fn() } as any;
-    const socket = {
-      handshake: { auth: {} },
-      disconnect: vi.fn(),
-      emit: vi.fn(),
-    } as any;
-
-    factoryConnectHandler(io)(socket);
-
-    expect(socket.disconnect).toHaveBeenCalledWith(true);
-    expect(registerRoomHandlers).not.toHaveBeenCalled();
-    expect(registerGameHandlers).not.toHaveBeenCalled();
-    expect(registerServerHandlers).not.toHaveBeenCalled();
-  });
-
   it("creates a session and emits lobby state for a fresh connection", () => {
     const io = { emit: vi.fn() } as any;
-    const socket = {
-      id: "new-socket",
-      handshake: { auth: { clientId: "new-player" } },
-      emit: vi.fn(),
-      disconnect: vi.fn(),
-    } as any;
+    const socket = createMockSocket("new-socket", "new-player");
 
     factoryConnectHandler(io)(socket);
 
+    // Regression guard: a stale `handshake.auth.clientId` check used to
+    // disconnect every connection before any handler ran.
+    expect(socket.disconnect).not.toHaveBeenCalled();
     expect(registerRoomHandlers).toHaveBeenCalledWith(io, socket);
     expect(registerGameHandlers).toHaveBeenCalledWith(io, socket);
     expect(registerServerHandlers).toHaveBeenCalledWith(io, socket);
@@ -116,15 +120,11 @@ describe("factoryConnectHandler", () => {
       emit: vi.fn(),
       to: vi.fn().mockReturnValue({ emit: vi.fn() }),
     } as any;
-    const socket = {
-      id: "live-socket",
-      handshake: { auth: { clientId: "owner" } },
-      emit: vi.fn(),
-      disconnect: vi.fn(),
-    } as any;
+    const socket = createMockSocket("live-socket", "owner");
 
     factoryConnectHandler(io)(socket);
 
+    expect(socket.disconnect).not.toHaveBeenCalled();
     expect(socket.emit).toHaveBeenCalledWith(
       "session_restored",
       expect.objectContaining({ id: "owner", socketId: "live-socket" }),
