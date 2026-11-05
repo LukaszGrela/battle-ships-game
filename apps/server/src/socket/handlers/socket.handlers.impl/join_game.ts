@@ -12,6 +12,7 @@ import { WarRoom } from "../../../services/WarRoom";
 import ActiveGameRegistrySingleton from "../../../services/active-game-registry";
 import { playerHasAnotherActiveGame } from "../../../utils/playerHasAnotherActiveGame";
 import { storeGameId } from "../../../utils/storeGameId";
+import { getSession } from "../../../security/auth";
 
 type TJoinGameHandler = IClientToServerEvents["join_game"];
 
@@ -21,7 +22,9 @@ export const factoryJoinGameHandler = (
 ): TJoinGameHandler => {
   return (roomIdentifier) => {
     const session = ClientSessionServiceSingleton.getInstance();
-    const clientId = socket.handshake.auth.clientId;
+
+    const clientId = getSession(socket).playerId;
+
     const activeGameRegistry = ActiveGameRegistrySingleton.getInstance();
 
     const roomId: Pick<TRoomIdentity, "id" | "name"> =
