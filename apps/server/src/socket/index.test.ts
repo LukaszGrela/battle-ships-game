@@ -5,6 +5,7 @@ import ClientSessionServiceSingleton from "../services/client-session.service";
 import ActiveUsersServiceSingleton from "../services/users.service";
 import { WarRoom } from "../services/WarRoom";
 import { factoryConnectHandler } from "./index";
+import { createSocket } from "./handlers/socket.handlers.impl/__tests/utils";
 import { registerRoomHandlers } from "./handlers/room.handlers";
 import { registerGameHandlers } from "./handlers/game.handlers";
 import { registerServerHandlers } from "./handlers/server.handlers";
@@ -52,28 +53,6 @@ const cleanup = () => {
   });
 };
 
-/**
- * `createSessionAuthMiddleware` normally fills `socket.data.session` during the
- * handshake. Calling `factoryConnectHandler(io)(socket)` directly skips that
- * step, so the mock has to seed it — `getSession()` reads `socket.data.session`
- * and throws if the auth middleware never ran.
- *
- * `issuedToken` / `isNewPlayer` are deliberately absent: they are consumed by
- * the security layer, not by the connection handler.
- */
-const createMockSocket = (socketId: string, playerId: string) => {
-  const now = Math.floor(Date.now() / 1000);
-
-  return {
-    id: socketId,
-    // No longer read by the handler; kept because a real socket always has one.
-    handshake: { auth: {} },
-    data: { session: { playerId, iat: now, exp: now + 60 } },
-    emit: vi.fn(),
-    disconnect: vi.fn(),
-  } as any;
-};
-
 describe("factoryConnectHandler", () => {
   beforeEach(() => {
     vi.spyOn(console, "log").mockImplementation(() => undefined);
@@ -87,7 +66,7 @@ describe("factoryConnectHandler", () => {
 
   it("creates a session and emits lobby state for a fresh connection", () => {
     const io = { emit: vi.fn() } as any;
-    const socket = createMockSocket("new-socket", "new-player");
+    const socket = createSocket("new-player", "new-socket");
 
     factoryConnectHandler(io)(socket);
 
@@ -120,7 +99,7 @@ describe("factoryConnectHandler", () => {
       emit: vi.fn(),
       to: vi.fn().mockReturnValue({ emit: vi.fn() }),
     } as any;
-    const socket = createMockSocket("live-socket", "owner");
+    const socket = createSocket("owner", "live-socket");
 
     factoryConnectHandler(io)(socket);
 

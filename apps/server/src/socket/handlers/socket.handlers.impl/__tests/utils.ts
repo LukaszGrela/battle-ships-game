@@ -2,9 +2,26 @@ import { createEmptyBoard, placeShip } from "@repo/game-logic";
 import { EGamePhase, TRoomState, TShip } from "@repo/types";
 import { vi } from "vitest";
 
+/**
+ * The handlers no longer read `handshake.auth.clientId` - identity comes from
+ * `getSession(socket).playerId`, which the auth middleware (see
+ * ../security/guards.ts) writes to `socket.data.session`. A fixture without
+ * `data.session` throws "Cannot read properties of undefined (reading 'session')".
+ *
+ * `clientId` is kept as the parameter name so every existing call site
+ * (`createSocket("owner")`) keeps working and means "this player".
+ */
 export const createSocket = (clientId: string, socketId?: string) => {
+  const now = Math.floor(Date.now() / 1000);
   const socket = {
-    handshake: { auth: { clientId } },
+    data: {
+      session: {
+        playerId: clientId,
+        iat: now,
+        exp: now + 60 * 60,
+      },
+    },
+    handshake: { auth: {} },
     emit: vi.fn(),
     join: vi.fn(),
     disconnect: vi.fn(),

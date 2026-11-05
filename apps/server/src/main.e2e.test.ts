@@ -12,7 +12,7 @@ import {
 import ActiveGameRegistrySingleton from "./services/active-game-registry";
 import ClientSessionServiceSingleton from "./services/client-session.service";
 import { createGameServer } from "./server.js";
-
+import { signSession } from "./security/auth.js";
 
 export const TEST_SESSION_SECRET =
   "test-only-secret-do-not-use-anywhere-else-0123456789";
@@ -69,6 +69,16 @@ const waitForGameState = (
   predicate: (state: TGameState) => boolean,
 ) => waitForEvent<TGameState>(socket, "game_updated", predicate);
 
+/**
+ * A packet dropped by the rate limiter never gets an ack, so a bare
+ * `emitWithAck` hangs until the 60s test timeout. This keeps a throttled shot
+ * a 5s failure with a message instead.
+ */
+const ACK_TIMEOUT_MS = 5_000;
+
+const attack = (socket: TestClient, target: { x: number; y: number }) =>
+  socket.timeout(ACK_TIMEOUT_MS).emitWithAck("attack_coordinate", target);
+
 const createFleet = (): (TShip & {
   type: "pending";
   id: TCellStatusShipId;
@@ -91,17 +101,19 @@ const fleetCells = [
 ];
 
 const missCells = Array.from({ length: 16 }, (_, index) =>
-  index < 10
-    ? { x: 9, y: index }
-    : { x: 8, y: index - 10 },
+  index < 10 ? { x: 9, y: index } : { x: 8, y: index - 10 },
 );
 
-async function connectToLobby(clientId: string, url: string): Promise<TestClient> {
+async function connectToLobby(
+  clientId: string,
+  url: string,
+): Promise<TestClient> {
+  const token = signSession({ playerId: clientId }, TEST_SESSION_SECRET, 3600);
   const socket = createSocketClient(url, {
-      auth: { clientId },
-      transports: ["websocket"],
-      reconnection: false,
-    }) as unknown as TestClient;
+    auth: { token },
+    transports: ["websocket"],
+    reconnection: false,
+  }) as unknown as TestClient;
   const connected = waitForEvent<void>(socket, "connect");
   const sessionCreated = waitForEvent(socket, "session_created");
   const lobbyUpdate = waitForEvent(socket, "open_games");
@@ -122,13 +134,10 @@ async function finishGameWithFleetAttacks(
   finishedState: Promise<TGameState>,
 ): Promise<TGameState> {
   for (const [index, target] of fleetCells.entries()) {
-    const result = await owner.emitWithAck("attack_coordinate", target);
+    const result = await attack(owner, target);
     expect(result.ok).toBe(true);
     if (index < fleetCells.length - 1) {
-      const missResult = await opponent.emitWithAck(
-        "attack_coordinate",
-        missCells[index]!,
-      );
+      const missResult = await attack(opponent, missCells[index]!);
       expect(missResult).toEqual({ ok: true, status: 0 });
     }
   }
@@ -152,217 +161,224 @@ describe("main Socket.IO E2E", () => {
       .forEach((session) => sessions.deleteSession(session.id));
   });
 
-  it(
-    "plays a full game, accepts and finishes a rematch, then lets both players leave",
-    async () => {
-      const server = createGameServer({
-        sessionSecret: TEST_SESSION_SECRET,
-        instrumentAdminUi: false,
-        reconnectSweepIntervalMs: 60_000,
-      });
-      closeServer = server.close;
-      await new Promise<void>((resolve) => {
-        server.httpServer.listen(0, "127.0.0.1", () => resolve());
-      });
-      const address = server.httpServer.address();
-      if (!address || typeof address === "string") {
-        throw new Error("Expected the test server to listen on a TCP port");
-      }
-      const url = `http://127.0.0.1:${address.port}`;
+  it("plays a full game, accepts and finishes a rematch, then lets both players leave", async () => {
+    const server = createGameServer({
+      sessionSecret: TEST_SESSION_SECRET,
+      instrumentAdminUi: false,
+      reconnectSweepIntervalMs: 60_000,
+      // Limits stay on - just wide enough that a full E2E run (~40 events per
+      // player, 17 attacks in one loop) is not mistaken for a flood.
+      rateLimit: {
+        burst: 10_000,
+        perSecond: 1_000,
+        eventBurst: 10_000,
+        eventPerSecond: 1_000,
+        maxViolationsBeforeDisconnect: 10_000,
+      },
+      ipLimit: {
+        capacity: 1_000,
+        refillPerSecond: 100,
+        denialsBeforeBan: 1_000,
+      },
+      maxConnectionsPerIp: 100,
+    });
+    closeServer = server.close;
+    await new Promise<void>((resolve) => {
+      server.httpServer.listen(0, "127.0.0.1", () => resolve());
+    });
+    const address = server.httpServer.address();
+    if (!address || typeof address === "string") {
+      throw new Error("Expected the test server to listen on a TCP port");
+    }
+    const url = `http://127.0.0.1:${address.port}`;
 
-      const owner = await connectToLobby("e2e-owner", url);
-      clients.push(owner);
-      const roomName = "E2E Battle Room";
+    const owner = await connectToLobby("e2e-owner", url);
+    clients.push(owner);
+    const roomName = "E2E Battle Room";
 
-      const ownerWelcome = waitForEvent<string>(owner, "welcome");
-      const ownerWaitingState = waitForGameState(
-        owner,
-        (state) => state.phase === EGamePhase.Waiting,
-      );
-      owner.emit("join_game", roomName);
-      await ownerWelcome;
-      const waitingState = await ownerWaitingState;
-      expect(waitingState.name).toBe(roomName);
-      expect(waitingState.self.id).toBe("e2e-owner");
+    const ownerWelcome = waitForEvent<string>(owner, "welcome");
+    const ownerWaitingState = waitForGameState(
+      owner,
+      (state) => state.phase === EGamePhase.Waiting,
+    );
+    owner.emit("join_game", roomName);
+    await ownerWelcome;
+    const waitingState = await ownerWaitingState;
+    expect(waitingState.name).toBe(roomName);
+    expect(waitingState.self.id).toBe("e2e-owner");
 
-      const opponent = await connectToLobby("e2e-opponent", url);
-      clients.push(opponent);
+    const opponent = await connectToLobby("e2e-opponent", url);
+    clients.push(opponent);
 
-      const opponentConnected = waitForEvent(owner, "opponent_connected");
-      const ownerPlacementState = waitForGameState(
-        owner,
-        (state) => state.phase === EGamePhase.Placement,
-      );
-      const opponentWelcome = waitForEvent<string>(opponent, "welcome");
-      const opponentPlacementState = waitForGameState(
-        opponent,
-        (state) => state.phase === EGamePhase.Placement,
-      );
-      opponent.emit("join_game", { id: waitingState.id, name: roomName });
-      await Promise.all([
-        opponentConnected,
-        opponentWelcome,
-        ownerPlacementState,
-        opponentPlacementState,
-      ]);
+    const opponentConnected = waitForEvent(owner, "opponent_connected");
+    const ownerPlacementState = waitForGameState(
+      owner,
+      (state) => state.phase === EGamePhase.Placement,
+    );
+    const opponentWelcome = waitForEvent<string>(opponent, "welcome");
+    const opponentPlacementState = waitForGameState(
+      opponent,
+      (state) => state.phase === EGamePhase.Placement,
+    );
+    opponent.emit("join_game", { id: waitingState.id, name: roomName });
+    await Promise.all([
+      opponentConnected,
+      opponentWelcome,
+      ownerPlacementState,
+      opponentPlacementState,
+    ]);
 
-      const ownerReady = waitForEvent(opponent, "player_ready");
-      const ownerReadyState = waitForGameState(
-        owner,
-        (state) => state.phase === EGamePhase.Placement && state.self.ready,
-      );
-      owner.emit("place_ships", createFleet());
-      await Promise.all([ownerReady, ownerReadyState]);
+    const ownerReady = waitForEvent(opponent, "player_ready");
+    const ownerReadyState = waitForGameState(
+      owner,
+      (state) => state.phase === EGamePhase.Placement && state.self.ready,
+    );
+    owner.emit("place_ships", createFleet());
+    await Promise.all([ownerReady, ownerReadyState]);
 
-      const firstGameOwnerState = waitForGameState(
-        owner,
-        (state) => state.phase === EGamePhase.Playing,
-      );
-      const firstGameOpponentState = waitForGameState(
-        opponent,
-        (state) => state.phase === EGamePhase.Playing,
-      );
-      opponent.emit("place_ships", createFleet());
-      await Promise.all([firstGameOwnerState, firstGameOpponentState]);
+    const firstGameOwnerState = waitForGameState(
+      owner,
+      (state) => state.phase === EGamePhase.Playing,
+    );
+    const firstGameOpponentState = waitForGameState(
+      opponent,
+      (state) => state.phase === EGamePhase.Playing,
+    );
+    opponent.emit("place_ships", createFleet());
+    await Promise.all([firstGameOwnerState, firstGameOpponentState]);
 
-      const opponentTurnState = waitForGameState(
-        opponent,
-        (state) =>
-          state.phase === EGamePhase.Playing &&
-          state.turn === "e2e-opponent" &&
-          state.lastAttack?.coords.x === 9 &&
-          state.lastAttack?.coords.y === 9,
-      );
-      const firstMiss = await owner.emitWithAck("attack_coordinate", {
-        x: 9,
-        y: 9,
-      });
-      expect(firstMiss).toEqual({ ok: true, status: 0 });
-      await opponentTurnState;
+    const opponentTurnState = waitForGameState(
+      opponent,
+      (state) =>
+        state.phase === EGamePhase.Playing &&
+        state.turn === "e2e-opponent" &&
+        state.lastAttack?.coords.x === 9 &&
+        state.lastAttack?.coords.y === 9,
+    );
+    const firstMiss = await attack(owner, { x: 9, y: 9 });
+    expect(firstMiss).toEqual({ ok: true, status: 0 });
+    await opponentTurnState;
 
-      const ownerTurnState = waitForGameState(
-        owner,
-        (state) =>
-          state.phase === EGamePhase.Playing && state.turn === "e2e-owner",
-      );
-      const opponentMiss = await opponent.emitWithAck("attack_coordinate", {
-        x: 9,
-        y: 8,
-      });
-      expect(opponentMiss).toEqual({ ok: true, status: 0 });
-      await ownerTurnState;
+    const ownerTurnState = waitForGameState(
+      owner,
+      (state) =>
+        state.phase === EGamePhase.Playing && state.turn === "e2e-owner",
+    );
+    const opponentMiss = await attack(opponent, { x: 9, y: 8 });
+    expect(opponentMiss).toEqual({ ok: true, status: 0 });
+    await ownerTurnState;
 
-      const firstFinishedOwnerState = waitForGameState(
-        owner,
-        (state) => state.phase === EGamePhase.Finished,
-      );
-      const firstFinishedOpponentState = waitForGameState(
-        opponent,
-        (state) => state.phase === EGamePhase.Finished,
-      );
-      const firstFinished = await finishGameWithFleetAttacks(
-        owner,
-        opponent,
-        firstFinishedOwnerState,
-      );
-      const firstFinishedForOpponent = await firstFinishedOpponentState;
-      expect(firstFinished.result).toEqual({
-        "e2e-owner": "win",
-        "e2e-opponent": "lost",
-      });
-      expect(firstFinishedForOpponent.phase).toBe(EGamePhase.Finished);
+    const firstFinishedOwnerState = waitForGameState(
+      owner,
+      (state) => state.phase === EGamePhase.Finished,
+    );
+    const firstFinishedOpponentState = waitForGameState(
+      opponent,
+      (state) => state.phase === EGamePhase.Finished,
+    );
+    const firstFinished = await finishGameWithFleetAttacks(
+      owner,
+      opponent,
+      firstFinishedOwnerState,
+    );
+    const firstFinishedForOpponent = await firstFinishedOpponentState;
+    expect(firstFinished.result).toEqual({
+      "e2e-owner": "win",
+      "e2e-opponent": "lost",
+    });
+    expect(firstFinishedForOpponent.phase).toBe(EGamePhase.Finished);
 
-      const rematchRequested = waitForEvent(owner, "rematch_requested");
-      const requestState = waitForGameState(
-        opponent,
-        (state) =>
-          state.phase === EGamePhase.Finished &&
-          state.rematchRequest?.status === "pending",
-      );
-      opponent.emit("request_rematch");
-      await Promise.all([rematchRequested, requestState]);
+    const rematchRequested = waitForEvent(owner, "rematch_requested");
+    const requestState = waitForGameState(
+      opponent,
+      (state) =>
+        state.phase === EGamePhase.Finished &&
+        state.rematchRequest?.status === "pending",
+    );
+    opponent.emit("request_rematch");
+    await Promise.all([rematchRequested, requestState]);
 
-      const ownerAccepted = waitForEvent(owner, "rematch_accepted");
-      const opponentAccepted = waitForEvent(opponent, "rematch_accepted");
-      const ownerRematchPlacement = waitForGameState(
-        owner,
-        (state) => state.phase === EGamePhase.Placement,
-      );
-      const opponentRematchPlacement = waitForGameState(
-        opponent,
-        (state) => state.phase === EGamePhase.Placement,
-      );
-      owner.emit("accept_rematch");
-      await Promise.all([
-        ownerAccepted,
-        opponentAccepted,
-        ownerRematchPlacement,
-        opponentRematchPlacement,
-      ]);
+    const ownerAccepted = waitForEvent(owner, "rematch_accepted");
+    const opponentAccepted = waitForEvent(opponent, "rematch_accepted");
+    const ownerRematchPlacement = waitForGameState(
+      owner,
+      (state) => state.phase === EGamePhase.Placement,
+    );
+    const opponentRematchPlacement = waitForGameState(
+      opponent,
+      (state) => state.phase === EGamePhase.Placement,
+    );
+    owner.emit("accept_rematch");
+    await Promise.all([
+      ownerAccepted,
+      opponentAccepted,
+      ownerRematchPlacement,
+      opponentRematchPlacement,
+    ]);
 
-      const rematchOwnerPlaying = waitForGameState(
-        owner,
-        (state) => state.phase === EGamePhase.Playing,
-      );
-      const rematchOpponentPlaying = waitForGameState(
-        opponent,
-        (state) => state.phase === EGamePhase.Playing,
-      );
-      owner.emit("place_ships", createFleet());
-      opponent.emit("place_ships", createFleet());
-      await Promise.all([rematchOwnerPlaying, rematchOpponentPlaying]);
+    const rematchOwnerPlaying = waitForGameState(
+      owner,
+      (state) => state.phase === EGamePhase.Playing,
+    );
+    const rematchOpponentPlaying = waitForGameState(
+      opponent,
+      (state) => state.phase === EGamePhase.Playing,
+    );
+    owner.emit("place_ships", createFleet());
+    opponent.emit("place_ships", createFleet());
+    await Promise.all([rematchOwnerPlaying, rematchOpponentPlaying]);
 
-      const rematchFinishedOwnerState = waitForGameState(
-        owner,
-        (state) => state.phase === EGamePhase.Finished,
-      );
-      const rematchFinishedOpponentState = waitForGameState(
-        opponent,
-        (state) => state.phase === EGamePhase.Finished,
-      );
-      const rematchFinished = await finishGameWithFleetAttacks(
-        owner,
-        opponent,
-        rematchFinishedOwnerState,
-      );
-      const rematchFinishedForOpponent = await rematchFinishedOpponentState;
-      expect(rematchFinished.result).toEqual({
-        "e2e-owner": "win",
-        "e2e-opponent": "lost",
-      });
-      expect(
-        (rematchFinished as TGameState & {
+    const rematchFinishedOwnerState = waitForGameState(
+      owner,
+      (state) => state.phase === EGamePhase.Finished,
+    );
+    const rematchFinishedOpponentState = waitForGameState(
+      opponent,
+      (state) => state.phase === EGamePhase.Finished,
+    );
+    const rematchFinished = await finishGameWithFleetAttacks(
+      owner,
+      opponent,
+      rematchFinishedOwnerState,
+    );
+    const rematchFinishedForOpponent = await rematchFinishedOpponentState;
+    expect(rematchFinished.result).toEqual({
+      "e2e-owner": "win",
+      "e2e-opponent": "lost",
+    });
+    expect(
+      (
+        rematchFinished as TGameState & {
           phase: EGamePhase.Finished;
           battleResults: Record<string, number>;
-        }).battleResults,
-      ).toEqual({
-        "e2e-owner": 1,
-        "e2e-opponent": 0,
-      });
-      expect(rematchFinishedForOpponent.phase).toBe(EGamePhase.Finished);
+        }
+      ).battleResults,
+    ).toEqual({
+      "e2e-owner": 1,
+      "e2e-opponent": 0,
+    });
+    expect(rematchFinishedForOpponent.phase).toBe(EGamePhase.Finished);
 
-      const activeRoom = activeGames.getRoom(rematchFinished.id)!;
-      expect(activeRoom.getPlayer("e2e-owner")?.active).toBe(true);
-      expect(activeRoom.getPlayer("e2e-opponent")?.active).toBe(true);
-      expect(sessions.readSession("e2e-owner")?.socketId).toBe(owner.id);
-      expect(sessions.readSession("e2e-opponent")?.socketId).toBe(opponent.id);
+    const activeRoom = activeGames.getRoom(rematchFinished.id)!;
+    expect(activeRoom.getPlayer("e2e-owner")?.active).toBe(true);
+    expect(activeRoom.getPlayer("e2e-opponent")?.active).toBe(true);
+    expect(sessions.readSession("e2e-owner")?.socketId).toBe(owner.id);
+    expect(sessions.readSession("e2e-opponent")?.socketId).toBe(opponent.id);
 
-      const opponentLeft = waitForCondition(
-        () => sessions.readSession("e2e-opponent")?.gameId === undefined,
-        "opponent leave to clear their game session",
-      );
-      opponent.emit("leave_game");
-      await opponentLeft;
-      const ownerLeft = waitForCondition(
-        () => sessions.readSession("e2e-owner")?.gameId === undefined,
-        "owner leave to clear their game session",
-      );
-      owner.emit("leave_game");
-      await ownerLeft;
+    const opponentLeft = waitForCondition(
+      () => sessions.readSession("e2e-opponent")?.gameId === undefined,
+      "opponent leave to clear their game session",
+    );
+    opponent.emit("leave_game");
+    await opponentLeft;
+    const ownerLeft = waitForCondition(
+      () => sessions.readSession("e2e-owner")?.gameId === undefined,
+      "owner leave to clear their game session",
+    );
+    owner.emit("leave_game");
+    await ownerLeft;
 
-      expect(sessions.readSession("e2e-owner")?.gameId).toBeUndefined();
-      expect(sessions.readSession("e2e-opponent")?.gameId).toBeUndefined();
-    },
-    60_000,
-  );
+    expect(sessions.readSession("e2e-owner")?.gameId).toBeUndefined();
+    expect(sessions.readSession("e2e-opponent")?.gameId).toBeUndefined();
+  }, 60_000);
 });

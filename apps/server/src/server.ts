@@ -9,6 +9,10 @@ import {
   type ISocketSecurityLogger,
   type ISocketSecurityOptions,
 } from "./security/guards";
+import type {
+  IIpLimiterOptions,
+  ISocketRateLimitOptions,
+} from "./security/rateLimit";
 
 export interface IGameServerOptions {
   instrumentAdminUi?: boolean;
@@ -18,16 +22,16 @@ export interface IGameServerOptions {
   /** Browser origins allowed to connect. Fail-closed: defaults to the dev list. */
   allowedOrigins?: ISocketSecurityOptions["allowedOrigins"];
   maxConnectionsPerIp?: number;
+  /**
+   * Per-socket token bucket overrides. Tests widen these: one E2E run fires far
+   * more events than a real player, and a dropped packet that requested an ack
+   * never answers, so an under-sized bucket shows up as a 60s hang.
+   */
+  rateLimit?: Partial<ISocketRateLimitOptions>;
+  /** Per-IP handshake limiter overrides. Tests share 127.0.0.1. */
+  ipLimit?: Partial<IIpLimiterOptions>;
   /** Enable only behind a proxy you control (nginx / Cloudflare / ALB). */
   trustProxy?: boolean;
-  /**
-   * Overrides the per-socket event buckets. Test-only in practice: every test
-   * client shares 127.0.0.1, so an ordinary connect/disconnect loop trips the
-   * production limits and fails as an unrelated `connect_error`.
-   */
-  rateLimit?: ISocketSecurityOptions["rateLimit"];
-  /** Overrides the per-IP handshake bucket and ban. Same caveat as `rateLimit`. */
-  ipLimit?: ISocketSecurityOptions["ipLimit"];
   logger?: ISocketSecurityLogger;
 }
 
@@ -46,9 +50,9 @@ export function createGameServer({
   sessionSecret = process.env.SESSION_SECRET,
   allowedOrigins,
   maxConnectionsPerIp,
-  trustProxy,
   rateLimit,
   ipLimit,
+  trustProxy,
   logger,
 }: IGameServerOptions = {}) {
   const isProd = process.env.NODE_ENV === "production";
@@ -73,9 +77,9 @@ export function createGameServer({
     // does nothing at all. The `cors` block below only guards the polling XHR.
     allowedOrigins: allowed,
     maxConnectionsPerIp,
-    trustProxy,
     rateLimit,
     ipLimit,
+    trustProxy,
     logger,
   });
 
