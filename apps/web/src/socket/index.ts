@@ -1,7 +1,7 @@
 import { IClientToServerEvents, IServerToClientEvents } from "@repo/types";
 import { useCallback } from "react";
 import { io, type Socket } from "socket.io-client";
-import { getClientId } from "./getClientId";
+import { getSessionToken, setSessionToken } from "./sessionTokenStorage";
 
 const URL =
   import.meta.env.MODE === "production"
@@ -11,9 +11,9 @@ const URL =
 export const socket: Socket<IServerToClientEvents, IClientToServerEvents> = io(
   URL,
   {
-    auth: {
-      clientId: getClientId(),
-    },
+    // Function form: evaluated on EVERY connection attempt, so a reconnect
+    // always sends the most recent (renewed) token, not the one from page load.
+    auth: (cb) => cb({ token: getSessionToken() }),
     autoConnect: false,
     transports: ["websocket"],
 
@@ -23,6 +23,10 @@ export const socket: Socket<IServerToClientEvents, IClientToServerEvents> = io(
     reconnectionDelayMax: 2_000,
   },
 );
+
+// Sent by the server on every successful connect (first visit: brand-new
+// identity; later: the same identity with a renewed expiry).
+socket.on("session_token", setSessionToken);
 
 if (import.meta.env.MODE === "development") {
   socket.onAny((event, ...args) => {

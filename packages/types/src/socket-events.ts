@@ -108,4 +108,5 @@ export interface IServerToClientEvents {
    * @returns
    */
   session_created: (newSession: IClientSession) => void;
+  session_token: (token: string) => void;
 }
