@@ -39,7 +39,7 @@ export const PlayerAvatar: FC<{
 
     const rnd = random.nextInt(0, ALL_ATLASES_SPRITES - 1);
 
-    return mapIndexToAtlas(rnd);
+    return mapIndexToAtlas(rnd, ALL_ATLASES_SPRITES);
   }, [player.seed]);
 
   return <PirateAvatar {...params} className={className} />;
