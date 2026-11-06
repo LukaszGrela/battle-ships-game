@@ -42,32 +42,71 @@ function waitForCondition(
   });
 }
 
+/**
+ * Application events only. `connect`, `connect_error` and `disconnect` are
+ * reserved: they live in `SocketReservedEventsMap`, not in
+ * `IServerToClientEvents`, so a key constrained to this union can never name
+ * them. Those three are awaited through `waitForConnect` below, where the
+ * literal resolves socket.io-client's built-in overload.
+ */
+type TAppEvent = keyof IServerToClientEvents;
+
+/**
+ * `socket.on` is generic over
+ * `ReservedOrUserEventNames<SocketReservedEvents, IServerToClientEvents>` and its
+ * listener parameter is the matching union of every listener signature. A helper
+ * that indexes an event name from a variable cannot satisfy that without a cast,
+ * so the cast lives here once instead of at each call site. The event name stays
+ * checked against `TAppEvent`; the payload type is asserted by the caller via `T`.
+ */
+type TListener = (payload: unknown) => void;
+const rawEmitter = (socket: TestClient) =>
+  socket as unknown as {
+    on: (event: string, listener: TListener) => void;
+    off: (event: string, listener: TListener) => void;
+  };
+
 function waitForEvent<T>(
   socket: TestClient,
-  event: string,
+  event: TAppEvent,
   predicate: (payload: T) => boolean = () => true,
 ): Promise<T> {
+  const emitter = rawEmitter(socket);
+
   return new Promise((resolve, reject) => {
     const timeout = setTimeout(() => {
-      (socket as any).off(event, listener);
+      emitter.off(event, listener);
       reject(new Error(`Timed out waiting for '${event}'`));
     }, eventTimeoutMs);
 
-    const listener = (payload: T) => {
-      if (!predicate(payload)) return;
+    const listener: TListener = (payload) => {
+      const typed = payload as T;
+      if (!predicate(typed)) return;
       clearTimeout(timeout);
-      (socket as any).off(event, listener);
-      resolve(payload);
+      emitter.off(event, listener);
+      resolve(typed);
     };
 
-    (socket as any).on(event, listener);
+    emitter.on(event, listener);
   });
 }
 
 const waitForGameState = (
   socket: TestClient,
   predicate: (state: TGameState) => boolean,
-) => waitForEvent<TGameState>(socket, "game_updated", predicate);
+) => waitForEvent(socket, "game_updated", predicate);
+
+/**
+ * `connect` is a reserved engine.io event, not a member of
+ * `IServerToClientEvents`, so it is awaited here with its own literal overload.
+ */
+function waitForConnect(socket: TestClient): Promise<void> {
+  if (socket.connected) return Promise.resolve();
+  return new Promise((resolve, reject) => {
+    socket.once("connect", () => resolve());
+    socket.once("connect_error", reject);
+  });
+}
 
 /**
  * A packet dropped by the rate limiter never gets an ack, so a bare
@@ -113,11 +152,15 @@ async function connectToLobby(
     auth: { token },
     transports: ["websocket"],
     reconnection: false,
+    // `io()` auto-connects on creation, which would start the handshake before
+    // the listeners below are attached - `session_created` / `open_games` would
+    // be missed and the test would sit until the timeout. Connect explicitly.
+    autoConnect: false,
   }) as unknown as TestClient;
-  const connected = waitForEvent<void>(socket, "connect");
+  const connected = waitForConnect(socket);
   const sessionCreated = waitForEvent(socket, "session_created");
   const lobbyUpdate = waitForEvent(socket, "open_games");
-  const initialGameState = waitForEvent<null>(
+  const initialGameState = waitForEvent(
     socket,
     "game_updated",
     (state) => state === null,
@@ -196,7 +239,7 @@ describe("main Socket.IO E2E", () => {
     clients.push(owner);
     const roomName = "E2E Battle Room";
 
-    const ownerWelcome = waitForEvent<string>(owner, "welcome");
+    const ownerWelcome = waitForEvent(owner, "welcome");
     const ownerWaitingState = waitForGameState(
       owner,
       (state) => state.phase === EGamePhase.Waiting,
@@ -215,7 +258,7 @@ describe("main Socket.IO E2E", () => {
       owner,
       (state) => state.phase === EGamePhase.Placement,
     );
-    const opponentWelcome = waitForEvent<string>(opponent, "welcome");
+    const opponentWelcome = waitForEvent(opponent, "welcome");
     const opponentPlacementState = waitForGameState(
       opponent,
       (state) => state.phase === EGamePhase.Placement,
