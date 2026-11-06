@@ -37,7 +37,7 @@ export const factoryDisconnectHandler =
 
     ActiveUsersServiceSingleton.getInstance().removeUser(socket.id);
 
-    if (!clientId || !clientSession || !clientSession.gameId) {
+    if (!clientSession || !clientSession.gameId) {
       emitStats(io);
       return;
     }
