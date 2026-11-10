@@ -1,13 +1,15 @@
 {
   "name": "@repo/server",
   "private": true,
-  "version": "0.1.1",
+  "version": "0.2.2",
   "scripts": {
     "dev": "node --env-file-if-exists=.env --import tsx --watch src/main.ts",
-    "build": "tsc",
+    "build": "tsup && node scripts/deploy-package-json.js",
     "start": "node dist/main.js",
     "test": "vitest run",
-    "check-types":"tsc --noEmit"
+    "check-types": "tsc --noEmit -p tsconfig.check.json",
+    "clean": "rm -rf dist",
+    "prebuild": "pnpm clean"
   },
   "dependencies": {
     "@repo/game-logic": "workspace:*",
@@ -20,6 +22,7 @@
     "@socket.io/admin-ui": "^0.5.1",
     "@types/node": "^26.4.0",
     "socket.io-client": "^4.8.3",
+    "tsup": "^9.0.0",
     "tsx": "^4.23.13",
     "vitest": "^5.0.1"
   }

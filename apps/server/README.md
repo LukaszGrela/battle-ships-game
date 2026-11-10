@@ -2,6 +2,13 @@
 
 This server is the authoritative state machine for multiplayer battleship matches. It owns the client session registry, room lifecycle, disconnect policy, and Socket.IO-based game updates.
 
+## Deployment
+
+Following environment variables are required to be set on the server (process.env.*):
+- NODE_ENV - set to "production"
+- SESSION_SECRET - secret used to sign session tokens. [Read more](./src/security/README.md#session_secret)
+- PORT - to change default (3001) value
+
 ## Core model
 
 ### Sessions
