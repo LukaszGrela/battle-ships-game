@@ -56,7 +56,7 @@ describe("createGameServer (integration)", () => {
     ctx = await createTestServer();
 
     const forged = signSession(
-      { playerId: "someone-else" },
+      { playerId: "someone-else", seed: 123 },
       "wrong-secret",
       60,
     );
