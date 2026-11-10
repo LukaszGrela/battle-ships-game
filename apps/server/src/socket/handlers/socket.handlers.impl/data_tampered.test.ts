@@ -19,7 +19,7 @@ const createPlayer = (id: string, owner = false): IPlayer => ({
 });
 
 const addSessionToRoom = (id: string, socketId: string, roomId: string) => {
-  const session = sessionService.createSession(id, socketId);
+  const session = sessionService.createSession(id, 1, socketId);
   session.gameId = roomId;
   sessionService.updateSession(id, session);
 };
@@ -35,7 +35,11 @@ describe("dataTampered", () => {
   it("emits a server error, clears the client session, and disconnects the socket", () => {
     const io = createIo();
     const socket = createSocket("tampered-client", "tampered-client-socket");
-    sessionService.createSession("tampered-client", "tampered-client-socket");
+    sessionService.createSession(
+      "tampered-client",
+      1,
+      "tampered-client-socket",
+    );
 
     dataTampered(io, socket);
 

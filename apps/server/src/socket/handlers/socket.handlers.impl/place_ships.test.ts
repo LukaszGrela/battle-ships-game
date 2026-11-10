@@ -27,12 +27,13 @@ const createPlayer = (id: string, name: string, owner = false): IPlayer => ({
 });
 
 const createPlacementRoom = (id: string, name: string) => {
-  const ownerSession = sessionService.createSession("owner", "owner-socket");
+  const ownerSession = sessionService.createSession("owner", 1, "owner-socket");
   ownerSession.name = "Captain Black";
   sessionService.updateSession("owner", ownerSession);
 
   const opponentSession = sessionService.createSession(
     "opponent",
+    2,
     "opponent-socket",
   );
   opponentSession.name = "Captain Red";

@@ -90,7 +90,7 @@ describe("factoryConnectHandler", () => {
     });
     activeGames.addRoom(room.id, room);
 
-    const session = sessions.createSession("owner", "stale-socket");
+    const session = sessions.createSession("owner", 1, "stale-socket");
     session.name = "Captain Black";
     session.gameId = room.id;
     sessions.updateSession("owner", session);

@@ -1,10 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
-import {
-  EGamePhase,
-  IPlayer,
-  TCellStatusShipId,
-  TShip,
-} from "@repo/types";
+import { EGamePhase, IPlayer, TCellStatusShipId, TShip } from "@repo/types";
 import ActiveGameRegistrySingleton from "../../../services/active-game-registry";
 import ClientSessionServiceSingleton from "../../../services/client-session.service";
 import { WarRoom } from "../../../services/WarRoom";
@@ -57,11 +52,11 @@ const createPlayingRoom = (roomId: string, firstTurn = "owner") => {
 };
 
 const createSessionsForRoom = (roomId: string) => {
-  for (const [id, socketId] of [
-    ["owner", "owner-socket"],
-    ["opponent", "opponent-socket"],
+  for (const [id, socketId, seed] of [
+    ["owner", "owner-socket", 1] as const,
+    ["opponent", "opponent-socket", 2] as const,
   ]) {
-    const session = sessionService.createSession(id!, socketId!, roomId);
+    const session = sessionService.createSession(id, seed, socketId!);
     session.gameId = roomId;
     sessionService.updateSession(id!, session);
   }
@@ -70,7 +65,7 @@ const createSessionsForRoom = (roomId: string) => {
 describe("attack_coordinate handler", () => {
   afterEach(() => {
     activeGames.listRooms().forEach(({ id }) => activeGames.deleteRoom(id));
-  ["owner", "opponent"].forEach((id) => sessionService.deleteSession(id));
+    ["owner", "opponent"].forEach((id) => sessionService.deleteSession(id));
   });
 
   it("applies a valid hit, flips the turn, and emits the updated game state", () => {
@@ -101,7 +96,6 @@ describe("attack_coordinate handler", () => {
         phase: EGamePhase.Playing,
       }),
     );
-
   });
 
   it("rejects an attack when it is not the player's turn", () => {
@@ -130,7 +124,6 @@ describe("attack_coordinate handler", () => {
       "game_updated",
       expect.anything(),
     );
-
   });
 
   it("finishes the match when the enemy fleet is sunk", () => {
@@ -158,7 +151,10 @@ describe("attack_coordinate handler", () => {
     });
 
     expect(room.getPhase()).toBe(EGamePhase.Finished);
-    expect(room.getGameState("owner")?.result).toEqual({ owner: "win", opponent: "lost" });
+    expect(room.getGameState("owner")?.result).toEqual({
+      owner: "win",
+      opponent: "lost",
+    });
     expect(io._toSpy).toHaveBeenCalledWith(
       "game_updated",
       expect.objectContaining({
@@ -166,6 +162,5 @@ describe("attack_coordinate handler", () => {
         id: roomId,
       }),
     );
-
   });
 });

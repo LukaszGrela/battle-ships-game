@@ -14,10 +14,9 @@ export const factoryConnectHandler =
   (io: Server<IClientToServerEvents, IServerToClientEvents>) =>
   (socket: Socket<IClientToServerEvents, IServerToClientEvents>) => {
     const sessions = ClientSessionServiceSingleton.getInstance();
-    const clientId = getSession(socket).playerId;
+    const sessionPayload = getSession(socket);
+    const clientId = sessionPayload.playerId;
     console.log("[factoryConnectHandler]", clientId, sessions);
-
-
 
     // register listener
     registerRoomHandlers(io, socket);
@@ -56,7 +55,7 @@ export const factoryConnectHandler =
     } else {
       socket.emit(
         "session_created",
-        sessions.createSession(clientId, socket.id),
+        sessions.createSession(clientId, sessionPayload.seed, socket.id),
       );
     }
 

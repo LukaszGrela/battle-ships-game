@@ -1,10 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
-import {
-  EGamePhase,
-  IPlayer,
-  TCellStatusShipId,
-  TShip,
-} from "@repo/types";
+import { EGamePhase, IPlayer, TCellStatusShipId, TShip } from "@repo/types";
 import ActiveGameRegistrySingleton from "../../../services/active-game-registry";
 import ClientSessionServiceSingleton from "../../../services/client-session.service";
 import { WarRoom } from "../../../services/WarRoom";
@@ -56,8 +51,8 @@ const createFinishedWarRoom = (roomId: string) => {
 };
 
 const createSessions = () => {
-  sessionService.createSession("owner", "owner-socket");
-  sessionService.createSession("opponent", "opponent-socket");
+  sessionService.createSession("owner", 1, "owner-socket");
+  sessionService.createSession("opponent", 2, "opponent-socket");
 };
 
 describe("rematch handlers", () => {
@@ -111,7 +106,10 @@ describe("rematch handlers", () => {
 
     expect(room.getPhase()).toBe(EGamePhase.Placement);
     expect(room.battlesPlayed).toBe(1);
-    expect(room.getPlayer("owner")).toMatchObject({ ready: false, owner: true });
+    expect(room.getPlayer("owner")).toMatchObject({
+      ready: false,
+      owner: true,
+    });
     expect(room.getPlayer("opponent")?.ready).toBe(false);
     expect(sessionService.readSession("owner")?.gameId).toBe(room.id);
     expect(sessionService.readSession("opponent")?.gameId).toBe(room.id);

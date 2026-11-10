@@ -145,9 +145,14 @@ const missCells = Array.from({ length: 16 }, (_, index) =>
 
 async function connectToLobby(
   clientId: string,
+  seed: number,
   url: string,
 ): Promise<TestClient> {
-  const token = signSession({ playerId: clientId }, TEST_SESSION_SECRET, 3600);
+  const token = signSession(
+    { playerId: clientId, seed },
+    TEST_SESSION_SECRET,
+    3600,
+  );
   const socket = createSocketClient(url, {
     auth: { token },
     transports: ["websocket"],
@@ -235,7 +240,7 @@ describe("main Socket.IO E2E", () => {
     }
     const url = `http://127.0.0.1:${address.port}`;
 
-    const owner = await connectToLobby("e2e-owner", url);
+    const owner = await connectToLobby("e2e-owner", 1, url);
     clients.push(owner);
     const roomName = "E2E Battle Room";
 
@@ -250,7 +255,7 @@ describe("main Socket.IO E2E", () => {
     expect(waitingState.name).toBe(roomName);
     expect(waitingState.self.id).toBe("e2e-owner");
 
-    const opponent = await connectToLobby("e2e-opponent", url);
+    const opponent = await connectToLobby("e2e-opponent", 2, url);
     clients.push(opponent);
 
     const opponentConnected = waitForEvent(owner, "opponent_connected");

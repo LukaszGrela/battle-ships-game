@@ -18,7 +18,11 @@ const createPlayer = (id: string, owner = false): IPlayer => ({
 });
 
 const createRoom = () => {
-  const room = new WarRoom("room-1", "Pirate Room", createPlayer("owner", true));
+  const room = new WarRoom(
+    "room-1",
+    "Pirate Room",
+    createPlayer("owner", true),
+  );
   room.addPlayer(createPlayer("opponent"));
   activeGames.addRoom(room.id, room);
   return room;
@@ -37,8 +41,8 @@ describe("emitRoomStateToPlayers", () => {
       to: vi.fn().mockReturnValue({ emit }),
     } as any;
 
-    sessionService.createSession("owner", "owner-socket");
-    sessionService.createSession("opponent", "opponent-socket");
+    sessionService.createSession("owner", 1, "owner-socket");
+    sessionService.createSession("opponent", 2, "opponent-socket");
 
     emitRoomStateToPlayers(io, "owner", room.id, "owner");
 
@@ -56,7 +60,7 @@ describe("emitRoomStateToPlayers", () => {
       to: vi.fn().mockReturnValue({ emit: vi.fn() }),
     } as any;
 
-    sessionService.createSession("owner", "owner-socket");
+    sessionService.createSession("owner", 1, "owner-socket");
     sessionService.deleteSession("opponent");
 
     emitRoomStateToPlayers(io, "owner", room.id);

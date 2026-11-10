@@ -1,10 +1,10 @@
-import { stableHash } from "@repo/game-logic";
 import { IClientSession } from "@repo/types";
 import { getShortPirateName } from "../utils/getPirateyName";
 
 export interface IClientSessionService {
   createSession: (
     id: string,
+    seed: number,
     socketId: string,
     gameId?: string,
   ) => IClientSession;
@@ -19,12 +19,16 @@ export interface IClientSessionService {
 export class ClientSessionService implements IClientSessionService {
   private sessions = new Map<string, IClientSession>();
 
-  createSession(id: string, socketId: string, gameId?: string): IClientSession {
+  createSession(
+    id: string,
+    seed: number,
+    socketId: string,
+    gameId?: string,
+  ): IClientSession {
     const existingSession = this.sessions.get(id);
     if (existingSession) {
       return existingSession;
     }
-    const seed = stableHash(id);
     const session: IClientSession = {
       id,
       socketId,

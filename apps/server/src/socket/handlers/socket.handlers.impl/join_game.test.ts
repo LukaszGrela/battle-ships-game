@@ -19,11 +19,10 @@ const createPlayer = (id: string, name: string): IPlayer => ({
 });
 
 const createWaitingRoom = (id: string, ownerId = "owner") => {
-  const room = new WarRoom(
-    id,
-    `Room ${id}`,
-    { ...createPlayer(ownerId, `Player ${ownerId}`), owner: true },
-  );
+  const room = new WarRoom(id, `Room ${id}`, {
+    ...createPlayer(ownerId, `Player ${ownerId}`),
+    owner: true,
+  });
   activeGames.addRoom(id, room);
   return room;
 };
@@ -49,7 +48,7 @@ describe("join_game handler", () => {
   });
 
   it("creates a waiting WarRoom for a valid owner and sends the welcome game state", () => {
-    sessions.createSession("owner", "owner-socket");
+    sessions.createSession("owner", 1, "owner-socket");
     const io = createIo();
     const socket = createSocket("owner", "owner-socket");
     const handler = factoryJoinGameHandler(io, socket);
@@ -89,10 +88,14 @@ describe("join_game handler", () => {
   });
 
   it("adds the opponent, transitions to placement, and emits opponent and game updates", () => {
-    const ownerSession = sessions.createSession("owner", "owner-socket");
+    const ownerSession = sessions.createSession("owner", 1, "owner-socket");
     ownerSession.name = "Captain Black";
     sessions.updateSession("owner", ownerSession);
-    const opponentSession = sessions.createSession("opponent", "opponent-socket");
+    const opponentSession = sessions.createSession(
+      "opponent",
+      2,
+      "opponent-socket",
+    );
     opponentSession.name = "Captain Red";
     sessions.updateSession("opponent", opponentSession);
     const room = createWaitingRoom("join-room-id");
@@ -145,9 +148,9 @@ describe("join_game handler", () => {
   });
 
   it("rejects joining when the player already has another active game", () => {
-    sessions.createSession("owner", "owner-socket");
-    sessions.createSession("opponent", "opponent-socket");
-    sessions.createSession("busy", "busy-socket");
+    sessions.createSession("owner", 1, "owner-socket");
+    sessions.createSession("opponent", 2, "opponent-socket");
+    sessions.createSession("busy", 3, "busy-socket");
     const roomToJoin = createWaitingRoom("join-target");
     createWaitingRoom("busy-room", "busy");
     const busySession = sessions.readSession("busy")!;
@@ -170,9 +173,9 @@ describe("join_game handler", () => {
   });
 
   it("rejects a join when the room is already full", () => {
-    sessions.createSession("owner", "owner-socket");
-    sessions.createSession("opponent", "opponent-socket");
-    sessions.createSession("third", "third-socket");
+    sessions.createSession("owner", 1, "owner-socket");
+    sessions.createSession("opponent", 2, "opponent-socket");
+    sessions.createSession("third", 3, "third-socket");
     const room = createWaitingRoom("join-room-full");
     expect(room.addPlayer(createPlayer("opponent", "Captain Red"))).toBe(true);
     expect(room.getPhase()).toBe(EGamePhase.Placement);

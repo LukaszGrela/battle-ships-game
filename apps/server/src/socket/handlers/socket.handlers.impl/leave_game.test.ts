@@ -87,7 +87,11 @@ describe("leave_game handler", () => {
 
   it("destroys a waiting room and clears the owner session when the player leaves early", () => {
     const room = createWaitingRoom("leave-waiting");
-    const ownerSession = sessionService.createSession("owner", "owner-socket");
+    const ownerSession = sessionService.createSession(
+      "owner",
+      1,
+      "owner-socket",
+    );
     ownerSession.name = "Captain Black";
     sessionService.updateSession("owner", ownerSession);
     linkSessionToRoom("owner", room.id);
@@ -106,11 +110,16 @@ describe("leave_game handler", () => {
 
   it("moves a placement room back to waiting when the player leaves", () => {
     const room = createPlacementRoom("leave-placement");
-    const ownerSession = sessionService.createSession("owner", "owner-socket");
+    const ownerSession = sessionService.createSession(
+      "owner",
+      1,
+      "owner-socket",
+    );
     ownerSession.name = "Captain Black";
     sessionService.updateSession("owner", ownerSession);
     const opponentSession = sessionService.createSession(
       "opponent",
+      2,
       "opponent-socket",
     );
     opponentSession.name = "Captain Red";
@@ -156,11 +165,16 @@ describe("leave_game handler", () => {
     expect(room.placeShips("owner", createFleet())).toBe(true);
     expect(room.getPlayer("owner")?.ready).toBe(true);
 
-    const ownerSession = sessionService.createSession("owner", "owner-socket");
+    const ownerSession = sessionService.createSession(
+      "owner",
+      1,
+      "owner-socket",
+    );
     ownerSession.name = "Captain Black";
     sessionService.updateSession("owner", ownerSession);
     const opponentSession = sessionService.createSession(
       "opponent",
+      2,
       "opponent-socket",
     );
     opponentSession.name = "Captain Red";
@@ -179,15 +193,16 @@ describe("leave_game handler", () => {
       ready: false,
       active: true,
     });
-    expect(room.getGameState("owner")?.myBoard.every((row) =>
-      row.every((cell) => cell === -1),
-    )).toBe(true);
+    expect(
+      room
+        .getGameState("owner")
+        ?.myBoard.every((row) => row.every((cell) => cell === -1)),
+    ).toBe(true);
     expect(sessionService.readSession("opponent")?.gameId).toBeUndefined();
 
     expect(room.addPlayer(createPlayer("third", "Captain Green"))).toBe(true);
     const ownerPlacementState = room.getGameState("owner") as
-      | (TGameState & { phase: EGamePhase.Placement })
-      | null;
+      (TGameState & { phase: EGamePhase.Placement }) | null;
     expect(ownerPlacementState?.phase).toBe(EGamePhase.Placement);
     expect(ownerPlacementState?.self.ready).toBe(false);
     expect(
@@ -199,11 +214,16 @@ describe("leave_game handler", () => {
 
   it("forfeits the game when a player leaves during play", () => {
     const room = createPlayingRoom("leave-playing");
-    const ownerSession = sessionService.createSession("owner", "owner-socket");
+    const ownerSession = sessionService.createSession(
+      "owner",
+      1,
+      "owner-socket",
+    );
     ownerSession.name = "Captain Black";
     sessionService.updateSession("owner", ownerSession);
     const opponentSession = sessionService.createSession(
       "opponent",
+      2,
       "opponent-socket",
     );
     opponentSession.name = "Captain Red";
@@ -236,11 +256,16 @@ describe("leave_game handler", () => {
     game.updatePlayer({ id: "owner", active: true, ready: true });
     game.updatePlayer({ id: "opponent", active: true, ready: true });
 
-    const ownerSession = sessionService.createSession("owner", "owner-socket");
+    const ownerSession = sessionService.createSession(
+      "owner",
+      1,
+      "owner-socket",
+    );
     ownerSession.name = "Captain Black";
     sessionService.updateSession("owner", ownerSession);
     const opponentSession = sessionService.createSession(
       "opponent",
+      2,
       "opponent-socket",
     );
     opponentSession.name = "Captain Red";

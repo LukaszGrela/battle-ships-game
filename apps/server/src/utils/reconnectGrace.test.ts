@@ -1,10 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import {
-  EGamePhase,
-  IPlayer,
-  TCellStatusShipId,
-  TShip,
-} from "@repo/types";
+import { EGamePhase, IPlayer, TCellStatusShipId, TShip } from "@repo/types";
 import ClientSessionServiceSingleton from "../services/client-session.service";
 import ActiveGameRegistrySingleton from "../services/active-game-registry";
 import { WarRoom } from "../services/WarRoom";
@@ -51,9 +46,10 @@ describe("reconnectGrace", () => {
   });
 
   it("forfeits a playing room when a player has been disconnected longer than the timeout", () => {
-    const owner = sessionService.createSession("owner", "owner-socket");
+    const owner = sessionService.createSession("owner", 1, "owner-socket");
     const opponent = sessionService.createSession(
       "opponent",
+      2,
       "opponent-socket",
     );
     owner.gameId = "room-1";
@@ -62,7 +58,11 @@ describe("reconnectGrace", () => {
     sessionService.updateSession("owner", owner);
     sessionService.updateSession("opponent", opponent);
 
-    const room = new WarRoom("room-1", "Grace Room", createPlayer("owner", true));
+    const room = new WarRoom(
+      "room-1",
+      "Grace Room",
+      createPlayer("owner", true),
+    );
     room.addPlayer(createPlayer("opponent"));
     expect(room.placeShips("owner", createFleet())).toBe(true);
     expect(room.placeShips("opponent", createFleet())).toBe(true);

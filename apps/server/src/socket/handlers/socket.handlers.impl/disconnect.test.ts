@@ -67,7 +67,11 @@ describe("disconnect handler", () => {
 
   it("ignores stale socket disconnects for an active session", () => {
     const room = createWaitingRoom("stale-room");
-    const ownerSession = sessionService.createSession("owner", "live-socket");
+    const ownerSession = sessionService.createSession(
+      "owner",
+      1,
+      "live-socket",
+    );
     ownerSession.name = "Captain Black";
     sessionService.updateSession("owner", ownerSession);
     attachSessionToRoom("owner", room.id);
@@ -87,11 +91,16 @@ describe("disconnect handler", () => {
 
   it("marks a player as disconnected during play without ending the room", () => {
     const room = createPlayingRoom("disconnect-playing");
-    const ownerSession = sessionService.createSession("owner", "owner-socket");
+    const ownerSession = sessionService.createSession(
+      "owner",
+      1,
+      "owner-socket",
+    );
     ownerSession.name = "Captain Black";
     sessionService.updateSession("owner", ownerSession);
     const opponentSession = sessionService.createSession(
       "opponent",
+      2,
       "opponent-socket",
     );
     opponentSession.name = "Captain Red";
@@ -115,11 +124,16 @@ describe("disconnect handler", () => {
 
   it("emits the updated room state to the remaining opponent when a player disconnects during play", () => {
     const room = createPlayingRoom("disconnect-playing-update");
-    const ownerSession = sessionService.createSession("owner", "owner-socket");
+    const ownerSession = sessionService.createSession(
+      "owner",
+      1,
+      "owner-socket",
+    );
     ownerSession.name = "Captain Black";
     sessionService.updateSession("owner", ownerSession);
     const opponentSession = sessionService.createSession(
       "opponent",
+      2,
       "opponent-socket",
     );
     opponentSession.name = "Captain Red";
@@ -149,7 +163,11 @@ describe("disconnect handler", () => {
     room.addPlayer(createPlayer("opponent", "Captain Red"));
     room.removePlayer("opponent");
 
-    const ownerSession = sessionService.createSession("owner", "owner-socket");
+    const ownerSession = sessionService.createSession(
+      "owner",
+      1,
+      "owner-socket",
+    );
     ownerSession.name = "Captain Black";
     sessionService.updateSession("owner", ownerSession);
     attachSessionToRoom("owner", room.id);
@@ -168,11 +186,16 @@ describe("disconnect handler", () => {
 
   it("moves a placement room back to waiting when one player disconnects", () => {
     const room = createPlacementRoom("disconnect-placement");
-    const ownerSession = sessionService.createSession("owner", "owner-socket");
+    const ownerSession = sessionService.createSession(
+      "owner",
+      1,
+      "owner-socket",
+    );
     ownerSession.name = "Captain Black";
     sessionService.updateSession("owner", ownerSession);
     const opponentSession = sessionService.createSession(
       "opponent",
+      2,
       "opponent-socket",
     );
     opponentSession.name = "Captain Red";
@@ -206,7 +229,11 @@ describe("disconnect handler", () => {
 
   it("tears down a waiting room when the owner disconnects", () => {
     const room = createWaitingRoom("disconnect-waiting");
-    const ownerSession = sessionService.createSession("owner", "owner-socket");
+    const ownerSession = sessionService.createSession(
+      "owner",
+      1,
+      "owner-socket",
+    );
     ownerSession.name = "Captain Black";
     sessionService.updateSession("owner", ownerSession);
     attachSessionToRoom("owner", room.id);

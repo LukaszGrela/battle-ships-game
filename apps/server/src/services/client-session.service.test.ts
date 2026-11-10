@@ -11,6 +11,7 @@ describe("services", () => {
 
       const session = sessionService.createSession(
         "client-id",
+        1,
         "socket-id",
         "game-id",
       );
@@ -28,7 +29,7 @@ describe("services", () => {
     it("creates a session without a game id", () => {
       const sessionService = createSessionService();
 
-      const session = sessionService.createSession("client-id", "socket-id");
+      const session = sessionService.createSession("client-id", 1, "socket-id");
 
       expect(session.gameId).toBeUndefined();
       expect(sessionService.readSession("missing-id")).toBeNull();
@@ -36,10 +37,11 @@ describe("services", () => {
 
     it("returns the existing session when creating a duplicate id", () => {
       const sessionService = createSessionService();
-      const session = sessionService.createSession("client-id", "socket-id");
+      const session = sessionService.createSession("client-id", 1, "socket-id");
 
       const duplicate = sessionService.createSession(
         "client-id",
+        1,
         "replacement-socket-id",
         "game-id",
       );
@@ -50,7 +52,7 @@ describe("services", () => {
 
     it("updates an existing session", () => {
       const sessionService = createSessionService();
-      const session = sessionService.createSession("client-id", "socket-id");
+      const session = sessionService.createSession("client-id", 1, "socket-id");
       const updatedSession: IClientSession = {
         ...session,
         socketId: "replacement-socket-id",
@@ -68,19 +70,23 @@ describe("services", () => {
 
     it("tracks disconnect timestamps and clears them when the game ends", () => {
       const sessionService = createSessionService();
-      const session = sessionService.createSession("client-id", "socket-id");
+      const session = sessionService.createSession("client-id", 1, "socket-id");
       session.disconnectedAt = 1234;
       sessionService.updateSession("client-id", session);
 
-      expect(sessionService.readSession("client-id")?.disconnectedAt).toBe(1234);
+      expect(sessionService.readSession("client-id")?.disconnectedAt).toBe(
+        1234,
+      );
       expect(sessionService.clearSessionGame("client-id")).toBe(true);
       expect(sessionService.readSession("client-id")?.gameId).toBeUndefined();
-      expect(sessionService.readSession("client-id")?.disconnectedAt).toBeUndefined();
+      expect(
+        sessionService.readSession("client-id")?.disconnectedAt,
+      ).toBeUndefined();
     });
 
     it("deletes an existing session", () => {
       const sessionService = createSessionService();
-      sessionService.createSession("client-id", "socket-id");
+      sessionService.createSession("client-id", 1, "socket-id");
 
       expect(sessionService.deleteSession("client-id")).toBe(true);
       expect(sessionService.readSession("client-id")).toBeNull();
