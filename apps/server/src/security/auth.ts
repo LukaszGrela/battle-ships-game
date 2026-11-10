@@ -17,6 +17,7 @@
  * other players; leaking it does not let anyone take the seat.
  */
 
+import { stableHash } from "@repo/game-logic";
 import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
 import type { Socket } from "socket.io";
 
@@ -26,6 +27,10 @@ export const DEFAULT_SESSION_TTL_SECONDS = 30 * 24 * 60 * 60;
 export interface ISessionPayload {
   /** Server-generated, safe to share with other players. */
   playerId: string;
+
+  // random seed for player's avatar/name selection.
+  seed: number;
+
   /** Issued at, seconds. */
   iat: number;
   /** Expiry, seconds. */
@@ -39,7 +44,7 @@ function hmac(value: string, secret: string): Buffer {
 }
 
 export function signSession(
-  payload: Pick<ISessionPayload, "playerId">,
+  payload: Pick<ISessionPayload, "playerId" | "seed">,
   secret: string,
   ttlSeconds: number,
 ): string {
@@ -73,9 +78,15 @@ export function verifySession(
     if (typeof payload.playerId !== "string" || payload.playerId.length === 0) {
       return null;
     }
+
+    if (typeof payload.seed !== "number") {
+      return null;
+    }
+
     if (typeof payload.exp !== "number" || payload.exp * 1000 <= Date.now()) {
       return null;
     }
+
     return payload;
   } catch {
     return null;
@@ -121,9 +132,12 @@ export function createSessionAuthMiddleware(
     const verified = token ? verifySession(token, secret) : null;
 
     const playerId = verified?.playerId ?? randomUUID();
+    const seed = verified?.seed ?? stableHash(playerId);
     const now = Math.floor(Date.now() / 1000);
     const session: ISessionPayload = verified ?? {
       playerId,
+      seed,
+
       iat: now,
       exp: now + ttlSeconds,
     };
@@ -133,7 +147,7 @@ export function createSessionAuthMiddleware(
     const data = socket.data as ISocketAuthData;
     data.session = session;
     data.isNewPlayer = !verified;
-    data.issuedToken = signSession({ playerId }, secret, ttlSeconds);
+    data.issuedToken = signSession({ playerId, seed }, secret, ttlSeconds);
     next();
   };
 }

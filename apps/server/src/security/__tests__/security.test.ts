@@ -103,12 +103,15 @@ describe("session tokens", () => {
   const secret = "test-secret";
 
   it("round-trips a valid payload", () => {
-    const token = signSession({ playerId: "p1" }, secret, 60);
-    expect(verifySession(token, secret)).toMatchObject({ playerId: "p1" });
+    const token = signSession({ playerId: "p1", seed: 1 }, secret, 60);
+    expect(verifySession(token, secret)).toMatchObject({
+      playerId: "p1",
+      seed: 1,
+    });
   });
 
   it("rejects a tampered payload", () => {
-    const token = signSession({ playerId: "p1" }, secret, 60);
+    const token = signSession({ playerId: "p1", seed: 1 }, secret, 60);
     const [version, , signature] = token.split(".");
     const forged = Buffer.from(
       JSON.stringify({ playerId: "admin", iat: 0, exp: 9e9 }),
@@ -119,12 +122,12 @@ describe("session tokens", () => {
   });
 
   it("rejects a token signed with another secret", () => {
-    const token = signSession({ playerId: "p1" }, "other-secret", 60);
+    const token = signSession({ playerId: "p1", seed: 1 }, "other-secret", 60);
     expect(verifySession(token, secret)).toBeNull();
   });
 
   it("rejects an expired token", () => {
-    const token = signSession({ playerId: "p1" }, secret, -1);
+    const token = signSession({ playerId: "p1", seed: 1 }, secret, -1);
     expect(verifySession(token, secret)).toBeNull();
   });
 });
