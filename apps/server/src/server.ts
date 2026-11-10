@@ -1,4 +1,3 @@
-import { instrument } from "@socket.io/admin-ui";
 import { createServer } from "node:http";
 import { Server } from "socket.io";
 import { IClientToServerEvents, IServerToClientEvents } from "@repo/types";
@@ -13,6 +12,7 @@ import type {
   IIpLimiterOptions,
   ISocketRateLimitOptions,
 } from "./security/rateLimit";
+import { getVersion } from "./utils/version";
 
 export interface IGameServerOptions {
   instrumentAdminUi?: boolean;
@@ -56,6 +56,8 @@ export function createGameServer({
   logger,
 }: IGameServerOptions = {}) {
   const isProd = process.env.NODE_ENV === "production";
+
+  let APP_VERSION: string = "";
 
   if (!sessionSecret) {
     throw new Error("SESSION_SECRET is required by createGameServer()");
@@ -110,11 +112,17 @@ export function createGameServer({
   reconnectSweep.unref();
 
   if (instrumentAdminUi) {
-    instrument(io, {
-      // `auth: false` means no credentials at all on the admin namespace.
-      auth: false,
-      mode: "development",
-    });
+    import("@socket.io/admin-ui")
+      .then(({ instrument }) => {
+        instrument(io, {
+          // `auth: false` means no credentials at all on the admin namespace.
+          auth: false,
+          mode: "development",
+        });
+      })
+      .catch((err) => {
+        console.error("Failed to load @socket.io/admin-ui:", err);
+      });
   }
 
   return {
@@ -124,6 +132,12 @@ export function createGameServer({
       clearInterval(reconnectSweep);
       security.dispose();
       await new Promise<void>((resolve) => io.close(() => resolve()));
+    },
+    getVersion: async () => {
+      if (!APP_VERSION) {
+        APP_VERSION = await getVersion();
+      }
+      return APP_VERSION;
     },
   };
 }
