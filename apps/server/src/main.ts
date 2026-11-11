@@ -15,7 +15,7 @@ if (!Number.isInteger(PORT) || PORT < 1 || PORT > 65535) {
   throw new Error("PORT must be a valid port number");
 }
 
-const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGIN ?? "")
+const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS ?? "")
   .split(",")
   .map((o) => o.trim())
   .filter(Boolean);
