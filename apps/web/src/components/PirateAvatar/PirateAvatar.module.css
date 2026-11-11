@@ -11,12 +11,12 @@
   width: var(--avatar-size, 256px);
   height: var(--avatar-size, 256px);
 
-  background-image: url("./avatars/avatars-1.png");
+  background-image: url("/avatars/avatars-1.png");
   &[data-atlas="2"] {
-    background-image: url("./avatars/avatars-2.png");
+    background-image: url("/avatars/avatars-2.png");
   }
   &[data-atlas="3"] {
-    background-image: url("./avatars/avatars-3.png");
+    background-image: url("/avatars/avatars-3.png");
   }
 
   /* scale WHOLE atlas file proportionallyto display size */

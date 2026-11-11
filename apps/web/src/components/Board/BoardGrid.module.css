@@ -94,7 +94,7 @@
     right: -3rem;
     bottom: -3rem;
 
-    background-image: url("./compass-rose-1.png");
+    background-image: url("/compass-rose-1.png");
     background-repeat: no-repeat;
     background-position: center;
     background-size: 200px 200px;
@@ -133,7 +133,7 @@
       --scale: calc(var(--grid-size) / var(--cell-size));
 
       background-repeat: no-repeat;
-      background-image: url("./assets/explosions-sprites.png");
+      background-image: url("/assets/explosions-sprites.png");
       background-size: calc(var(--atlas-size) * var(--scale))
         calc(var(--atlas-size) * var(--scale));
 
@@ -149,7 +149,7 @@
       
     background-color: var(--pirates-palette-24);
     background-repeat: no-repeat;
-    background-image: url("./assets/splashes-sprites.png");
+    background-image: url("/assets/splashes-sprites.png");
     background-size: calc(var(--atlas-size) * var(--scale))
       calc(var(--atlas-size) * var(--scale));
 
