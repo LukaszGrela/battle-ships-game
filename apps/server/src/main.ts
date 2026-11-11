@@ -10,7 +10,7 @@ if (missing.length) {
   process.exit(1);
 }
 
-const PORT = Number(process.env.PORT ?? 3001);
+const PORT = Number(process.env.PORT ?? 3101);
 if (!Number.isInteger(PORT) || PORT < 1 || PORT > 65535) {
   throw new Error("PORT must be a valid port number");
 }

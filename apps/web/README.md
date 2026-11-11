@@ -23,10 +23,10 @@ pnpm dev
 
 The development URLs are:
 
-- Web app: http://localhost:3000
-- Socket.IO server: http://localhost:3001
+- Web app: http://localhost:3100
+- Socket.IO server: http://localhost:3101
 
-The web app connects to port 3001 in development. No frontend environment variables are required.
+The web app connects to port 3101 in development. No frontend environment variables are required.
 
 To run only this app:
 

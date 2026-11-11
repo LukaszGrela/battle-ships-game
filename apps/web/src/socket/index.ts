@@ -6,7 +6,7 @@ import { getSessionToken, setSessionToken } from "./sessionTokenStorage";
 const URL =
   import.meta.env.MODE === "production"
     ? undefined
-    : `${window.location.protocol}//${window.location.hostname}:3001`;
+    : `${window.location.protocol}//${window.location.hostname}:3101`;
 
 export const socket: Socket<IServerToClientEvents, IClientToServerEvents> = io(
   URL,

@@ -301,7 +301,7 @@ far has a socket but no room membership and no reconnect-grace slot yet.
 - Throws without `SESSION_SECRET`.
 - Throws if `instrumentAdminUi` is on and `NODE_ENV=production`.
 - Origins fail closed: production defaults to `[]` (no browser origin), dev
-  defaults to `localhost:3000`, `:4173`, `:5173`.
+  defaults to `localhost:3100`, `:3101`.
 - CORS and the engine-level origin check are built from **the same list**. They
   used to disagree, which meant the admin UI passed CORS and was then rejected
   at the handshake — fixed.

@@ -25,8 +25,8 @@ pnpm dev
 
 This starts:
 
-- web app: http://localhost:3000
-- server: http://localhost:3001
+- web app: http://localhost:3100
+- server: http://localhost:3101
 
 ## Server behavior summary
 
