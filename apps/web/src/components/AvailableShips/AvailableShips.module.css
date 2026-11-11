@@ -73,18 +73,18 @@
   }
   &[data-size="2"]::before {
     height: calc(2 * 32px);
-    background-image: url("/ships/ship-64-2.png");
+    background-image: url("/assets/ships/ship-64-2.png");
   }
   &[data-size="3"]::before {
     height: calc(3 * 32px);
-    background-image: url("/ships/ship-64-3.png");
+    background-image: url("/assets/ships/ship-64-3.png");
   }
   &[data-size="4"]::before {
     height: calc(4 * 32px);
-    background-image: url("/ships/ship-64-4.png");
+    background-image: url("/assets/ships/ship-64-4.png");
   }
   &[data-size="5"]::before {
     height: calc(5 * 32px);
-    background-image: url("/ships/ship-64-5.png");
+    background-image: url("/assets/ships/ship-64-5.png");
   }
 }

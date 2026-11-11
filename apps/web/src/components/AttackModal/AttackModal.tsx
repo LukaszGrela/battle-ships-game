@@ -151,7 +151,7 @@ export const AttackModal: FC<{
 const DestroyedShipImage: FC<{ size: number }> = ({ size = 2 }) => {
   return (
     <img
-      src={`/ships/size-${size}-destroyed-side-view.png`}
+      src={`/assets/ships/size-${size}-destroyed-side-view.png`}
       width={256}
       height={256}
       aria-hidden={true}

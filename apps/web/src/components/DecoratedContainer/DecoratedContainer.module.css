@@ -97,7 +97,7 @@
 
     background-image: var(
       --decorated-container-decoration-url,
-      url("/compass-rose-1.png")
+      url("/assets/compass-rose-1.png")
     );
     background-size: contain;
     image-rendering: optimizeQuality;

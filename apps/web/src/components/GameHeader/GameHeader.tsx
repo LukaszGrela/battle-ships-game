@@ -62,7 +62,7 @@ export const GameHeader: FC<{
         )}
         <img
           alt="Pirates - BattleShips"
-          src="./title.png"
+          src="/assets/title.png"
           className={styles.Header_title}
         />
         {gameState && (

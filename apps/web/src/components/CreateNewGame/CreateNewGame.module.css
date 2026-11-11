@@ -1,5 +1,5 @@
 .CreateNewGame {
-  --decorated-container-decoration-url: url("/ships-wheel.png");
+  --decorated-container-decoration-url: url("/assets/ships-wheel.png");
   container-type: inline-size;
 }
 

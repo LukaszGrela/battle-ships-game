@@ -15,7 +15,7 @@ export function loadImage(src: string): Promise<HTMLImageElement> {
   return cache.get(src)!;
 }
 
-// np. /ships/ship-3.png dla trzymasztowca
-export const shipSrc = (length: number) => `/ships/ship-64-${length}.png`;
+// np. /assets/ships/ship-3.png dla trzymasztowca
+export const shipSrc = (length: number) => `/assets/ships/ship-64-${length}.png`;
 export const shipDestroyedSrc = (length: number) =>
-  `/ships/ship-64-${length}-destroyed.png`;
+  `/assets/ships/ship-64-${length}-destroyed.png`;

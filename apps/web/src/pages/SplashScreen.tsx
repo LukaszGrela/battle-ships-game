@@ -11,7 +11,7 @@ export const SplashScreen = () => {
       <div className={styles.container}>
         <img
           alt="Pirates - BattleShips"
-          src="./title.png"
+          src="/assets/title.png"
           className={styles.logo}
         />
         <Button
