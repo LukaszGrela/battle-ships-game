@@ -3,10 +3,10 @@ import { getReconnectTimeoutMs } from "./utils/reconnectGrace.js";
 
 const isProduction = process.env.NODE_ENV === "production";
 
-const REQUIRED = ['NODE_ENV', 'SESSION_SECRET'];
+const REQUIRED = ["NODE_ENV", "SESSION_SECRET"];
 const missing = REQUIRED.filter((k) => !process.env[k]);
 if (missing.length) {
-  console.error(`Missing required env vars: ${missing.join(', ')}`);
+  console.error(`Missing required env vars: ${missing.join(", ")}`);
   process.exit(1);
 }
 
@@ -15,10 +15,15 @@ if (!Number.isInteger(PORT) || PORT < 1 || PORT > 65535) {
   throw new Error("PORT must be a valid port number");
 }
 
+const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGIN ?? "")
+  .split(",")
+  .map((o) => o.trim())
+  .filter(Boolean);
+
 const { httpServer, io, getVersion } = createGameServer({
   instrumentAdminUi: !isProduction,
   logger: !isProduction ? { warn: console.warn } : undefined,
-  allowedOrigins: isProduction ? [process.env.ALLOWED_ORIGIN ?? ""] : undefined,
+  allowedOrigins: isProduction ? ALLOWED_ORIGINS : undefined,
 });
 
 // io.listen(PORT);

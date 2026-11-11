@@ -8,6 +8,7 @@ Following environment variables are required to be set on the server (process.en
 - NODE_ENV - set to "production"
 - SESSION_SECRET - secret used to sign session tokens. [Read more](./src/security/README.md#session_secret)
 - PORT - to change default (3101) value
+- ALLOWED_ORIGIN - list of allowed origins
 
 ## Core model
 

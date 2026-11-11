@@ -38,7 +38,7 @@ export interface IGameServerOptions {
 const DEV_ORIGINS = [
   "http://localhost:3100",
   "http://localhost:3102",
-  "http://192.168.1.49:3100",
+  "http://192.168.1.32:3100",
 ];
 
 /** admin.socket.io is a real browser origin: it needs CORS *and* the engine check. */
