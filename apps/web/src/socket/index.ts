@@ -5,7 +5,7 @@ import { getSessionToken, setSessionToken } from "./sessionTokenStorage";
 
 const URL =
   import.meta.env.MODE === "production"
-    ? undefined
+    ? import.meta.env.VITE_SOCKET_URL
     : `${window.location.protocol}//${window.location.hostname}:3101`;
 
 export const socket: Socket<IServerToClientEvents, IClientToServerEvents> = io(

@@ -40,6 +40,10 @@ The server must be running separately when using this command:
 pnpm --filter @repo/server dev
 ```
 
+## Production
+
+Setup `VITE_SOCKET_URL` with the game server endpoint.
+
 ## Client-server flow
 
 The client stores a persistent client ID in browser storage and sends it as Socket.IO authentication data. The server uses it to restore the client session and associate the player with a game.
