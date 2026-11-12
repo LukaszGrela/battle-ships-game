@@ -14,7 +14,7 @@ pnpm --filter @repo/server dev
 ```
 ## Environment variables
 
-The server expects a few environment variables when it starts. In local development, you can place them in an `.env` file inside `apps/server`.
+The server expects a few environment variables when it starts (`via process.env.*`). In local development, you can place them in an `.env` file inside `apps/server`.
 
 ```env
 NODE_ENV=development
@@ -22,8 +22,6 @@ SESSION_SECRET=replace-with-a-long-random-secret
 PORT=3101
 ALLOWED_ORIGINS=http://localhost:3100
 ```
-
-Required values:
 
 - `NODE_ENV` — set to `production` in deploys
 - `SESSION_SECRET` — secret used to sign session tokens and validate reconnect identity
