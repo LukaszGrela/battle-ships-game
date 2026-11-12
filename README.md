@@ -1,6 +1,6 @@
-# Battleship Game
+# Battle-Ships Game
 
-A multiplayer battleship game built as a TypeScript monorepo with a Socket.IO server and a React/Vite web client.
+A multiplayer battle-ships game built as a TypeScript monorepo with a Socket.IO server and a React/Vite web client.
 
 ## Project layout
 
