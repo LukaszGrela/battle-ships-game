@@ -398,6 +398,7 @@ export const GamePlacement: FC = () => {
 };
 
 // TODO: to consider later
+/*
 const handleEdgePlacement = <T,>(
   coords: TCoordinate,
   ship: TShip,
@@ -422,3 +423,4 @@ const handleEdgePlacement = <T,>(
 
   return ship;
 };
+*/

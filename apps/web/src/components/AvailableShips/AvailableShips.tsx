@@ -1,6 +1,6 @@
 import styles from "./AvailableShips.module.css";
 import { TShip } from "@repo/types";
-import { FC, ReactNode, useCallback, useState } from "react";
+import { FC, ReactNode, useCallback } from "react";
 import { Button } from "../Button/Button";
 
 export const AvailableShips: FC<{
