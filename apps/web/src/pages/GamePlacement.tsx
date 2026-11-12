@@ -2,13 +2,11 @@ import gameStyles from "./Game.module.css";
 import styles from "./GamePlacement.module.css";
 
 import { FC, useCallback, useMemo, useState } from "react";
-import { Draft } from "immer";
 import { useImmer } from "use-immer";
 import { AppLayout } from "../components/AppLayout/AppLayout";
 import { useGameStore } from "../store/useGameStore";
 import {
   TBoard,
-  TCellStatus,
   TCellStatusEmpty,
   TCoordinate,
   TPlacedShip,
@@ -30,6 +28,7 @@ import {
   GameHeader,
   TGameHeaderAllowedState,
 } from "../components/GameHeader/GameHeader";
+import { Button } from "../components/Button";
 
 const empty: TCellStatusEmpty = -1;
 
@@ -44,134 +43,265 @@ export const GamePlacement: FC = () => {
     (gameState && gameState.phase === "placement" && gameState.ships) || [],
   );
 
-  const [shipSelected, onShipSelected] = useState<TShip | null>(null);
+  const [selectedShipId, setSelectedShipId] = useState<number | null>(null);
+  const [orientation, setOrientationChange] =
+    useState<TShipPlacementOrientation>("horizontal");
 
-  const rotateShipUnderPointer = useCallback(
-    (
-      cell: TCellStatus,
-      placementBoardDraft: Draft<TBoard>,
-      // TODO: to implement rotate around point
-      _coords: TCoordinate,
-    ) => {
-      // get ship
-      const ship = availableShips.find((needle) => needle.id === cell);
-      if (ship && ship.orientation && ship.coords) {
-        const orientation: TShipPlacementOrientation =
-          ship.orientation === "horizontal" ? "vertical" : "horizontal";
+  const changeShipOrientation = useCallback(
+    (newOrientation: TShipPlacementOrientation) => {
+      function findShip(id: number) {
+        return availableShips.find((needle) => needle.id === id);
+      }
 
-        // remove from placement board
-        removeShip(placementBoardDraft, ship.coords, ship, ship.orientation);
+      updatePlacementBoard((draft) => {
+        if (selectedShipId) {
+          const selection = findShip(selectedShipId) as
+            | (TShip & {
+                type: "pending";
+              })
+            | undefined;
+          if (!selection) return;
 
-        // check if rotation is possible
-        const validationResult = isValidPlacement(
-          placementBoardDraft,
-          ship.coords,
-          ship,
-          orientation,
-        );
-        // place with opposite orientation
-        if (validationResult === 1) {
-          placeShip(placementBoardDraft, ship.coords, ship, orientation);
-          setAvailableShips((draft) => {
-            // mark as selected
-            const toUpdate = draft.find((needle) => needle.id === ship.id);
-            if (toUpdate && toUpdate.type === "pending") {
-              toUpdate.orientation = orientation;
+          if (selection.placed) {
+            // can only change orientation of a selected and placed ship
+            // first remove ship
+            removeShip(
+              draft,
+              selection.coords,
+              selection,
+              selection.orientation,
+            );
+
+            // validate new location
+            const validationResult = isValidPlacement(
+              draft,
+              selection.coords,
+              selection,
+              // new orientation
+              newOrientation,
+            );
+            if (validationResult === 1) {
+              // apply new orientation
+              placeShip(draft, selection.coords, selection, newOrientation);
+              setAvailableShips((draftShips) => {
+                // mark as selected
+                const ship = draftShips.find(
+                  (needle) => needle.id === selection.id,
+                );
+                if (ship && ship.type === "pending") {
+                  ship.placed = true;
+                  ship.coords = selection.coords;
+                  ship.orientation = newOrientation;
+                }
+              });
+            } else {
+              // restore previous location
+              placeShip(
+                draft,
+                selection.coords,
+                selection,
+                selection.orientation,
+              );
+
+              if (validationResult == -1001) {
+                // TODO: Add Toast/Alert ton inform user of invalid placement
+                console.warn("Cell not empty");
+              }
+              if (validationResult == -1002) {
+                // TODO: Add Toast/Alert ton inform user of invalid placement
+                console.warn("Not enough space for ship (or out of bounds)");
+              }
+              if (validationResult == -1003) {
+                // TODO: Add Toast/Alert ton inform user of invalid placement
+                console.warn("Another boat next to it");
+              }
             }
-          });
-        } else {
-          // restore original
-          placeShip(placementBoardDraft, ship.coords, ship, ship.orientation!);
-
-          if (validationResult == -1001) {
-            console.warn("Cell not empty");
-          }
-          if (validationResult == -1002) {
-            console.warn("Not enough space for ship (or out of bounds)");
-          }
-          if (validationResult == -1003) {
-            console.warn("Another boat next to it");
           }
         }
+      });
+    },
+    [availableShips, selectedShipId, setAvailableShips, updatePlacementBoard],
+  );
+  const handleShipSelection = useCallback(
+    (shipId: number | null) => {
+      if (shipId != null) {
+        setSelectedShipId(shipId);
+        function findShip(id: number) {
+          return availableShips.find((needle) => needle.id === id);
+        }
+        const selection = findShip(shipId) as
+          | (TShip & {
+              type: "pending";
+            })
+          | undefined;
+        if (selection && selection.placed) {
+          setOrientationChange(selection.orientation);
+          setAvailableShips((draftShips) => {
+            // mark as selected
+            const selected = draftShips.find(
+              (needle) =>
+                needle &&
+                needle.type === "pending" &&
+                needle.placed &&
+                needle.selected,
+            );
+
+            if (selected?.type === "pending" && selected.placed) {
+              // deselect any previous selections
+              selected.selected = false;
+            }
+
+            // select
+            const ship = draftShips.find(
+              (needle) =>
+                needle &&
+                needle.type === "pending" &&
+                needle.placed &&
+                needle.id === shipId,
+            ) as
+              | (TShip & {
+                  type: "pending";
+                })
+              | undefined;
+
+            if (ship && ship.placed) {
+              ship.selected = true;
+            }
+          });
+        }
+      } else {
+        setSelectedShipId(null);
+        setAvailableShips((draftShips) => {
+          // deselect
+          const ship = draftShips.find(
+            (needle) =>
+              needle &&
+              needle.type === "pending" &&
+              needle.placed &&
+              needle.selected,
+          ) as
+            | (TShip & {
+                type: "pending";
+              })
+            | undefined;
+
+          if (ship && ship.placed) {
+            ship.selected = false;
+          }
+        });
       }
     },
     [availableShips, setAvailableShips],
   );
 
   const placeShipHandler = useCallback(
-    async (coords: TCoordinate, modifier?: boolean) => {
-      console.log("placeShipHandler", coords);
-      let orientation: TShipPlacementOrientation =
-        shipSelected?.orientation ?? "horizontal";
-
-      if (modifier) {
-        // flip
-        orientation = orientation === "horizontal" ? "vertical" : "horizontal";
+    async (coords: TCoordinate) => {
+      function findShip(id: number) {
+        return availableShips.find((needle) => needle.id === id);
       }
-      console.log("place_ship", shipSelected, orientation, coords);
-
       updatePlacementBoard((draft) => {
-        if (!shipSelected) {
-          // whats under the pointer?
-
-          const cell = getCell(draft, coords.x, coords.y);
-
-          if (!isCellFailure(cell) && cell != empty) {
-            rotateShipUnderPointer(cell, draft, coords);
-          }
-          return;
-        }
-        let shipToPlace = { ...shipSelected, orientation } as TShip;
-        console.log("updatePlacementBoard", shipToPlace);
-
-        const row = draft[coords.y];
-
-        console.log("GET CELL", getCell(draft, coords.x, coords.y));
-        shipToPlace = handleEdgePlacement(coords, shipToPlace, draft);
-
-        const validationResult = isValidPlacement(
-          draft,
-          coords,
-          shipToPlace,
-          shipToPlace.orientation!,
-        );
-        console.log("validationResult", validationResult);
-        if (validationResult === 1) {
-          placeShip(draft, coords, shipToPlace, shipToPlace.orientation!);
-          setAvailableShips((draftShips) => {
-            // mark as selected
-            const ship = draftShips.find(
-              (needle) => needle.id === shipToPlace.id,
-            );
-            if (ship && ship.type === "pending") {
-              ship.placed = true;
-              ship.coords = coords;
-              ship.orientation = shipToPlace.orientation!;
+        const cell = getCell(draft, coords.x, coords.y);
+        if (cell && !isCellFailure(cell)) {
+          if (cell != empty) {
+            // get ship
+            const ship = findShip(cell);
+            if (ship) {
+              // reselect ship
+              handleShipSelection(ship.id);
+              //
+              return;
             }
-          });
-          // deselect
-          onShipSelected(null);
-        } else {
-          if (validationResult == -1001) {
-            console.warn("Cell not empty");
           }
-          if (validationResult == -1002) {
-            console.warn("Not enough space for ship (or out of bounds)");
-          }
-          if (validationResult == -1003) {
-            console.warn("Another boat next to it");
+          if (selectedShipId) {
+            const selection = findShip(selectedShipId) as
+              | (TShip & {
+                  type: "pending";
+                })
+              | undefined;
+            if (!selection) return;
+
+            if (selection.placed) {
+              // first remove ship
+              removeShip(
+                draft,
+                selection.coords,
+                selection,
+                selection.orientation,
+              );
+            }
+
+            // validate new location
+            const validationResult = isValidPlacement(
+              draft,
+              coords,
+              selection,
+              orientation,
+            );
+
+            if (validationResult === 1) {
+              placeShip(draft, coords, selection, orientation);
+              setAvailableShips((draftShips) => {
+                // mark as selected
+                const selected = draftShips.find(
+                  (needle) =>
+                    needle &&
+                    needle.type === "pending" &&
+                    needle.placed &&
+                    needle.selected,
+                );
+                if (selected?.type === "pending" && selected.placed) {
+                  // deselect any previous selections
+                  selected.selected = false;
+                }
+                const ship = draftShips.find(
+                  (needle) => needle.id === selection.id,
+                );
+                if (ship && ship.type === "pending") {
+                  ship.placed = true;
+                  ship.coords = coords;
+                  ship.orientation = orientation;
+                  if (ship.placed) {
+                    ship.selected = true;
+                  }
+                }
+              });
+            } else {
+              if (selection.placed) {
+                // restore previous location
+                placeShip(
+                  draft,
+                  selection.coords,
+                  selection,
+                  selection.orientation,
+                );
+              }
+              if (validationResult == -1001) {
+                // TODO: Add Toast/Alert ton inform user of invalid placement
+                console.warn("Cell not empty");
+              }
+              if (validationResult == -1002) {
+                // TODO: Add Toast/Alert ton inform user of invalid placement
+                console.warn("Not enough space for ship (or out of bounds)");
+              }
+              if (validationResult == -1003) {
+                // TODO: Add Toast/Alert ton inform user of invalid placement
+                console.warn("Another boat next to it");
+              }
+            }
           }
         }
-        console.log(">", row?.[coords.x], getCell(draft, coords.x, coords.y));
       });
     },
     [
-      rotateShipUnderPointer,
-      setAvailableShips,
-      shipSelected,
       updatePlacementBoard,
+      availableShips,
+      selectedShipId,
+      handleShipSelection,
+      orientation,
+      setAvailableShips,
     ],
   );
+
   const placementInteractivity: TInteractivityProps = useMemo(() => {
     if (gameState?.phase === "placement" && !gameState.self.ready) {
       return {
@@ -194,6 +324,9 @@ export const GamePlacement: FC = () => {
     );
     // reset board
     updatePlacementBoard(gameState?.myBoard ?? []);
+    // reset selection
+    setSelectedShipId(null);
+    setOrientationChange("horizontal");
   }, [gameState, setAvailableShips, updatePlacementBoard]);
 
   const handleApplyPlacement = useCallback(() => {
@@ -205,8 +338,11 @@ export const GamePlacement: FC = () => {
     );
   }, [availableShips]);
 
-  console.log("availableShips", availableShips);
-  console.log(gameState);
+  const toggleOrientation = useCallback(() => {
+    const newState = orientation === "horizontal" ? "vertical" : "horizontal";
+    setOrientationChange(newState);
+    changeShipOrientation(newState);
+  }, [changeShipOrientation, orientation]);
 
   return (
     <AppLayout
@@ -237,8 +373,8 @@ export const GamePlacement: FC = () => {
         </div>
         {gameState?.phase === "placement" && !gameState?.self.ready && (
           <AvailableShips
-            selected={shipSelected}
-            onSelection={onShipSelected}
+            selected={selectedShipId}
+            onSelection={handleShipSelection}
 
             ships={availableShips as (TShip & { type: "pending" })[]}
 
@@ -246,13 +382,22 @@ export const GamePlacement: FC = () => {
             onReset={handleResetPlacement}
 
             disabled={gameState.self.ready}
-          />
+          >
+            <Button
+              size="sm"
+              disabled={gameState.self.ready || selectedShipId == null}
+              onClick={toggleOrientation}
+            >
+              Orientation: {orientation}
+            </Button>
+          </AvailableShips>
         )}
       </section>
     </AppLayout>
   );
 };
 
+// TODO: to consider later
 const handleEdgePlacement = <T,>(
   coords: TCoordinate,
   ship: TShip,
