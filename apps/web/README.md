@@ -136,3 +136,9 @@ After a finished game, the losing side may request a rematch. The UI should list
 - `src/test`: test setup
 
 Production builds are generated in `apps/web/dist` by `pnpm build`. The production Socket.IO URL is same-origin, so deployment must either serve the frontend and Socket.IO server behind the same origin or provide the correct proxy configuration.
+
+## Testing
+
+```sh
+pnpm --filter @repo/web test
+```

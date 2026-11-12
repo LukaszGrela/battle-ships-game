@@ -1,13 +1,29 @@
 # Battle-Ships Game
 
-A multiplayer battle-ships game built as a TypeScript monorepo with a Socket.IO server and a React/Vite web client.
+A one-on-one battle-ships game built as a TypeScript monorepo with a Socket.IO game server and a React/Vite web client.
 
-## Project layout
+## Repository overview
 
-- apps/server: authoritative game server and room lifecycle logic
-- apps/web: frontend client and game UI
-- packages/types: shared TypeScript contracts for client/server events and room data
-- packages/game-logic: board and ship rules used by both the server and client code
+The monorepo is organized as follows:
+
+- `apps/server` — authoritative server and socket handlers
+- `apps/web` — React + Vite client
+- `packages/game-logic` — shared board and gameplay rules
+- `packages/types` — shared TypeScript contracts for event payloads and runtime state
+
+## Tech stack
+
+- TypeScript
+- Socket.IO
+- Vite + React for the client
+- Vitest for tests
+- Turbo for workspace orchestration
+- pnpm workspaces
+
+## Requirements
+
+- Node.js 24+
+- pnpm 11+
 
 ## Runtime setup
 
@@ -28,6 +44,14 @@ This starts:
 - web app: http://localhost:3100
 - server: http://localhost:3101
 
+## Useful commands
+
+```sh
+pnpm build
+pnpm lint
+pnpm test
+```
+
 ## Server behavior summary
 
 The server owns the session registry and room lifecycle. It keeps the client session as the source of truth, and socket IDs are treated as ephemeral values that may change on reconnect.
@@ -38,7 +62,11 @@ Key rules:
 - `socketId` is refreshed whenever the client reconnects.
 - `gameId` is restored only when the room still exists.
 - `game_updated` is emitted with the real room state or `null` when there is no active room.
-- stale disconnects maintain a reconnect grace period before a room is forfeited.
+- stale disconnects from playing game maintain a reconnect grace period before a room is forfeited.
+
+## Player identity
+
+There is no login functionality, each player has token assigned at first connection which is then stored on users machine. This token identifies players machine only, it stores player id with a seed number. The seed is used to pick player's avatar and pick piratey name. There is only 48 avatars so it may happen that 2 opponents has the same avatar.
 
 ## Rematch flow
 
