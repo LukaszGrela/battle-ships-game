@@ -1,30 +1,16 @@
 .PirateAvatar {
-  /* atlas cell/sprite step, match file defined grid size */
+  /* avatar original size */
   --sprite-step: 256px;
 
   /* display size — any, eg. 64px, 96px... defaults to file cell size */
-  /* --avatar-size: 256px; */
-
-  --avatar-x: 0;
-  --avatar-y: 0;
-
   width: var(--avatar-size, 256px);
   height: var(--avatar-size, 256px);
 
-  background-image: url("/assets/avatars/avatars-1.png");
-  &[data-atlas="2"] {
-    background-image: url("/assets/avatars/avatars-2.png");
-  }
-  &[data-atlas="3"] {
-    background-image: url("/assets/avatars/avatars-3.png");
-  }
-
-  /* scale WHOLE atlas file proportionallyto display size */
+  background-image: url("/assets/avatars/avatar-default.png");
   background-size: calc(
-    var(--sprite-step) * 4 * (var(--avatar-size, 256px) / var(--sprite-step))
+    (
+      var(--sprite-step, 256px) *
+        (var(--avatar-size, 256px) / var(--sprite-step, 256px))
+    )
   );
-  /* = 4 * avatar-size */
-
-  background-position-x: calc(var(--avatar-x) * var(--avatar-size, 256px));
-  background-position-y: calc(var(--avatar-y) * var(--avatar-size, 256px));
 }
