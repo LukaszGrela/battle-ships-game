@@ -1,50 +1,40 @@
 import styles from "./AvailableShips.module.css";
 import { TShip } from "@repo/types";
-import { FC, useCallback, useState } from "react";
+import { FC, ReactNode, useCallback, useState } from "react";
 import { Button } from "../Button/Button";
 
 export const AvailableShips: FC<{
   ships: (TShip & { type: "pending" })[];
 
-  selected: TShip | null;
-  onSelection: (ship: TShip | null) => void;
+  selected: number | null;
+  onSelection: (shipId: number | null) => void;
   onApply: () => void;
   onReset: () => void;
 
   disabled?: boolean;
-}> = ({ ships, onSelection, selected, onApply, onReset, disabled }) => {
-  const [vertical, setVertical] = useState(false);
 
-  const handleVerticalCheckbox: React.ChangeEventHandler<
-    HTMLInputElement,
-    HTMLInputElement
-  > = useCallback(
-    (e) => {
-      const vert = !!e.target.checked;
-      setVertical(vert);
-      if (selected) {
-        onSelection({
-          ...selected,
-          orientation: vert ? "vertical" : "horizontal",
-        });
-      }
-    },
-    [onSelection, selected],
-  );
+  children?: ReactNode;
+}> = ({
+  ships,
+  onSelection,
+  selected,
+  onApply,
+  onReset,
+  disabled,
+  children,
+}) => {
+  console.log("AvailableShips", ships);
 
   const handleClick = useCallback(
     (ship: TShip) => () => {
       console.log("handleClick", ship);
-      if (ship.id === selected?.id) {
+      if (ship.id === selected) {
         onSelection(null);
       } else {
-        onSelection({
-          ...ship,
-          orientation: vertical ? "vertical" : "horizontal",
-        });
+        onSelection(ship.id);
       }
     },
-    [onSelection, selected, vertical],
+    [onSelection, selected],
   );
 
   const disableApply = ships.some((needle) => !needle.placed) || disabled;
@@ -61,11 +51,11 @@ export const AvailableShips: FC<{
               key={id}
               className={styles.Option}
               data-placed={placed ? "" : undefined}
-              data-selected={selected?.id === ship.id ? "" : undefined}
+              data-selected={selected === ship.id ? "" : undefined}
 
               onClick={handleClick(ship)}
 
-              disabled={placed || disabled}
+              disabled={disabled}
             >
               <Ship size={size} />
               <span className={styles.Option_label}>{size}</span>
@@ -73,16 +63,7 @@ export const AvailableShips: FC<{
           );
         })}
       </div>
-      <div>
-        <label>
-          <input
-            type="checkbox"
-            checked={vertical}
-            onChange={handleVerticalCheckbox}
-          />
-          Vertical orientation
-        </label>
-      </div>
+      {children && <div>{children}</div>}
       <div>
         <Button type="secondary" onClick={onReset} disabled={disableReset}>
           Reset

@@ -6,6 +6,7 @@
 
 .Option {
   position: relative;
+  overflow: hidden;
 
   background-color: var(--pirates-palette-24);
 
