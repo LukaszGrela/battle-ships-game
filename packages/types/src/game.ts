@@ -58,9 +58,16 @@ export type TShip = {
   | TPlacedShipProps
   | {
       type: "pending";
-      placed: boolean;
+      placed: false;
       coords?: TCoordinate;
       orientation?: TShipPlacementOrientation;
+    }
+  | {
+      type: "pending";
+      placed: true;
+      coords: TCoordinate;
+      orientation: TShipPlacementOrientation;
+      selected?: boolean;
     }
 );
 
