@@ -1,3 +1,28 @@
 .StatsContainer {
   --decorated-container-decoration-url: null;
 }
+
+.StatsContainer_content {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+
+  width: 100%;
+}
+
+.statsContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+
+  flex: 1 1 auto;
+}
+
+.StatsContainer_user {
+  composes: statsContainer;
+  display: none;
+}
+
+.StatsContainer_server {
+  composes: statsContainer;
+}
