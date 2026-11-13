@@ -1,7 +1,7 @@
 import gameStyles from "./Game.module.css";
 import styles from "./GamePlacement.module.css";
 
-import { FC, useCallback, useMemo, useState } from "react";
+import { FC, useCallback, useEffect, useMemo, useState } from "react";
 import { useImmer } from "use-immer";
 import { AppLayout } from "../components/AppLayout/AppLayout";
 import { useGameStore } from "../store/useGameStore";
@@ -29,11 +29,14 @@ import {
   TGameHeaderAllowedState,
 } from "../components/GameHeader/GameHeader";
 import { Button } from "../components/Button";
+import { classNames } from "../utils/classNames";
 
 const empty: TCellStatusEmpty = -1;
 
 export const GamePlacement: FC = () => {
   const { gameState } = useGameStore();
+
+  const [displayError, error, setError] = useError();
 
   const [placementBoard, updatePlacementBoard] = useImmer<TBoard>(
     gameState?.myBoard ?? [],
@@ -102,25 +105,33 @@ export const GamePlacement: FC = () => {
                 selection,
                 selection.orientation,
               );
+              // restore orientation
+
+              const newState =
+                newOrientation === "horizontal" ? "vertical" : "horizontal";
+              setOrientationChange(newState);
 
               if (validationResult == -1001) {
-                // TODO: Add Toast/Alert ton inform user of invalid placement
-                console.warn("Cell not empty");
+                setError("Cell not empty");
               }
               if (validationResult == -1002) {
-                // TODO: Add Toast/Alert ton inform user of invalid placement
-                console.warn("Not enough space for ship (or out of bounds)");
+                setError("Not enough space for ship (or out of bounds)");
               }
               if (validationResult == -1003) {
-                // TODO: Add Toast/Alert ton inform user of invalid placement
-                console.warn("Another boat next to it");
+                setError("Another boat next to it");
               }
             }
           }
         }
       });
     },
-    [availableShips, selectedShipId, setAvailableShips, updatePlacementBoard],
+    [
+      availableShips,
+      selectedShipId,
+      setAvailableShips,
+      setError,
+      updatePlacementBoard,
+    ],
   );
   const handleShipSelection = useCallback(
     (shipId: number | null) => {
@@ -276,16 +287,13 @@ export const GamePlacement: FC = () => {
                 );
               }
               if (validationResult == -1001) {
-                // TODO: Add Toast/Alert ton inform user of invalid placement
-                console.warn("Cell not empty");
+                setError("Cell not empty");
               }
               if (validationResult == -1002) {
-                // TODO: Add Toast/Alert ton inform user of invalid placement
-                console.warn("Not enough space for ship (or out of bounds)");
+                setError("Not enough space for ship (or out of bounds)");
               }
               if (validationResult == -1003) {
-                // TODO: Add Toast/Alert ton inform user of invalid placement
-                console.warn("Another boat next to it");
+                setError("Another boat next to it");
               }
             }
           }
@@ -299,6 +307,7 @@ export const GamePlacement: FC = () => {
       handleShipSelection,
       orientation,
       setAvailableShips,
+      setError,
     ],
   );
 
@@ -327,7 +336,9 @@ export const GamePlacement: FC = () => {
     // reset selection
     setSelectedShipId(null);
     setOrientationChange("horizontal");
-  }, [gameState, setAvailableShips, updatePlacementBoard]);
+    // reset error
+    setError(undefined);
+  }, [gameState, setAvailableShips, setError, updatePlacementBoard]);
 
   const handleApplyPlacement = useCallback(() => {
     // save placement
@@ -361,7 +372,7 @@ export const GamePlacement: FC = () => {
       }
     >
       <section className={gameStyles.Game_layout}>
-        <div>
+        <div className={styles.ShipBoard_container}>
           <ShipsBoard
             board={placementBoard}
             owner={!!gameState?.self.owner}
@@ -370,6 +381,7 @@ export const GamePlacement: FC = () => {
 
             {...placementInteractivity}
           />
+          <ErrorPanel show={displayError} message={error} />
         </div>
         {gameState?.phase === "placement" && !gameState?.self.ready && (
           <AvailableShips
@@ -394,6 +406,53 @@ export const GamePlacement: FC = () => {
         )}
       </section>
     </AppLayout>
+  );
+};
+
+const useError = (): [
+  show: boolean,
+  error: string | undefined,
+  setter: (message?: string) => void,
+] => {
+  const [error, setError] = useState<string | undefined>("");
+  const [show, setShow] = useState<boolean>(false);
+
+  const setter = useCallback((message?: string) => {
+    setError(message);
+    if (message) {
+      setShow(true);
+    } else {
+      setShow(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    const id = setTimeout(() => {
+      setShow(false);
+    }, 2000);
+
+    return () => {
+      clearTimeout(id);
+    };
+  }, [error, show]);
+
+  return useMemo(() => [show, error, setter], [show, error, setter]);
+};
+
+const ErrorPanel: FC<{ show: boolean; message?: string }> = ({
+  show,
+  message,
+}) => {
+  return (
+    <div
+      className={classNames(
+        styles.ErrorPanel,
+        !show && styles.ErrorPanel_hidden,
+      )}
+    >
+      <h3>Error</h3>
+      <p>{message}</p>
+    </div>
   );
 };
 
