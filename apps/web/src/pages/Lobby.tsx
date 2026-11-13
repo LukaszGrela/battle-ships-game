@@ -24,7 +24,7 @@ const Header = () => {
       <DisconnectButton className={styles.Header_disconnect} />
       <img
         alt="Pirates - BattleShips"
-        src="/assets/title.png"
+        src="/assets/title-120.png"
         className={styles.Header_title}
       />
 

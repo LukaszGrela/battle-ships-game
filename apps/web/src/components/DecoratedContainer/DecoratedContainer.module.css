@@ -97,10 +97,10 @@
 
     background-image: var(
       --decorated-container-decoration-url,
-      url("/assets/compass-rose-1.png")
+      url("/assets/compass-rose-160.png")
     );
     background-size: contain;
-    image-rendering: optimizeQuality;
+    image-rendering: crisp-edges;
     opacity: 0.4;
     z-index: -1;
   }

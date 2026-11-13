@@ -23,7 +23,9 @@
 
 .logo {
   min-height: 200px;
-  max-height: 40vh;
+  min-width: 200px;
+  max-width: min(40vw, calc(0.4 * var(--layout-max-width, 1200px)));
+  max-height: min(40vh, calc(0.4 * var(--layout-max-width, 1200px)));
 }
 
 .connect {
