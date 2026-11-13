@@ -1,6 +1,7 @@
 import { classNames } from "../../utils/classNames";
+import { useMediaQuery } from "../../utils/screen/useMediaQuery";
 import styles from "./Waves.module.css";
-import { CSSProperties, FC } from "react";
+import { CSSProperties, FC, useEffect, useRef } from "react";
 
 type WavesProps = {
   className?: string;
@@ -9,6 +10,7 @@ type WavesProps = {
    * Timeout indicator mode: the wave drains to nothing over
    * `--wave-timout-duration`. Set the var inline (style prop) or
    * on any ancestor. Omit for a plain animated divider.
+   * When user has `prefers-reduced-motion: reduce` then default `NON_ANIMATED_TIMEOUT = 2_000` timeout is used.
    */
   timeout?: boolean;
   /** Freezes (and later resumes) the drain with progress intact. */
@@ -18,7 +20,7 @@ type WavesProps = {
   /** Escape hatch for inline styles / custom properties. */
   style?: CSSProperties;
 };
-
+const NON_ANIMATED_TIMEOUT = 2_000;
 export const Waves: FC<WavesProps> = ({
   className,
   direction,
@@ -27,6 +29,19 @@ export const Waves: FC<WavesProps> = ({
   onDrained,
   style,
 }) => {
+  const timeoutId = useRef(-1);
+  const noAnimation = useMediaQuery("(prefers-reduced-motion: reduce)");
+
+  useEffect(() => {
+    const id = timeoutId.current;
+    clearTimeout(id);
+    if (noAnimation && timeout && onDrained) {
+      timeoutId.current = setTimeout(onDrained, NON_ANIMATED_TIMEOUT);
+    }
+    return () => {
+      clearTimeout(id);
+    };
+  }, [noAnimation, onDrained, timeout]);
   return (
     <div
       className={classNames(styles.Waves, className)}

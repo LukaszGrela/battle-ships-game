@@ -145,10 +145,11 @@ export const GamePlacement: FC = () => {
               type: "pending";
             })
           | undefined;
-        if (selection && selection.placed) {
-          setOrientationChange(selection.orientation);
+        if (selection) {
+          if (selection.placed) {
+            setOrientationChange(selection.orientation);
+          }
           setAvailableShips((draftShips) => {
-            // mark as selected
             const selected = draftShips.find(
               (needle) =>
                 needle &&
@@ -341,13 +342,22 @@ export const GamePlacement: FC = () => {
   }, [gameState, setAvailableShips, setError, updatePlacementBoard]);
 
   const handleApplyPlacement = useCallback(() => {
-    // save placement
+    // deselect all
+    setAvailableShips((draftShips) => {
+      // deselect
+      draftShips.forEach((ship) => {
+        if (ship && ship.type === "pending" && ship.placed && ship.selected) {
+          ship.selected = false;
+        }
+      });
+    });
 
+    // emit placement
     socket.emit(
       "place_ships",
       availableShips as (TShip & { type: "pending" })[],
     );
-  }, [availableShips]);
+  }, [availableShips, setAvailableShips]);
 
   const toggleOrientation = useCallback(() => {
     const newState = orientation === "horizontal" ? "vertical" : "horizontal";
