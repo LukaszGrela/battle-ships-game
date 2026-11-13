@@ -6,7 +6,7 @@
 
 .Option {
   position: relative;
-  overflow: hidden;
+  overflow: hidden; 
 
   background-color: var(--pirates-palette-24);
 
@@ -15,7 +15,7 @@
   border-color: var(--pirates-palette-25);
 
   padding: 4px;
-  padding-left: 2rem;
+  padding-left: 1.5rem;
 
   font-weight: bold;
   color: var(--pirates-foreground);
@@ -23,6 +23,16 @@
   &[data-selected] {
     background-color: var(--pirates-palette-23);
     border-color: var(--pirates-palette-24);
+  }
+  &[data-placed] {
+    &::after {
+      content: "✔";
+
+      position: absolute;
+      right: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+    }
   }
 
   @media screen and (max-width: 720px) {
@@ -32,7 +42,7 @@
 
 .Option_label {
   position: absolute;
-  left: 16px;
+  left: 10px;
   top: 50%;
   transform: translateY(-50%);
 }
@@ -48,44 +58,68 @@
 }
 
 .Ship {
+  --ship-size: 5;
+  --ship-cell-size: 20px;
+
+  /* ship images are always 3x5 cell size */
+  --ship-sprite-width: calc(3 * var(--ship-cell-size));
+  --ship-sprite-height: calc(5 * var(--ship-cell-size));
+  --ship-width-offset: var(--ship-cell-size);
+
+  --ship-width: calc(var(--ship-sprite-width) - var(--ship-width-offset));
+
   position: relative;
-  height: 32px;
-  width: calc(5 * 32px);
+  height: var(--ship-width);
+  width: calc(var(--ship-size) * var(--ship-cell-size));
   display: flex;
   &[data-vertical] {
     flex-direction: column;
   }
   & span {
-    width: calc(2rem - 8px - 2px - 2px);
-    height: calc(2rem - 8px - 2px - 2px);
+    width: calc(var(--ship-size) * var(--ship-cell-size));
+    height: var(--ship-width);
   }
 
   &::before {
     position: absolute;
+
     content: "";
-    width: 32px;
+    width: var(--ship-width);
     background-repeat: no-repeat;
-    background-size: 64px;
+    background-size: var(--ship-sprite-width) var(--ship-sprite-height);
     background-clip: unset;
     background-origin: border-box;
-    background-position: -16px 0;
+    background-position: calc(-1 * var(--ship-width-offset) / 2) 0;
     transform-origin: 0px 0px;
-    transform: rotate(-90deg) translate(-32px, 0);
+    transform: rotate(-90deg) translate(calc(-1 * var(--ship-width)), 0);
+    
   }
-  &[data-size="2"]::before {
-    height: calc(2 * 32px);
-    background-image: url("/assets/ships/ship-64-2.png");
+  &[data-size="2"] {
+    --ship-size: 2;
+    &::before {
+      height: var(--ship-sprite-height);
+      background-image: url("/assets/ships/ship-64-2.png");
+    }
   }
-  &[data-size="3"]::before {
-    height: calc(3 * 32px);
-    background-image: url("/assets/ships/ship-64-3.png");
+  &[data-size="3"] {
+    --ship-size: 3;
+    &::before {
+      height: var(--ship-sprite-height);
+      background-image: url("/assets/ships/ship-64-3.png");
+    }
   }
-  &[data-size="4"]::before {
-    height: calc(4 * 32px);
-    background-image: url("/assets/ships/ship-64-4.png");
+  &[data-size="4"] {
+    --ship-size: 4;
+    &::before {
+      height: var(--ship-sprite-height);
+      background-image: url("/assets/ships/ship-64-4.png");
+    }
   }
-  &[data-size="5"]::before {
-    height: calc(5 * 32px);
-    background-image: url("/assets/ships/ship-64-5.png");
+  &[data-size="5"] {
+    --ship-size: 5;
+    &::before {
+      height: var(--ship-sprite-height);
+      background-image: url("/assets/ships/ship-64-5.png");
+    }
   }
 }

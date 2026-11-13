@@ -53,6 +53,7 @@
 .empty {
   padding: 1rem 0 1rem;
   color: var(--pirates-palette-10);
+  text-align: center;
 }
 
 .joinGame {

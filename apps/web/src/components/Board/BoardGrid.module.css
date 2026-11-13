@@ -126,7 +126,7 @@
   &[data-type]:not([data-type="empty"]):not([data-type="margin"]):not(
       [data-type="miss"]
     ) {
-    background-color: #aaa;
+    background-color: var(--pirates-palette-25);
     &[data-type="hit"] {
       --atlas-size: 256px;
       --cell-size: 64px;
@@ -143,10 +143,10 @@
   }
 
   &[data-type="miss"] {
-      --atlas-size: 256px;
-      --cell-size: 64px;
-      --scale: calc(var(--grid-size) / var(--cell-size));
-      
+    --atlas-size: 256px;
+    --cell-size: 64px;
+    --scale: calc(var(--grid-size) / var(--cell-size));
+
     background-color: var(--pirates-palette-24);
     background-repeat: no-repeat;
     background-image: url("/assets/splashes-sprites.png");
