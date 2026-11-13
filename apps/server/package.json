@@ -1,7 +1,7 @@
 {
   "name": "@repo/server",
   "private": true,
-  "version": "0.2.3",
+  "version": "0.2.4",
   "scripts": {
     "dev": "node --env-file-if-exists=.env --import tsx --watch src/main.ts",
     "build": "tsup && node scripts/deploy-package-json.js",

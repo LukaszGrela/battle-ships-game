@@ -13,6 +13,7 @@ import type {
   ISocketRateLimitOptions,
 } from "./security/rateLimit";
 import { getVersion } from "./utils/version";
+import { isProd } from "./utils/isProd";
 
 export interface IGameServerOptions {
   instrumentAdminUi?: boolean;
@@ -20,7 +21,7 @@ export interface IGameServerOptions {
   /** Signs/verifies the Socket.IO session token. Defaults to SESSION_SECRET. */
   sessionSecret?: string;
   /** Browser origins allowed to connect. Fail-closed: defaults to the dev list. */
-  allowedOrigins?: ISocketSecurityOptions["allowedOrigins"];
+  allowedOrigins?: Exclude<ISocketSecurityOptions["allowedOrigins"], boolean>;
   maxConnectionsPerIp?: number;
   /**
    * Per-socket token bucket overrides. Tests widen these: one E2E run fires far
@@ -35,11 +36,7 @@ export interface IGameServerOptions {
   logger?: ISocketSecurityLogger;
 }
 
-const DEV_ORIGINS = [
-  "http://localhost:3100",
-  "http://localhost:3102",
-  "http://192.168.1.32:3100",
-];
+const DEV_ORIGINS = ["http://localhost:3100", "http://localhost:3102"];
 
 /** admin.socket.io is a real browser origin: it needs CORS *and* the engine check. */
 const ADMIN_ORIGIN = "https://admin.socket.io";
@@ -55,19 +52,17 @@ export function createGameServer({
   trustProxy,
   logger,
 }: IGameServerOptions = {}) {
-  const isProd = process.env.NODE_ENV === "production";
-
   let APP_VERSION: string = "";
 
   if (!sessionSecret) {
     throw new Error("SESSION_SECRET is required by createGameServer()");
   }
-  if (isProd && instrumentAdminUi) {
+  if (isProd() && instrumentAdminUi) {
     throw new Error("Admin UI instrumentation must be disabled in production");
   }
 
-  // Fail closed: a missing origin list is an empty list, never "*".
-  const allowed = allowedOrigins ?? (isProd ? [] : DEV_ORIGINS);
+  // Fail closed: a missing origin list is an empty list, never "*". Boolean `true` is removed from allowedOrigins type, so the engine-level check never allows all origins. The dev list is always allowed, so a local dev server can connect to a prod server without changing the prod config.
+  const allowed = (allowedOrigins ?? []).concat(isProd() ? [] : DEV_ORIGINS);
   const origins: (string | RegExp)[] = [
     ...(Array.isArray(allowed) ? allowed : []),
     ...(instrumentAdminUi ? [ADMIN_ORIGIN] : []),

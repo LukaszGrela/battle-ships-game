@@ -23,7 +23,7 @@ PORT=3101
 ALLOWED_ORIGINS=http://localhost:3100
 ```
 
-- `NODE_ENV` — set to `production` in deploys
+- `NODE_ENV` — set to `production` for deploys, set to `development` for dev work.
 - `SESSION_SECRET` — secret used to sign session tokens and validate reconnect identity
 - `PORT` — optional, defaults to `3101`
 - `ALLOWED_ORIGINS` — comma-separated list of allowed origins in production

@@ -1,7 +1,6 @@
 import { createGameServer } from "./server.js";
+import { isDev } from "./utils/isDev.js";
 import { getReconnectTimeoutMs } from "./utils/reconnectGrace.js";
-
-const isProduction = process.env.NODE_ENV === "production";
 
 const REQUIRED = ["NODE_ENV", "SESSION_SECRET"];
 const missing = REQUIRED.filter((k) => !process.env[k]);
@@ -18,12 +17,24 @@ if (!Number.isInteger(PORT) || PORT < 1 || PORT > 65535) {
 const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS ?? "")
   .split(",")
   .map((o) => o.trim())
-  .filter(Boolean);
+  .filter(Boolean)
+  .map((entry) => {
+    if (!entry.startsWith("RE:")) return entry;
+
+    const pattern = entry.slice(3);
+    try {
+      return new RegExp(pattern);
+    } catch (err) {
+      throw new Error(
+        `Invalid regex in ALLOWED_ORIGINS: ${pattern} (${(err as Error).message})`,
+      );
+    }
+  });
 
 const { httpServer, io, getVersion } = createGameServer({
-  instrumentAdminUi: !isProduction,
-  logger: !isProduction ? { warn: console.warn } : undefined,
-  allowedOrigins: isProduction ? ALLOWED_ORIGINS : undefined,
+  instrumentAdminUi: isDev(),
+  logger: isDev() ? { warn: console.warn } : undefined,
+  allowedOrigins: ALLOWED_ORIGINS.length > 0 ? ALLOWED_ORIGINS : undefined,
 });
 
 // io.listen(PORT);
@@ -37,6 +48,11 @@ httpServer.listen(PORT, "0.0.0.0", async () => {
     "version:",
     await getVersion(),
   );
+  if (!isDev()) {
+    console.log("process.env.ALLOWED_ORIGINS:", process.env.ALLOWED_ORIGINS);
+    console.log("Allowed origins:", ALLOWED_ORIGINS);
+  }
+
   httpServer.on("request", (req, res) => {
     if (req.url === "/health") {
       res.writeHead(200, { "Content-Type": "application/json" });
