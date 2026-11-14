@@ -39,6 +39,11 @@ export interface IPlayer {
    * Owner of the war room, this user created the game.
    */
   owner?: boolean;
+  /**
+   * Player is an AI opponent (bot) controlled by the server.
+   * The client uses it to pick a bot avatar instead of a human one.
+   */
+  isBot?: boolean;
 }
 
 export type TBoard<S = TCellStatus> = S[][];
