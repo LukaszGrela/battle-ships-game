@@ -4,6 +4,8 @@ import ClientSessionServiceSingleton from "../services/client-session.service";
 import ActiveGameRegistrySingleton from "../services/active-game-registry";
 import { BotRunnerService } from "../bots";
 import { scheduleFinishedRoomCleanup } from "./roomLifecycle";
+import { recordFinishedGame } from "./recordFinishedGame";
+import { emitStats } from "./emitStats";
 
 export function emitRoomStateToPlayers(
   io: Server<IClientToServerEvents, IServerToClientEvents>,
@@ -50,6 +52,16 @@ export function emitRoomStateToPlayers(
   }
 
   BotRunnerService.getInstance().onRoomStateChanged(roomId);
+
+  if (warRoom.getPhase() === EGamePhase.Finished) {
+    // Every path that can end a battle (attack, forfeit, leave, disconnect,
+    // data tampering) funnels through a room state broadcast. Recording here
+    // keeps the statistics independent of how the game ended; the recorder is
+    // idempotent, so the second player's broadcast does not double count.
+    if (recordFinishedGame(roomId)?.recorded) {
+      emitStats(io);
+    }
+  }
 
   // A finished game with a bot never ends on its own: both sides stay in
   // `Finished`, the bot keeps its timers and the room keeps its name. Give

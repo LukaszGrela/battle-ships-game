@@ -148,6 +148,28 @@ export class WarRoom implements ISerializable {
     return this.currentGame?.getOpponent(ofPlayerId);
   }
 
+  /**
+   * Summary of the battle that just ended, `undefined` while the room is not
+   * in `Finished`. The index is the position of that battle in the room's
+   * battle list, so a rematch yields the next index (statistics stay unique).
+   */
+  getFinishedBattleSummary():
+    | {
+        battleIndex: number;
+        finishedAt: string;
+        winnerId: string;
+        loserId?: string;
+        byForfeit: boolean;
+      }
+    | undefined {
+    if (this.getPhase() !== EGamePhase.Finished) return undefined;
+
+    const summary = this.currentGame?.getFinishSummary();
+    if (!summary) return undefined;
+
+    return { ...summary, battleIndex: this.battles.length };
+  }
+
   placeShips(
     playerId: string,
     ships: (TShip & { type: "pending"; id: TCellStatusShipId })[],
