@@ -4,10 +4,11 @@ import { registerGameHandlers } from "./handlers/game.handlers";
 import { IClientToServerEvents, IServerToClientEvents } from "@repo/types";
 import { emitStats } from "../utils/emitStats";
 import ActiveUsersServiceSingleton from "../services/users.service";
+import ActiveGameRegistrySingleton from "../services/active-game-registry";
 import ClientSessionServiceSingleton from "../services/client-session.service";
 import { registerServerHandlers } from "./handlers/server.handlers";
 import { emitRoomStateToPlayers } from "../utils/emitRoomStateToPlayers";
-import ActiveGameRegistrySingleton from "../services/active-game-registry";
+import { registerBotGameHandlers } from "./handlers/bot.handlers";
 import { getSession } from "../security/auth";
 
 export const factoryConnectHandler =
@@ -21,6 +22,7 @@ export const factoryConnectHandler =
     // register listener
     registerRoomHandlers(io, socket);
     registerGameHandlers(io, socket);
+    registerBotGameHandlers(io, socket);
     registerServerHandlers(io, socket);
 
     // emit events

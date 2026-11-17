@@ -11,6 +11,7 @@ import { emitStats } from "../../../utils/emitStats";
 import { emitRoomStateToPlayers } from "../../../utils/emitRoomStateToPlayers";
 import { storeGameId } from "../../../utils/storeGameId";
 import { getSession } from "../../../security/auth";
+import { BotRunnerService } from "../../../bots";
 
 function resolveAbandonedRoom(
   io: Server<IClientToServerEvents, IServerToClientEvents>,
@@ -61,6 +62,7 @@ function resolveAbandonedRoom(
       if (activeGameRegistry.deleteRoom(gameId)) {
         warRoomNames.releaseRoom(warRoom.name);
         storeGameId(clientId, undefined);
+        BotRunnerService.getInstance().removeBot(gameId);
       }
       break;
     case EGamePhase.Finished: {

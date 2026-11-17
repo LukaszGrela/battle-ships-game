@@ -14,6 +14,7 @@ import type {
 } from "./security/rateLimit";
 import { getVersion } from "./utils/version";
 import { isProd } from "./utils/isProd";
+import { BotRunnerService as BotRunnerServiceSingleton } from "./bots";
 
 export interface IGameServerOptions {
   instrumentAdminUi?: boolean;
@@ -101,6 +102,13 @@ export function createGameServer({
 
   io.on("connection", factoryConnectHandler(io));
 
+  // Bots resolve their `io` lazily through this provider, so a closed server is
+  // never emitted to and parallel test servers do not cross-talk.
+  let liveIo: typeof io = io;
+  const detachBotRunner = BotRunnerServiceSingleton.getInstance().attach(
+    () => liveIo,
+  );
+
   const reconnectSweep = setInterval(() => {
     expireDisconnectedPlayers(io);
   }, reconnectSweepIntervalMs);
@@ -126,6 +134,12 @@ export function createGameServer({
     close: async () => {
       clearInterval(reconnectSweep);
       security.dispose();
+
+      // Bots hold timers (unref'd, but they still mutate room state).
+      BotRunnerServiceSingleton.getInstance().disposeAll();
+      detachBotRunner();
+      liveIo = undefined as unknown as typeof io;
+
       await new Promise<void>((resolve) => io.close(() => resolve()));
     },
     getVersion: async () => {

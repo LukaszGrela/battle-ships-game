@@ -12,6 +12,7 @@ import ActiveGameRegistrySingleton from "../../../services/active-game-registry"
 import { warRoomNames } from "../../../services/WarRoomName.service";
 import { storeGameId } from "../../../utils/storeGameId";
 import { getSession } from "../../../security/auth";
+import { BotRunnerService } from "../../../bots";
 
 type TDisconnectHandler = (reason: DisconnectReason) => void;
 
@@ -69,6 +70,7 @@ export const factoryDisconnectHandler =
           if (activeGameRegistry.deleteRoom(clientSession.gameId)) {
             warRoomNames.releaseRoom(warRoom.name);
             storeGameId(clientId, undefined);
+            BotRunnerService.getInstance().removeBot(clientSession.gameId);
           }
 
           io.emit("open_games", activeGameRegistry.getOpenGames());

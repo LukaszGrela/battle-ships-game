@@ -2,6 +2,7 @@ import { IClientToServerEvents, IServerToClientEvents } from "@repo/types";
 import { Server } from "socket.io";
 import ClientSessionServiceSingleton from "../services/client-session.service";
 import ActiveGameRegistrySingleton from "../services/active-game-registry";
+import { BotRunnerService } from "../bots";
 
 export function emitRoomStateToPlayers(
   io: Server<IClientToServerEvents, IServerToClientEvents>,
@@ -13,11 +14,15 @@ export function emitRoomStateToPlayers(
 
   const warRoom = activeGameRegistry.getRoom(roomId);
 
-  console.log("[emitRoomStateToPlayers] warRoom", warRoom?.name);
+  console.log("[emitRoomStateToPlayers] playerId", playerId);
+  console.log("[emitRoomStateToPlayers] warRoom", roomId, warRoom?.name);
   if (!warRoom) return;
 
   const player = warRoom.getPlayer(playerId);
   const opponent = warRoom.getOpponent(playerId);
+
+  console.log("[emitRoomStateToPlayers] player", player?.name);
+  console.log("[emitRoomStateToPlayers] opponent", opponent?.name);
 
   const session = ClientSessionServiceSingleton.getInstance();
 
@@ -36,6 +41,12 @@ export function emitRoomStateToPlayers(
     }
   }
 
-  updatePlayer(player?.id);
-  updatePlayer(opponent?.id);
+  if (!player?.isBot) {
+    updatePlayer(player?.id);
+  }
+  if (!opponent?.isBot) {
+    updatePlayer(opponent?.id);
+  }
+
+  BotRunnerService.getInstance().onRoomStateChanged(roomId);
 }

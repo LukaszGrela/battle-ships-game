@@ -11,6 +11,7 @@ import { storeGameId } from "../../../utils/storeGameId";
 import ActiveGameRegistrySingleton from "../../../services/active-game-registry";
 import { warRoomNames } from "../../../services/WarRoomName.service";
 import { getSession } from "../../../security/auth";
+import { BotRunnerService as BotRunnerServiceSingleton } from "../../../bots";
 
 type TLeaveGameHandler = IClientToServerEvents["leave_game"];
 
@@ -47,23 +48,37 @@ export const factoryLeaveGameHandler = (
       } else if (phase === EGamePhase.Placement) {
         const opponent = warRoom.getOpponent(clientId);
         const self = warRoom.getPlayer(clientId);
-        if (warRoom.removePlayer(clientId)) {
-          storeGameId(clientId, undefined);
-          if (opponent) {
-            const opponentSession = session.readSession(opponent.id);
-            if (opponentSession?.socketId) {
-              io.to(opponentSession.socketId).emit(
-                "player_left",
-                self && {
-                  id: self.id,
-                  name: self.name,
-                  seed: self.seed,
-                },
-              );
-              io.to(opponentSession.socketId).emit(
-                "game_updated",
-                warRoom.getGameState(opponent.id),
-              );
+
+        if (opponent?.isBot) {
+          BotRunnerServiceSingleton.getInstance().removeBot(
+            clientSession.gameId,
+          );
+
+          warRoom.removePlayer(clientId);
+
+          if (activeGameRegistry.deleteRoom(clientSession.gameId)) {
+            warRoomNames.releaseRoom(warRoom.name);
+            storeGameId(clientId, undefined);
+          }
+        } else {
+          if (warRoom.removePlayer(clientId)) {
+            storeGameId(clientId, undefined);
+            if (opponent) {
+              const opponentSession = session.readSession(opponent.id);
+              if (opponentSession?.socketId) {
+                io.to(opponentSession.socketId).emit(
+                  "player_left",
+                  self && {
+                    id: self.id,
+                    name: self.name,
+                    seed: self.seed,
+                  },
+                );
+                io.to(opponentSession.socketId).emit(
+                  "game_updated",
+                  warRoom.getGameState(opponent.id),
+                );
+              }
             }
           }
         }
