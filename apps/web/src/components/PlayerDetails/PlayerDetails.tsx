@@ -10,7 +10,8 @@ export const PlayerDetails: FC<{
   enemy?: boolean;
   phase?: EGamePhase;
   className?: string;
-}> = ({ self, enemy, phase, className }) => {
+  result?: "win" | "lost";
+}> = ({ self, enemy, phase, className, result }) => {
   const { name, owner, ready, active, botLevel } = self;
 
   const enemyIsBot = !!botLevel;
@@ -33,6 +34,16 @@ export const PlayerDetails: FC<{
       </div>
       <Ribbon className={classNames(styles.Ribbon, owner && styles.owner)}>
         <span>{name}</span>
+        {result === "win" && (
+          <img
+            alt="Golden Anchor Trophy"
+            src="/assets/gold-anchor-64.png"
+            className={styles.winnerPin}
+          />
+        )}
+        {result === "win" && (
+          <span className={styles.winnerTitle}>Winner!</span>
+        )}
       </Ribbon>
       {enemy && ready && phase === EGamePhase.Placement && (
         <span className={styles.playerReady}>Player Ready!</span>
