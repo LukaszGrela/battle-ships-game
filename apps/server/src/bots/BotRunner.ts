@@ -32,6 +32,22 @@ const DIFFICULTY_DELAYS: Record<
   hard: { minDelayMs: 700, maxDelayMs: 1500 },
 };
 
+export const BOT_DIFFICULTIES: TBotDifficulty[] = ["easy", "medium", "hard"];
+
+/** Runtime guard for values coming from the socket layer. */
+export const isBotDifficulty = (value: unknown): value is TBotDifficulty =>
+  typeof value === "string" &&
+  (BOT_DIFFICULTIES as string[]).includes(value);
+
+/**
+ * Never let an unvalidated value reach `DIFFICULTY_DELAYS[...]` – an unknown
+ * string would resolve to `undefined` and crash on `delays.minDelayMs`.
+ */
+export const normalizeBotDifficulty = (
+  value: unknown,
+  fallback: TBotDifficulty = DEFAULT_BOTS_CONFIG.difficulty,
+): TBotDifficulty => (isBotDifficulty(value) ? value : fallback);
+
 export const BOT_ID_PREFIX = "bot-";
 
 export const isBotPlayerId = (playerId: string): boolean =>
@@ -77,6 +93,7 @@ export class BotRunner {
       return room.getPlayer(this.bots.get(roomId)!.id);
     }
 
+    const safeDifficulty = normalizeBotDifficulty(difficulty);
     const id = `${BOT_ID_PREFIX}${randomUUID()}`;
     const seed = Math.floor(Math.random() * 1_000_000_000);
     const player: IPlayer = {
@@ -90,14 +107,14 @@ export class BotRunner {
 
     if (!room.addPlayer(player)) return undefined;
 
-    const delays = DIFFICULTY_DELAYS[difficulty];
+    const delays = DIFFICULTY_DELAYS[safeDifficulty];
     const bot = new BotPlayer(
       room,
       id,
       new ProbabilityBrain({
         size: 10,
         seed,
-        blunderChance: BLUNDER_CHANCE[difficulty],
+        blunderChance: BLUNDER_CHANCE[safeDifficulty],
       }),
       {
         minDelayMs: delays.minDelayMs,

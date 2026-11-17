@@ -8,8 +8,10 @@ import { Server, Socket } from "socket.io";
 import ActiveGameRegistrySingleton from "../../../services/active-game-registry";
 import { getSession } from "../../../security/auth";
 import ClientSessionServiceSingleton from "../../../services/client-session.service";
-import { BotRunnerService } from "../../../bots";
+import { BotRunnerService, normalizeBotDifficulty } from "../../../bots";
 import { emitRoomStateToPlayers } from "../../../utils/emitRoomStateToPlayers";
+import { emitStats } from "../../../utils/emitStats";
+import { closeGameRoom } from "../../../utils/roomLifecycle";
 
 export const factoryBotOpponentHandler =
   (
@@ -23,7 +25,8 @@ export const factoryBotOpponentHandler =
     },
     callback: (result: { ok: boolean; message?: string }) => void,
   ) => {
-    const { roomIdentifier: roomId, difficulty = "easy" } = payload;
+    const { roomIdentifier: roomId } = payload;
+    const difficulty = normalizeBotDifficulty(payload.difficulty);
     const activeGameRegistry = ActiveGameRegistrySingleton.getInstance();
     const warRoom = activeGameRegistry.getRoom(roomId.id);
     if (!warRoom) {
@@ -56,11 +59,13 @@ export const factoryBotOpponentHandler =
       callback({ ok: true, message: "Game with bot created successfully." });
 
       emitRoomStateToPlayers(io, clientId, clientSession.gameId);
+      // Room is no longer joinable (bot spawn moved it to `Placement`).
+      io.emit("open_games", activeGameRegistry.getOpenGames());
+      emitStats(io);
     } else {
       // dispose warRoom if bot creation failed
-      activeGameRegistry.deleteRoom(roomId.id);
-
       socket.emit("error", "Failed to create bot opponent.");
       callback({ ok: false, message: "Failed to create bot opponent." });
+      closeGameRoom(io, roomId.id, "bot-opponent/spawn-failed");
     }
   };

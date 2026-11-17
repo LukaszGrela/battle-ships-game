@@ -55,7 +55,11 @@ export class BotPlayer {
 
   /** Call after every state broadcast of the room. Idempotent. */
   schedule(): void {
-    if (this.disposed || this.timer) return;
+    if (this.disposed) return;
+    // A parked bot (finished room) wakes up on the next broadcast – that is
+    // how a rematch request reaches it.
+    this.setPolling(true);
+    if (this.timer) return;
     // console.log(
     //   `[BotPlayer] schedule() for ${this.id} in room ${this.room.id}`,
     // );
@@ -79,11 +83,27 @@ export class BotPlayer {
   }
 
   private startPoll(): void {
+    if (this.disposed || this.poll) return;
     this.poll = setInterval(() => {
       if (this.disposed) return;
       this.schedule();
     }, POLL_INTERVAL_MS);
     this.poll.unref?.();
+  }
+
+  /**
+   * The poll is only a safety net for a live game. A finished room has nothing
+   * to do, so the interval is cleared instead of waking the bot every 300 ms
+   * until the room is torn down.
+   */
+  private setPolling(active: boolean): void {
+    if (this.disposed) return;
+    if (active) {
+      this.startPoll();
+      return;
+    }
+    if (this.poll) clearInterval(this.poll);
+    this.poll = null;
   }
 
   private fire(): void {
@@ -120,6 +140,8 @@ export class BotPlayer {
 
     if (state.phase === EGamePhase.Finished) {
       this.handleFinished(state);
+      // Park the bot: no polling until a rematch broadcast wakes it up.
+      this.setPolling(false);
     }
   }
 

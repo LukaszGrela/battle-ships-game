@@ -13,9 +13,10 @@ import { nanoid } from "nanoid";
 import { playerHasAnotherActiveGame } from "../../../utils/playerHasAnotherActiveGame";
 import { WarRoom } from "../../../services/WarRoom";
 import { storeGameId } from "../../../utils/storeGameId";
-import { BotRunnerService } from "../../../bots";
+import { BotRunnerService, normalizeBotDifficulty } from "../../../bots";
 import { emitStats } from "../../../utils/emitStats";
 import { emitRoomStateToPlayers } from "../../../utils/emitRoomStateToPlayers";
+import { closeGameRoom } from "../../../utils/roomLifecycle";
 
 export const factoryCreateGameWithBotHandler = (
   io: Server<IClientToServerEvents, IServerToClientEvents>,
@@ -29,7 +30,9 @@ export const factoryCreateGameWithBotHandler = (
       message?: string;
     }) => void,
   ) => {
-    const { difficulty = "easy" } = payload;
+    // The socket payload is `unknown` at runtime – never feed it straight
+    // into `DIFFICULTY_DELAYS` (an unknown key crashes the handler).
+    const difficulty = normalizeBotDifficulty(payload.difficulty);
     const roomId: Pick<TRoomIdentity, "id" | "name"> = {
       name: payload.name,
       id: nanoid(),
@@ -78,6 +81,8 @@ export const factoryCreateGameWithBotHandler = (
           ok: false,
           message: "Failed to activate player in the room",
         });
+        // Room + name + `gameId` must not survive a failed creation.
+        closeGameRoom(io, roomId.id, "create-bot/activate-failed");
         return;
       }
 
@@ -103,12 +108,15 @@ export const factoryCreateGameWithBotHandler = (
         callback({ ok: true, message: "Game with bot created successfully." });
 
         emitRoomStateToPlayers(io, clientId, clientSession.gameId);
+        // The room left `Waiting` (bot spawn -> `Placement`), so it must
+        // disappear from every open-games list right away.
+        io.emit("open_games", activeGameRegistry.getOpenGames());
+        emitStats(io);
       } else {
         // dispose warRoom if bot creation failed
-        activeGameRegistry.deleteRoom(roomId.id);
-
         socket.emit("error", "Failed to create bot opponent.");
         callback({ ok: false, message: "Failed to create bot opponent." });
+        closeGameRoom(io, roomId.id, "create-bot/spawn-failed");
       }
     } else {
       socket.emit(

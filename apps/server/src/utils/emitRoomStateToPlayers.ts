@@ -1,8 +1,9 @@
-import { IClientToServerEvents, IServerToClientEvents } from "@repo/types";
+import { EGamePhase, IClientToServerEvents, IServerToClientEvents } from "@repo/types";
 import { Server } from "socket.io";
 import ClientSessionServiceSingleton from "../services/client-session.service";
 import ActiveGameRegistrySingleton from "../services/active-game-registry";
 import { BotRunnerService } from "../bots";
+import { scheduleFinishedRoomCleanup } from "./roomLifecycle";
 
 export function emitRoomStateToPlayers(
   io: Server<IClientToServerEvents, IServerToClientEvents>,
@@ -49,4 +50,15 @@ export function emitRoomStateToPlayers(
   }
 
   BotRunnerService.getInstance().onRoomStateChanged(roomId);
+
+  // A finished game with a bot never ends on its own: both sides stay in
+  // `Finished`, the bot keeps its timers and the room keeps its name. Give
+  // the rematch window a deadline; a rematch moves the phase back to
+  // `Placement`, so the timer above simply becomes a no-op.
+  if (
+    warRoom.getPhase() === EGamePhase.Finished &&
+    (player?.isBot || opponent?.isBot)
+  ) {
+    scheduleFinishedRoomCleanup(io, roomId);
+  }
 }
