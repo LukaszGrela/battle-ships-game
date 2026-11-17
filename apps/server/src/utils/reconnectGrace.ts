@@ -52,7 +52,7 @@ export function expireDisconnectedPlayers(
       if (
         warRoom &&
         warRoom.getPhase() !== EGamePhase.Finished &&
-        warRoom.getOpponent(session.id)?.isBot
+        warRoom.getOpponent(session.id)?.botLevel
       ) {
         closeGameRoom(io, warRoom.id, "reconnect-timeout/non-playing");
       }
@@ -74,7 +74,7 @@ export function expireDisconnectedPlayers(
       // it has to be torn down (a bot cannot rematch with nobody).
       const humansLeft = warRoom
         .getPlayers()
-        .filter((player) => !player.isBot && player.active);
+        .filter((player) => !player.botLevel && player.active);
 
       if (humansLeft.length === 0) {
         closeGameRoom(io, warRoom.id, "reconnect-timeout/forfeited");

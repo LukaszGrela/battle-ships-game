@@ -41,7 +41,7 @@ export const closeGameRoom = (
   const warRoom = registry.getRoom(roomId);
 
   const humanPlayerIds = (warRoom?.getPlayers() ?? [])
-    .filter((player) => !player.isBot)
+    .filter((player) => !player.botLevel)
     .map((player) => player.id);
 
   // Last chance to persist the result: the room is the only source of the

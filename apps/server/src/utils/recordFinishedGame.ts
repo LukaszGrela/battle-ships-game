@@ -32,7 +32,7 @@ export const recordFinishedGame = (
   const players: IFinishedGamePlayer[] = warRoom.getPlayers().map((player) => ({
     id: player.id,
     name: player.name,
-    isBot: Boolean(player.isBot),
+    botLevel: player.botLevel,
     result: player.id === summary.winnerId ? "win" : "lost",
   }));
 

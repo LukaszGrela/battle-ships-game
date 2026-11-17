@@ -71,7 +71,7 @@ export const factoryDisconnectHandler =
         // play against: `removePlayer` would even revert the room to `Waiting`
         // and hand the ownership to the bot, exposing a ghost room in
         // `getOpenGames()`. Tear the room down instead.
-        if (opponent?.isBot || warRoom.playersCount === 1) {
+        if (opponent?.botLevel || warRoom.playersCount === 1) {
           closeGameRoom(io, warRoom.id, "disconnect/placement");
           socket.emit("game_updated", null);
           return;

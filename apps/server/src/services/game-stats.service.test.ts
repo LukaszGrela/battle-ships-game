@@ -15,8 +15,8 @@ const record = (
   finishedAt: "2026-01-01T10:00:00.000Z",
   byForfeit: false,
   players: [
-    { id: "p1", name: "Alice", isBot: false, result: "win" },
-    { id: "p2", name: "Bob", isBot: false, result: "lost" },
+    { id: "p1", name: "Alice", botLevel: undefined, result: "win" },
+    { id: "p2", name: "Bob", botLevel: undefined, result: "lost" },
   ],
   meta: {},
   ...overrides,
@@ -69,8 +69,8 @@ describe("GameStatsService", () => {
         id: buildRecordId("room-1", 1),
         battleIndex: 1,
         players: [
-          { id: "p1", name: "Alice", isBot: false, result: "lost" },
-          { id: "p2", name: "Bob", isBot: false, result: "win" },
+          { id: "p1", name: "Alice", botLevel: undefined, result: "lost" },
+          { id: "p2", name: "Bob", botLevel: undefined, result: "win" },
         ],
       }),
     );
@@ -94,8 +94,8 @@ describe("GameStatsService", () => {
       record({
         byForfeit: true,
         players: [
-          { id: "p1", name: "Alice", isBot: false, result: "win" },
-          { id: "p2", name: "Bob", isBot: false, result: "lost" },
+          { id: "p1", name: "Alice", botLevel: undefined, result: "win" },
+          { id: "p2", name: "Bob", botLevel: undefined, result: "lost" },
         ],
       }),
     );
@@ -115,8 +115,8 @@ describe("GameStatsService", () => {
     stats.recordGame(
       record({
         players: [
-          { id: "p1", name: "Alice", isBot: false, result: "lost" },
-          { id: "bot-abc", name: "Bot", isBot: true, result: "win" },
+          { id: "p1", name: "Alice", botLevel: undefined, result: "lost" },
+          { id: "bot-abc", name: "Bot", botLevel: "hard", result: "win" },
         ],
       }),
     );

@@ -1,16 +1,16 @@
 ```
-Front: "BOT" na liście ──emit bot_opponent──► game.handlers
+Front: "BOT" na liście ── emit bot_opponent ──► game.handlers
    │ walidacja (owner, Waiting)                      │
    └─ "Create with Bot" ──► create_room handler ─────┤
                                                      ▼
                             BotRunner.spawnBot(roomId)
-                              • IPlayer {id: "bot-…", isBot: true, piracki nick}
+                              • IPlayer {id: "bot-…", botLevel: 'easy', piracki nick}
                               • room.addPlayer(player)
                               • new ProbabilityBrain({seed, blunderChance})
                               • bot.schedule()
                                                      │
                         emitRoomStateToPlayers ◄─────┘
-                              • owner widzi enemy z isBot → awatara z puli botów
+                              • owner widzi enemy z botLevel → awatara z puli botów
                               • onRoomStateChanged(roomId)  ← CHOKE POINT
                                                      │
                               BotPlayer: Placement→placeFleet / Playing→shoot

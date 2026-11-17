@@ -40,10 +40,11 @@ export interface IPlayer {
    */
   owner?: boolean;
   /**
-   * Player is an AI opponent (bot) controlled by the server.
+   * When `botLevel` applied the player is an AI opponent (bot) controlled by the server.
+   * The value is the difficulty level of the bot, which can be used by the client to display a bot avatar or other UI elements.
    * The client uses it to pick a bot avatar instead of a human one.
    */
-  isBot?: boolean;
+  botLevel?: TBotDifficulty;
 }
 
 export type TBoard<S = TCellStatus> = S[][];

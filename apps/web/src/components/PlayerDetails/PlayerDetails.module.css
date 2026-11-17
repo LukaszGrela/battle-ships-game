@@ -29,6 +29,25 @@
   }
 }
 
+.Avatar_img {
+  position: relative;
+}
+
+.Avatar_botLevel {
+  display: block;
+  color: var(--pirates-palette-21);
+  font-size: small;
+  width: 100%;
+  text-align: center;
+
+  position: relative;
+  top: -10px;
+
+  @media screen and (max-width: 720px) {
+    top: -24px
+  }
+}
+
 .playerReady {
   color: var(--pirates-accented);
   font-weight: 700;
@@ -38,6 +57,7 @@
 
   @media screen and (max-width: 720px) {
     position: unset;
+    text-align: center;
   }
 }
 

@@ -11,7 +11,10 @@ export const PlayerDetails: FC<{
   phase?: EGamePhase;
   className?: string;
 }> = ({ self, enemy, phase, className }) => {
-  const { name, owner, ready, active } = self;
+  const { name, owner, ready, active, botLevel } = self;
+
+  const enemyIsBot = !!botLevel;
+
   return (
     <div
       className={classNames(styles.PlayerDetails, className)}
@@ -20,7 +23,13 @@ export const PlayerDetails: FC<{
       data-enemy-inactive={!active && ready ? "" : undefined}
     >
       <div className={styles.Avatar}>
-        <PlayerAvatar player={self} />
+        <PlayerAvatar player={self} className={styles.Avatar_img}>
+          {enemyIsBot && (
+            <span
+              className={styles.Avatar_botLevel}
+            >{`Bot level: ${botLevel}`}</span>
+          )}
+        </PlayerAvatar>
       </div>
       <Ribbon className={classNames(styles.Ribbon, owner && styles.owner)}>
         <span>{name}</span>

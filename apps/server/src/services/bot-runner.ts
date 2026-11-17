@@ -131,7 +131,7 @@ export class BotRunnerService {
     const sessions = ClientSessionServiceSingleton.getInstance();
 
     for (const player of room.getPlayers()) {
-      if (player.isBot) continue;
+      if (player.botLevel) continue;
 
       const session = sessions.readSession(player.id);
       if (!session?.socketId) continue;

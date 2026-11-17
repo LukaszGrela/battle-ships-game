@@ -44,10 +44,10 @@ export function emitRoomStateToPlayers(
     }
   }
 
-  if (!player?.isBot) {
+  if (!player?.botLevel) {
     updatePlayer(player?.id);
   }
-  if (!opponent?.isBot) {
+  if (!opponent?.botLevel) {
     updatePlayer(opponent?.id);
   }
 
@@ -69,7 +69,7 @@ export function emitRoomStateToPlayers(
   // `Placement`, so the timer above simply becomes a no-op.
   if (
     warRoom.getPhase() === EGamePhase.Finished &&
-    (player?.isBot || opponent?.isBot)
+    (player?.botLevel || opponent?.botLevel)
   ) {
     scheduleFinishedRoomCleanup(io, roomId);
   }

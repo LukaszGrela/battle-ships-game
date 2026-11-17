@@ -35,7 +35,7 @@ function resolveAbandonedRoom(
 
         const humansLeft = warRoom
           .getPlayers()
-          .filter((player) => !player.isBot && player.active);
+          .filter((player) => !player.botLevel && player.active);
 
         if (humansLeft.length === 0) {
           closeGameRoom(io, gameId, "data-tampered/forfeit");
@@ -50,7 +50,7 @@ function resolveAbandonedRoom(
 
       // A bot opponent cannot accept anything – drop the whole room, also
       // because `removePlayer` would revert the phase to `Waiting`.
-      if (opponent?.isBot) {
+      if (opponent?.botLevel) {
         closeGameRoom(io, gameId, "data-tampered/placement-bot");
         break;
       }
@@ -100,7 +100,7 @@ function resolveAbandonedRoom(
 
       const humansLeft = warRoom
         .getPlayers()
-        .filter((player) => !player.isBot && player.active);
+        .filter((player) => !player.botLevel && player.active);
 
       if (humansLeft.length === 0) {
         closeGameRoom(io, gameId, "data-tampered/finished");

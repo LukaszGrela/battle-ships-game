@@ -102,7 +102,7 @@ export interface IServerToClientEvents {
   player_ready: (
     playerName: Pick<
       IPlayer,
-      "id" | "name" | "seed" | "owner" | "ready" | "isBot"
+      "id" | "name" | "seed" | "owner" | "ready" | "botLevel"
     >,
   ) => void;
   player_left: (playerName?: Pick<IPlayer, "id" | "name" | "seed">) => void;
@@ -113,7 +113,7 @@ export interface IServerToClientEvents {
    * @returns
    */
   opponent_connected: (
-    opponent: Pick<IPlayer, "name" | "seed" | "owner" | "ready" | "isBot">,
+    opponent: Pick<IPlayer, "name" | "seed" | "owner" | "ready" | "botLevel">,
   ) => void;
 
   /**

@@ -19,12 +19,14 @@
  * implementing `IGameStatsService` and keeping the same singleton.
  */
 
+import { TBotDifficulty } from "@repo/types";
+
 /** Result of a single finished battle, as seen by one participant. */
 export interface IFinishedGamePlayer {
   id: string;
   name: string;
   /** Bot players never get their own aggregate row (ids are per room). */
-  isBot: boolean;
+  botLevel?: TBotDifficulty;
   result: "win" | "lost";
 }
 
@@ -95,7 +97,7 @@ export class GameStatsService implements IGameStatsService {
 
     if (record.players.length > 0) {
       for (const player of record.players) {
-        if (player.isBot) continue;
+        if (player.botLevel) continue;
         this.#accumulatePlayerStats(player, record);
       }
     }

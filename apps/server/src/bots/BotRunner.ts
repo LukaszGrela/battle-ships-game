@@ -66,7 +66,7 @@ export interface IBotRunnerHooks {
  * Owns every bot in the server process: one `BotPlayer` per room.
  *
  * The bot is a regular room player – it has no socket and no session, it is
- * driven by the server. `IPlayer.isBot` marks it, so the client can render a
+ * driven by the server. `IPlayer.botLevel` marks it, so the client can render a
  * bot avatar instead of a human one.
  */
 export class BotRunner {
@@ -102,7 +102,7 @@ export class BotRunner {
       seed,
       active: true,
       ready: false,
-      isBot: true,
+      botLevel: safeDifficulty,
     };
 
     if (!room.addPlayer(player)) return undefined;

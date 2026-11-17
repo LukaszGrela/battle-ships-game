@@ -48,7 +48,7 @@ export const factoryLeaveGameHandler = (
         const opponent = warRoom.getOpponent(clientId);
         const self = warRoom.getPlayer(clientId);
 
-        if (opponent?.isBot) {
+        if (opponent?.botLevel) {
           // No human opponent left in the room – nothing to keep alive.
           closeGameRoom(io, warRoom.id, "leave/placement-bot");
         } else {
@@ -83,7 +83,7 @@ export const factoryLeaveGameHandler = (
 
           const humansLeft = warRoom
             .getPlayers()
-            .filter((player) => !player.isBot && player.active);
+            .filter((player) => !player.botLevel && player.active);
 
           if (humansLeft.length === 0) {
             closeGameRoom(io, warRoom.id, "forfeit/no-humans");
@@ -120,7 +120,7 @@ export const factoryLeaveGameHandler = (
         // down instead of leaving an orphaned bot polling a dead room.
         const humansLeft = warRoom
           .getPlayers()
-          .filter((player) => !player.isBot && player.active);
+          .filter((player) => !player.botLevel && player.active);
 
         const opponentSession = opponent
           ? session.readSession(opponent.id)
