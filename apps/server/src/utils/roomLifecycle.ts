@@ -9,6 +9,7 @@ import { warRoomNames } from "../services/WarRoomName.service";
 import { BotRunnerService } from "../bots";
 import { storeGameId } from "./storeGameId";
 import { emitStats } from "./emitStats";
+import { recordFinishedGame } from "./recordFinishedGame";
 
 /** A finished room is kept alive for a possible rematch, but not forever. */
 export const FINISHED_ROOM_TTL_MS = 5 * 60 * 1000;
@@ -42,6 +43,11 @@ export const closeGameRoom = (
   const humanPlayerIds = (warRoom?.getPlayers() ?? [])
     .filter((player) => !player.isBot)
     .map((player) => player.id);
+
+  // Last chance to persist the result: the room is the only source of the
+  // participant list, so statistics must be written before the deletion below.
+  // Typically a no-op – the finish broadcast already recorded the battle.
+  recordFinishedGame(roomId);
 
   // The bot is disposed before the room disappears: `disposeBot` removes its
   // player from the room and clears the pending timeout / poll interval.
