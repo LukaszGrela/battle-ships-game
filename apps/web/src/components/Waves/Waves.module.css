@@ -45,7 +45,7 @@
    clip-path (not width/scaleX) so the drain is composited:
    no layout, and the wave pattern is never stretched.     */
 .Waves[data-mode="timeout"] .Waves_svg {
-  animation: shrink-right var(--wave-timout-duration, 4s)
+  animation: shrink-right var(--wave-timout-duration, 3s)
     var(--wave-timout-easing, linear) forwards;
   animation-delay: var(--wave-timout-delay, 0s);
 

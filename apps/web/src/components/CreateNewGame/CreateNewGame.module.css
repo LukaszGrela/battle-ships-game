@@ -23,6 +23,15 @@
   gap: 8px;
   width: 100%;
 }
+.action_row {
+  display:flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+}
 
 .randomName {
   --padding: 4px 0.5rem 4px 0.5rem;

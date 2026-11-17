@@ -1,0 +1,16 @@
+.BotGameDifficultyModal {
+}
+.BotGameDifficultyModal_dialog {
+  --modal-dialog-width: min(24rem, 90vw);
+}
+
+.BotGameDifficultyModal_body {
+}
+
+.BotGameDifficultyModal_list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 70%;
+  margin: 0 auto;
+}
