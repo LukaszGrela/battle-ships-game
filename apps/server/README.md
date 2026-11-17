@@ -59,6 +59,8 @@ Rooms move through these phases:
 
 The lifecycle is handled in the server utilities and service layer, with room transitions enforcing the rules for ready states, turn updates, disconnect handling, and finished-game reconciliation.
 
+A room that reaches `finished` is not deleted immediately: `scheduleFinishedRoomCleanup` keeps it alive for `FINISHED_ROOM_TTL_MS` (5 minutes) so the final state can be read and a rematch can be started. Teardown happens in `closeGameRoom`, which cancels the pending timer, disposes the bot, records the battle if it was not recorded yet, and only then removes the room from the registry.
+
 ### Reconnect flow
 
 When a client connects, the server:
@@ -85,6 +87,34 @@ When a game ends, the losing player may request a rematch. The winner can accept
 
 If accepted, the same room is reset to a fresh placement phase without creating a brand-new room.
 
+### Bots
+
+A room can be filled by a server-side bot instead of a waiting human.
+
+- `create_game_with_bot` creates a room with the bot already seated; `bot_opponent` seats a bot in an existing room.
+- difficulties are `easy`, `medium` and `hard` (`TBotDifficulty`); the value is validated at runtime and an unknown difficulty is rejected instead of stored.
+- the bot is a normal `IPlayer` with `botLevel` set, so it is broadcast and rendered like any other player.
+- bot ids use the `bot-` prefix and are unique per room; a room with a bot is no longer listed in `open_games`, and bots are excluded from per-player statistics aggregation.
+- `BotRunnerService` owns the bot lifecycle (`spawnBot`, `removeBot`, `onRoomStateChanged`, `disposeAll`). The bot is re-armed by room state changes and is disposed together with its room.
+- a bot acts through the same room API as a human (`room.attack`), so it cannot bypass turn or board rules.
+
+### Game statistics
+
+`src/services/game-stats.service.ts` is an append-only store of finished battles, deliberately independent from `ActiveGameRegistry`: rooms are deleted, lifetime numbers must not be.
+
+`src/utils/recordFinishedGame.ts` builds the record from the finished room (`WarRoom.getFinishedBattleSummary()` → `BattleShips.getFinishSummary()`) and stores it under the idempotency key `<roomId>#<battleIndex>`.
+
+Recording is triggered from two idempotent places:
+
+1. `emitRoomStateToPlayers` after a `finished` broadcast (the normal path, followed by a `server_stats` emit),
+2. `closeGameRoom` in `roomLifecycle.ts` as a last chance before the room is deleted, which covers endings whose broadcast never reached the choke point.
+
+A record contains `id`, `roomId`, `roomName`, `battleIndex`, `finishedAt`, `byForfeit`, `players[]` (`id`, `name`, `botLevel?`, `result: "win" | "lost"`) and a free-form `meta` bag for additional game data.
+
+Service methods: `recordGame`, `hasGame`, `playedGames`, `playedGamesByForfeit`, `recentGames(limit)`, `getGame`, `playerStats`, `allPlayerStats`, `size`, `reset` (tests only). `playedGames()` feeds `TStats.playedGames` through `emitStats`.
+
+The store is in memory, so statistics reset on server restart. Moving to a database means implementing `IGameStatsService` and keeping `GameStatsServiceSingleton`.
+
 ## Testing
 
 Run the server tests:
@@ -93,8 +123,11 @@ Run the server tests:
 pnpm --filter @repo/server test
 ```
 
+The suite includes the socket flow end-to-end (`src/main.e2e.test.ts`), the bot lifecycle (`src/bots/BotRunner.e2e.test.ts`), room rules (`src/services/WarRoom.test.ts`) and the statistics store (`src/services/game-stats.service.test.ts`).
+
 ## Notes
 
 - There is no user login flow; a player identity is assigned on first connection and stored locally in the browser.
 - The server remains the authority for room state; the client should never re-create a session during restore.
 - Production deployments should treat `SESSION_SECRET` as a real secret and keep `ALLOWED_ORIGINS` restricted to the frontend origin.
+- Statistics are held in process memory; restarting the server resets `playedGames` and per-player aggregates.
