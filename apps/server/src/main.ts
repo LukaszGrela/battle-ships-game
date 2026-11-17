@@ -53,11 +53,12 @@ httpServer.listen(PORT, "0.0.0.0", async () => {
     console.log("Allowed origins:", ALLOWED_ORIGINS);
   }
 
-  httpServer.on("request", (req, res) => {
+  httpServer.on("request", async (req, res) => {
     if (req.url === "/health") {
       res.writeHead(200, { "Content-Type": "application/json" });
+      const version = await getVersion();
       return res.end(
-        JSON.stringify({ status: "ok", sockets: io.engine.clientsCount }),
+        JSON.stringify({ status: "ok", sockets: io.engine.clientsCount, version }),
       );
     }
     res.writeHead(404).end();
