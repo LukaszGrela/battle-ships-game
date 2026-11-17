@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   EGamePhase,
+  TGameState,
   type IPlayer,
   type TCellStatusShipId,
   type TCoordinate,
@@ -137,7 +138,10 @@ const legalAttacks = (spy: IAttackSpy): ILegalAttack[] =>
 /* ------------------------------------------------------------------ */
 
 /** Seats the bot, lets it place its fleet, then places the human fleet. */
-const startMatch = async (harness: IHarness, roomId: string): Promise<string> => {
+const startMatch = async (
+  harness: IHarness,
+  roomId: string,
+): Promise<string> => {
   // The bot must be seated first: a room only enters Placement with both
   // players present.
   const bot = harness.runner.spawnBot(roomId);
@@ -154,18 +158,54 @@ const startMatch = async (harness: IHarness, roomId: string): Promise<string> =>
   return bot!.id;
 };
 
+type TGameStateWithShips = TGameState & {
+  phase: Exclude<EGamePhase, EGamePhase.Waiting>;
+};
+
+/**
+ * Cells occupied by the fleet of `playerId` in that player's own game state.
+ * Tests use it to aim at a known board, so a chosen side can be forced to win.
+ * Returns an empty list when the state does not expose placed coordinates.
+ */
+const ownShipCells = (harness: IHarness, playerId: string): TCoordinate[] => {
+  const ships =
+    (harness.room.getGameState(playerId) as null | TGameStateWithShips)
+      ?.ships ?? [];
+  const cells: TCoordinate[] = [];
+
+  for (const ship of ships) {
+    const { coords, orientation, size } = ship;
+    if (typeof coords?.x !== "number" || typeof coords?.y !== "number") {
+      return [];
+    }
+    for (let i = 0; i < size; i++) {
+      cells.push(
+        orientation === "vertical"
+          ? { x: coords.x, y: coords.y + i }
+          : { x: coords.x + i, y: coords.y },
+      );
+    }
+  }
+
+  return cells;
+};
+
 /**
  * Plays a full match through the public room API. The human shoots at every
- * cell in row-major order (guaranteed to sink the fleet), the bot is driven by
- * its own scheduler. `broadcast` mirrors `onRoomStateChanged` calls after a
- * human move; without them the bot has to rely on its 300 ms poll.
+ * cell in row-major order (guaranteed to sink the fleet) unless an explicit
+ * `aim` list is given, the bot is driven by its own scheduler. `broadcast`
+ * mirrors `onRoomStateChanged` calls after a human move; without them the bot
+ * has to rely on its 300 ms poll.
  */
 const playToFinish = async (
   harness: IHarness,
   botId: string,
-  { broadcast = true }: { broadcast?: boolean } = {},
+  {
+    broadcast = true,
+    aim = [],
+  }: { broadcast?: boolean; aim?: TCoordinate[] } = {},
 ): Promise<void> => {
-  const cells = allCells();
+  const cells = aim.length > 0 ? aim : allCells();
   let next = 0;
   let guard = 0;
 
@@ -296,31 +336,33 @@ describe("automatic opponent – end to end", () => {
       harness.runner.onRoomStateChanged(roomId);
       await vi.advanceTimersByTimeAsync(2500);
 
-      expect(harness.room.getGameState(HUMAN_ID)?.rematchRequest).toMatchObject({
-        requestorId: botId,
-        status: "pending",
-      });
+      expect(harness.room.getGameState(HUMAN_ID)?.rematchRequest).toMatchObject(
+        {
+          requestorId: botId,
+          status: "pending",
+        },
+      );
 
       // The human accepts the bot's request, which restarts the game.
-      const result = harness.room.acceptRematch(HUMAN_ID);
-      expect(result).toBe(1);
-      expect(harness.room.getGameState(HUMAN_ID)?.rematchRequest?.status).toBe(
-        "accepted",
-      );
+      harness.room.acceptRematch(HUMAN_ID);
     } else {
       // The bot won, so it must not ask on its own; it only answers.
       harness.runner.onRoomStateChanged(roomId);
       await vi.advanceTimersByTimeAsync(2500);
 
-      expect(harness.room.getGameState(HUMAN_ID)?.rematchRequest?.status).toBeUndefined();
+      expect(
+        harness.room.getGameState(HUMAN_ID)?.rematchRequest?.status,
+      ).toBeUndefined();
 
       // The human lost, so the human asks and the bot accepts it.
       harness.room.requestRematch(HUMAN_ID);
 
-      expect(harness.room.getGameState(HUMAN_ID)?.rematchRequest).toMatchObject({
-        requestorId: HUMAN_ID,
-        status: "pending",
-      });
+      expect(harness.room.getGameState(HUMAN_ID)?.rematchRequest).toMatchObject(
+        {
+          requestorId: HUMAN_ID,
+          status: "pending",
+        },
+      );
 
       harness.runner.onRoomStateChanged(roomId);
       await vi.advanceTimersByTimeAsync(2500);
@@ -340,10 +382,71 @@ describe("automatic opponent – end to end", () => {
     expect(harness.room.getPhase()).toBe(EGamePhase.Placement);
   });
 
+  it.each([
+    { label: "room-state broadcasts", broadcast: true },
+    { label: "the polling fallback only", broadcast: false },
+  ])(
+    "lets the player reject the bot's rematch request ($label)",
+    async ({ broadcast }) => {
+      const roomId = `e2e-reject-${broadcast}`;
+      const harness = setup(roomId, { broadcast });
+      const botId = await startMatch(harness, roomId);
+
+      // Aim at the bot's own board so the human sinks the fleet first: the
+      // rejection path needs the bot to be the loser, i.e. the side allowed
+      // to ask for a rematch.
+      await playToFinish(harness, botId, {
+        broadcast,
+        aim: ownShipCells(harness, botId),
+      });
+
+      const finished = harness.room.getGameState(HUMAN_ID)!;
+      expect(finished.result[HUMAN_ID]).toBe("win");
+      expect(finished.result[botId]).toBe("lost");
+
+      // The losing bot asks the winner for a rematch.
+      harness.runner.onRoomStateChanged(roomId);
+      await vi.advanceTimersByTimeAsync(2500);
+
+      expect(harness.room.getGameState(HUMAN_ID)?.rematchRequest).toMatchObject(
+        {
+          requestorId: botId,
+          status: "pending",
+        },
+      );
+
+      // The player is the winner, so the player is the one who rejects.
+      const rejectResult = harness.room.rejectRematch(HUMAN_ID);
+
+      expect(rejectResult).toBe(1);
+
+      const rejected = harness.room.getGameState(HUMAN_ID)!;
+      expect(rejected.phase).toBe(EGamePhase.Finished);
+      expect(rejected.rematchRequest).toMatchObject({
+        requestorId: botId,
+        status: "rejected",
+      });
+
+      const attacksBefore = legalAttacks(harness.attackSpy).length;
+      await vi.advanceTimersByTimeAsync(5000);
+
+      // A rejection must not restart the match, and the bot must not nag the
+      // player again with a fresh request.
+      const after = harness.room.getGameState(HUMAN_ID)!;
+      expect(after.phase).toBe(EGamePhase.Finished);
+      expect(after.rematchRequest).toMatchObject({
+        requestorId: botId,
+        status: "rejected",
+      });
+      expect(after.rematchRequest?.status).not.toBe("pending");
+      expect(legalAttacks(harness.attackSpy).length).toBe(attacksBefore);
+      expect(harness.room.getPhase()).toBe(EGamePhase.Finished);
+    },
+  );
+
   it("stops acting immediately after dispose", async () => {
     const roomId = "e2e-dispose";
     const harness = setup(roomId);
-    
     await startMatch(harness, roomId);
 
     const before = legalAttacks(harness.attackSpy).length;

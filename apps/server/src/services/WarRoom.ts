@@ -70,6 +70,9 @@ export class WarRoom implements ISerializable {
     }
   }
 
+  getOwner(): IPlayer | undefined {
+    return this.currentGame?.getOwner();
+  }
   addPlayer(player: IPlayer): boolean {
     return !!this.currentGame?.addPlayer(player);
   }
@@ -137,6 +140,9 @@ export class WarRoom implements ISerializable {
   }
   getPlayer(playerId: string): IPlayer | undefined {
     return this.currentGame?.getPlayer(playerId);
+  }
+  getPlayers(): IPlayer[] {
+    return this.currentGame?.getPlayers() ?? [];
   }
   getOpponent(ofPlayerId: string): IPlayer | undefined {
     return this.currentGame?.getOpponent(ofPlayerId);

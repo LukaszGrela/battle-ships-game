@@ -102,12 +102,15 @@ export type TGameTimeStamps = {
   game_started: string | null;
   game_finished: string | null;
 };
+
 export type TRoomIdentity = {
   id: TRoomId;
   name: string;
 
+  owner: Pick<IPlayer, "id" | "name">;
   phase: TStringifiedEnum<EGamePhase>;
 } & TGameTimeStamps;
+
 export type TRematchRequest = {
   requestorId: TUserId;
 
@@ -117,7 +120,7 @@ export type TRematchRequest = {
   status: "pending" | "accepted" | "rejected";
 };
 
-export type TRoomState = TRoomIdentity & {
+export type TRoomState = Omit<TRoomIdentity, "owner"> & {
   players: Record<TUserId, IPlayer>;
   boards: Record<TUserId, TBoard>;
   ships: Record<TUserId, TShip[]>;
@@ -199,3 +202,5 @@ export type TAttackResult =
       status: TCellStatusShipHit | TCellStatusMiss;
     }
   | { ok: false; message: string };
+
+export type TBotDifficulty = "easy" | "medium" | "hard";

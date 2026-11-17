@@ -705,12 +705,22 @@ export class BattleShips
     return undefined;
   }
 
+  getPlayers() {
+    return Array.from(this.players.values()).map((player) =>
+      structuredClone(player),
+    );
+  }
+
   getPlayersCount() {
     return this.players.size;
   }
 
   setRematchRequest(request: TRematchRequest | undefined) {
     this.#rematchRequest = request;
+  }
+
+  getOwner(): IPlayer | undefined {
+    return this.getPlayer(this.owner ?? "");
   }
 
   #validTurn(playerId: string): boolean {
@@ -853,10 +863,7 @@ function normalizeShipId(
   return hitStatus;
 }
 
-function initPlayer(
-  player: Omit<IPlayer, "ready">,
-  isOwner: boolean,
-): IPlayer {
+function initPlayer(player: Omit<IPlayer, "ready">, isOwner: boolean): IPlayer {
   const initializedPlayer: IPlayer = {
     ...player,
     ready: false,

@@ -6,6 +6,7 @@ import {
   TGameState,
   IPlayer,
   TRematchRequest,
+  TBotDifficulty,
 } from "./game";
 import { TCoordinate, IClientSession } from "./game-logic";
 
@@ -54,7 +55,10 @@ export interface IClientToServerEvents {
    * @param callback result of the operation
    */
   bot_opponent: (
-    roomId: string,
+    payload: {
+      roomIdentifier: Pick<TRoomIdentity, "id" | "name">;
+      difficulty?: TBotDifficulty;
+    },
     callback: (result: { ok: boolean; message?: string }) => void,
   ) => void;
 
@@ -65,7 +69,7 @@ export interface IClientToServerEvents {
    * @param callback result of the operation
    */
   create_game_with_bot: (
-    payload: { name: string; difficulty?: "easy" | "medium" | "hard" },
+    payload: { name: string; difficulty?: TBotDifficulty },
     callback: (result: {
       ok: boolean;
       roomId?: string;
