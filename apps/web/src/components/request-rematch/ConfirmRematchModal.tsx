@@ -33,9 +33,11 @@ export const ConfirmRematchModal: FC<{
     question: Math.floor(Math.random() * acceptQuestions.length),
   }));
   const wasOpen = useRef(open);
+  const rematchResponseEmitted = useRef(false);
 
   useEffect(() => {
     if (open && !wasOpen.current) {
+      rematchResponseEmitted.current = false;
       setCopyIndex({
         message: Math.floor(Math.random() * challengeMessages.length),
         question: Math.floor(Math.random() * acceptQuestions.length),
@@ -45,12 +47,22 @@ export const ConfirmRematchModal: FC<{
     wasOpen.current = open;
   }, [open]);
 
-  const handleReject = useCallback(() => {
-    socket.emit("reject_rematch");
-  }, []);
-  const handleAccept = useCallback(() => {
-    socket.emit("accept_rematch");
-  }, []);
+  // after emiting rematch response, state update is received and modal 
+  // is closed, closing calls onClose which calls handleReject. 
+  // Thats why we need `rematchResponseEmitted` gate.
+
+  const handleReject = () => {
+    if (!rematchResponseEmitted.current) {
+      socket.emit("reject_rematch");
+    }
+    rematchResponseEmitted.current = true;
+  };
+  const handleAccept = () => {
+    if (!rematchResponseEmitted.current) {
+      socket.emit("accept_rematch");
+    }
+    rematchResponseEmitted.current = true;
+  };
 
   const modalFooterRenderer = useCallback(() => {
     return (
@@ -63,7 +75,7 @@ export const ConfirmRematchModal: FC<{
         </Button>
       </>
     );
-  }, [handleAccept, handleReject]);
+  }, []);
 
   return (
     <Modal
