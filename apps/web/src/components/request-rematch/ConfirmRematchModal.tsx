@@ -45,12 +45,12 @@ export const ConfirmRematchModal: FC<{
     wasOpen.current = open;
   }, [open]);
 
-  const handleReject = () => {
+  const handleReject = useCallback(() => {
     socket.emit("reject_rematch");
-  };
-  const handleAccept = () => {
+  }, []);
+  const handleAccept = useCallback(() => {
     socket.emit("accept_rematch");
-  };
+  }, []);
 
   const modalFooterRenderer = useCallback(() => {
     return (
@@ -63,7 +63,7 @@ export const ConfirmRematchModal: FC<{
         </Button>
       </>
     );
-  }, []);
+  }, [handleAccept, handleReject]);
 
   return (
     <Modal
