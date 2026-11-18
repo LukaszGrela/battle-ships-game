@@ -23,7 +23,6 @@ export const EmitLeaveGameButton: FC<
   const { selfId, gameState, setGameState, setSelfId, setError } =
     useGameStore();
   const gameFinished = gameState?.phase === "finished";
-  console.log("[EmitLeaveGameButton]", "Game finished", gameFinished);
   const leaveGame = useCallback(() => {
     if (gameFinished) {
       setGameState(null);

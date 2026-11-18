@@ -5,12 +5,6 @@
   flex-direction: column;
   align-items: start;
 
-  /* &:focus-within {
-    .RoomNameInput_field {
-      box-shadow: 0 0 2px 0.25rem #f008;
-    }
-  } */
-
   flex: 1 1 auto;
 }
 
@@ -28,19 +22,12 @@
   width: 100%;
   box-shadow: 1px 1px 3px 0 var(--pirates-palette-20);
 
-  border-radius: 6px;
+  border-radius: var(--radius-md);
 
   border-color: var(--pirates-palette-14);
   border-width: 2px;
   border-style: solid;
 
-  /* &[data-status="valid"] {
-    border-color: green;
-  }
-  &[data-status="taken"],
-  &[data-status="invalid"] {
-    border-color: red;
-  } */
 }
 
 .RoomNameInput_input {

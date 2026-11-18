@@ -9,7 +9,7 @@
       calc(var(--root-padding) * 2)
   );
   height: calc(100dvh - var(--offset));
-  width: calc(100vw - var(--offset));
+  width: 100%;
 
   position: relative;
 }
@@ -30,6 +30,7 @@
 }
 
 .connect {
+  width: 100%;
   color: var(--pirates-palette-20);
   user-select: none;
 
@@ -42,38 +43,36 @@
 
   display: block;
 
-  &:hover {
-    .goldButton {
-      --ribbon-base-y-offset: 10px;
+  @media (hover: hover) {
+    &:hover {
+      .goldButton {
+        --ribbon-base-y-offset: 10px;
 
-      /* Konfiguracja lewej strony */
-      --ribbon-left-y-offset: calc(1rem - var(--ribbon-base-y-offset));
+        /* Konfiguracja lewej strony */
+        --ribbon-left-y-offset: calc(1rem - var(--ribbon-base-y-offset));
 
-      /* Konfiguracja prawej strony */
-      --ribbon-right-y-offset: calc(1rem - var(--ribbon-base-y-offset));
+        /* Konfiguracja prawej strony */
+        --ribbon-right-y-offset: calc(1rem - var(--ribbon-base-y-offset));
 
-      --margin-bottom: calc(
-        var(--ribbon-right-y-offset) + var(--ribbon-base-y-offset)
-      );
+        --margin-bottom: calc(
+          var(--ribbon-right-y-offset) + var(--ribbon-base-y-offset)
+        );
+      }
     }
   }
 }
 
 .goldButton {
-  --offset: 100vw -
-    calc(
-      calc(var(--root-border-width) * 2) + calc(var(--root-margin) * 2) +
-        calc(var(--root-padding) * 2)
-    );
-
-  --ribbon-min-width: 0;
-  --ribbon-max-width: calc(
-    var(--offset) -
+  width: calc(
+    100% -
       (
         calc(var(--ribbon-fold-right-width) - var(--ribbon-right-x-offset)) +
           calc(var(--ribbon-fold-left-width) - var(--ribbon-left-x-offset))
       )
   );
+
+  --ribbon-min-width: 0;
+  --ribbon-max-width: 100%;
   font-weight: 600;
 }
 
@@ -85,5 +84,8 @@
   bottom: -0.75rem;
   @media screen and (max-width: 500px) {
     bottom: -0.25rem;
+  }
+  @media screen and (max-width: 380px) {
+    bottom: 0;
   }
 }

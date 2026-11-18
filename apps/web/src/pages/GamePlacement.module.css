@@ -33,3 +33,9 @@
   opacity: 0;
   visibility: hidden;
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .ErrorPanel {
+    transition: none;
+  }
+}

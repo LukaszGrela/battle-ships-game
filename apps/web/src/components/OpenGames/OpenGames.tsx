@@ -18,7 +18,7 @@ export const OpenGames: FC<{ className?: string }> = ({ className }) => {
       header={<span className={"shadow"}>Open games</span>}
     >
       {openGames.length > 0 && (
-        <ul className={styles.list}>
+        <ul className={styles.list} aria-live="polite" aria-label="Open games">
           {openGames.map((warRoomName: TRoomIdentity) => (
             <li key={warRoomName.id} className={styles.listItem}>
               <div className={styles.listItem_name}>{warRoomName.name}</div>
@@ -43,7 +43,7 @@ export const OpenGames: FC<{ className?: string }> = ({ className }) => {
         </ul>
       )}
       {!openGames.length && (
-        <div className={styles.empty}>
+        <div className={styles.empty} role="status">
           No open games to join available. Create a new Game.
         </div>
       )}

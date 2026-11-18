@@ -1,10 +1,13 @@
 .BotGameDifficultyModal {
+  --modal-width: min(65dvw, 480px);
+}
+@media (max-width: 480px) {
+  .BotGameDifficultyModal {
+    --modal-width: 90dvw;
+  }
 }
 .BotGameDifficultyModal_dialog {
-  --modal-dialog-width: min(24rem, 90vw);
-}
-
-.BotGameDifficultyModal_body {
+  --modal-dialog-width: 100%;
 }
 
 .BotGameDifficultyModal_list {

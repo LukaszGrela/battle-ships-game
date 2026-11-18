@@ -2,7 +2,7 @@
   "extends": ["//"],
   "tasks": {
     "build": {
-      "env": ["MODE"]
+      "env": ["MODE", "DEV"]
     }
   }
 }

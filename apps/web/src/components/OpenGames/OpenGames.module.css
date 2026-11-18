@@ -10,7 +10,7 @@
   color: var(--pirates-palette-14);
 
   display: grid;
-  grid-template-columns: 1fr 1fr minmax(44px, 1fr);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(44px, 1fr);
   align-items: center;
 
   gap: 0.5rem;
@@ -36,12 +36,16 @@
 }
 .listItem_name {
   font-weight: bold;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-/* .listItem_date {
-} */
-/* .listItem_action {
-} */
+.listItem_date {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
 
 .listItem_action_content {
   container-type: inline-size;
@@ -54,6 +58,7 @@
   padding: 1rem 0 1rem;
   color: var(--pirates-palette-10);
   text-align: center;
+  text-wrap: pretty;
 }
 
 .joinGame {

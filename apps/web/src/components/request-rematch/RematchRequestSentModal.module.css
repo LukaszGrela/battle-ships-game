@@ -1,3 +1,16 @@
+.Modal {
+  --modal-width: min(65dvw, 360px);
+}
+@media (max-width: 480px) {
+  .Modal {
+    --modal-width: 90dvw;
+  }
+}
+
+.Modal_dialog {
+  --modal-dialog-width: 100%;
+}
+
 .Modal_body {
   padding: 1rem 0;
 }

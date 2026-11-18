@@ -487,7 +487,6 @@ const handleEdgePlacement = <T,>(
       coords.y === board.length - 1 &&
       coords.x + ship.size <= board.at(0)!.length
     ) {
-      console.log("Ship is at the bottom edge of the board");
       return { ...ship, orientation: "horizontal" } as TShip;
     }
   }

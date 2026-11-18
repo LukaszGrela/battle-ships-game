@@ -50,6 +50,8 @@ export const RematchRequestSentModal: FC<{ open?: boolean }> = ({
       hideHeader
       headerClassName={styles.title}
       bodyClassName={styles.Modal_body}
+      className={styles.Modal}
+      dialogClassName={styles.Modal_dialog}
     >
       <p className={styles.message}>{copy.message}</p>
       <Waves className={styles.separator} />

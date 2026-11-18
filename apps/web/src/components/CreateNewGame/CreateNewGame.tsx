@@ -213,7 +213,6 @@ const CreateBotGame: FC<{ gameName?: string }> = ({ gameName }) => {
   const emitBotGame = useCallback(
     (difficulty: "easy" | "medium" | "hard") => {
       setOpen(false);
-      // console.log("create_game_with_bot", gameName,difficulty)
       if (gameName)
         socket.emit(
           "create_game_with_bot",
@@ -222,7 +221,7 @@ const CreateBotGame: FC<{ gameName?: string }> = ({ gameName }) => {
             difficulty,
           },
           (result) => {
-            console.log("Result", result);
+            console.warn("TODO: Handle result", result);
           },
         );
     },

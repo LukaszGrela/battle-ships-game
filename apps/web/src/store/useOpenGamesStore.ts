@@ -25,7 +25,6 @@ export const useOpenGamesStatus = () => {
 
   useEffect(() => {
     function lobby(rooms: TRoomIdentity[]) {
-      console.log("useOpenGamesStatus", rooms);
       setOpenGames(rooms);
     }
 

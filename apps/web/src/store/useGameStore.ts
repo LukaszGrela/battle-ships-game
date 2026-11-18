@@ -95,7 +95,6 @@ export const useSocketGameState = () => {
   } = useGameStore();
   useEffect(() => {
     function onUpdate(state: TGameState | null) {
-      console.log("[useGameStore.onUpdate]", state);
 
       setGameState(state);
       if (state === null) {
@@ -125,18 +124,15 @@ export const useSocketGameState = () => {
     const playerReadyCallback = (
       player: Pick<IPlayer, "id" | "name" | "seed" | "owner">,
     ) => {
-      console.log(`Player ${player.name} is ready!`);
       setEnemyReady(player);
     };
     const playerLeftCallback = (
       player?: Pick<IPlayer, "id" | "name" | "seed">,
     ) => {
-      console.log(`Player ${player?.name} has left the game!`);
       setEnemyLeft(player);
     };
 
     const opponentRequestRematchHandler = (request: TRematchRequest) => {
-      console.log("[useGameStore.opponentRequestRematchHandler]", request);
       setRematchRequest(request);
     };
 
