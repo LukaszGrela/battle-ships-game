@@ -1,4 +1,10 @@
-import { EGamePhase, IPlayer, TGameState, TRematchRequest } from "@repo/types";
+import {
+  EGamePhase,
+  IPlayer,
+  TAttackHistory,
+  TGameState,
+  TRematchRequest,
+} from "@repo/types";
 import { useEffect } from "react";
 import { create } from "zustand";
 import { socket } from "../socket";
@@ -11,6 +17,8 @@ type TGameStoreActions = {
   setEnemyReady: (enemy: Pick<IPlayer, "name" | "seed" | "owner">) => void;
   setEnemyLeft: (enemy?: Pick<IPlayer, "id" | "name" | "seed">) => void;
   setRematchRequest: (request: TRematchRequest | undefined) => void;
+
+  setAttackHistory: (history?: TAttackHistory) => void;
 };
 
 type TGameStore = {
@@ -19,6 +27,8 @@ type TGameStore = {
   errorMessage: string | null;
 
   revengeRequest?: TRematchRequest;
+
+  attackHistory?: TAttackHistory;
 } & TGameStoreActions;
 
 export const useGameStore = create<TGameStore>((set) => ({
@@ -65,9 +75,12 @@ export const useGameStore = create<TGameStore>((set) => ({
         }) as TGameStore & { phase: EGamePhase.Placement },
     ),
 
+  setAttackHistory: (history) => set({ attackHistory: history }),
+
   selfId: null,
   errorMessage: null,
   gameState: null,
+  attackHistory: undefined,
 }));
 
 export const useSocketGameState = () => {
@@ -78,6 +91,7 @@ export const useSocketGameState = () => {
     setEnemyReady,
     setRematchRequest,
     setEnemyLeft,
+    setAttackHistory,
   } = useGameStore();
   useEffect(() => {
     function onUpdate(state: TGameState | null) {
@@ -88,7 +102,12 @@ export const useSocketGameState = () => {
         setSelfId(null);
         setError(null);
         setRematchRequest(undefined);
+        setAttackHistory(undefined);
       } else {
+        if (state.phase === "playing") {
+          setAttackHistory(state.lastAttack);
+        }
+
         setRematchRequest(state.rematchRequest);
       }
     }
@@ -136,6 +155,7 @@ export const useSocketGameState = () => {
       socket.off("rematch_requested", opponentRequestRematchHandler);
     };
   }, [
+    setAttackHistory,
     setEnemyLeft,
     setEnemyReady,
     setError,

@@ -158,12 +158,7 @@ export type TGameState = Omit<
       }
     | {
         ships: TShip[];
-        phase: TStringifiedEnum<
-          Exclude<
-            EGamePhase,
-            EGamePhase.Waiting | EGamePhase.Placement | EGamePhase.Finished
-          >
-        > & {};
+        phase: TStringifiedEnum<EGamePhase.Playing> & {};
         enemy: IPlayer;
         enemyBoard: TBoard<Exclude<TCellStatus, TCellStatusShipId>>;
         enemyDestroyedShips: TShip[];
