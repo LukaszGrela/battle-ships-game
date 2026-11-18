@@ -106,6 +106,8 @@ export const useSocketGameState = () => {
       } else {
         if (state.phase === "playing") {
           setAttackHistory(state.lastAttack);
+        } else {
+          setAttackHistory(undefined);
         }
 
         setRematchRequest(state.rematchRequest);

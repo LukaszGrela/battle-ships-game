@@ -149,7 +149,6 @@ const getShipSize = (
   return 0;
 };
 const getResult = (result?: TAttackResult | TAttackHistory | null) => {
-  console.log("getResult", result);
   if (result && guardTAttackHistory(result)) {
     return result.result;
   }
@@ -166,11 +165,15 @@ const AttackResult: FC<{
   attackResult?: TAttackResult | null;
   clearAttackResult: () => void;
 }> = ({ attackResult, clearAttackResult }) => {
-  const { attackHistory, setAttackHistory } = useGameStore();
+  const { selfId, attackHistory, setAttackHistory } = useGameStore();
+  // lastAttack trafia też do atakującego, gdy tura zostaje przy nim po trafieniu
+  const enemyHistory =
+    attackHistory && attackHistory.turn !== selfId ? attackHistory : undefined;
+
   const [key, setKey] = useState(0);
   const shipSize = useMemo(
-    () => getShipSize(attackResult) || getShipSize(attackHistory),
-    [attackHistory, attackResult],
+    () => getShipSize(attackResult) || getShipSize(enemyHistory),
+    [enemyHistory, attackResult],
   );
 
   const handleCloseModal = useCallback(() => {
@@ -182,17 +185,17 @@ const AttackResult: FC<{
     }
   }, [attackResult, clearAttackResult, setAttackHistory]);
 
-  const open = !!attackResult || !!attackHistory;
+  const open = !!attackResult || !!enemyHistory;
   const result = useMemo(
-    () => getResult(attackResult) ?? getResult(attackHistory),
-    [attackHistory, attackResult],
+    () => getResult(attackResult) ?? getResult(enemyHistory),
+    [enemyHistory, attackResult],
   );
 
   return (
     <AttackModal
       key={key}
       currentAttack={!!attackResult}
-      open={open && !isInitAttackHistory(attackHistory)}
+      open={open && !isInitAttackHistory(enemyHistory)}
       result={result}
       shipSize={shipSize}
       onClose={handleCloseModal}
