@@ -12,6 +12,7 @@ import {
 import { GameResultsModal } from "../components/GameResultsModal";
 import { RematchRequestSentModal } from "../components/request-rematch/RematchRequestSentModal";
 import { ConfirmRematchModal } from "../components/request-rematch/ConfirmRematchModal";
+import { GrelaDesign } from "../components/GrelaDesign/GrelaDesign";
 
 export const GameOver: FC = () => {
   const { gameState, revengeRequest } = useGameStore();
@@ -64,6 +65,7 @@ export const GameOver: FC = () => {
             />
           </>
         )}
+        <GrelaDesign className={styles.footerLogo} />
       </section>
       {gameState && (
         <GameResultsModal

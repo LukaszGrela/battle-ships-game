@@ -6,6 +6,7 @@ import {
   useGameStatsStore,
   useSocketGameStats,
 } from "../../store/useGameStatsStore";
+import { GrelaDesign } from "../GrelaDesign/GrelaDesign";
 
 export const StatsContainer: FC<{
   className?: string;
@@ -16,6 +17,7 @@ export const StatsContainer: FC<{
   return (
     <DecoratedContainer
       className={classNames(styles.StatsContainer, className)}
+      containerClassName={styles.StatsContainer_container}
       header={<span className={"shadow"}>Stats</span>}
     >
       <div className={styles.StatsContainer_content}>
@@ -31,6 +33,7 @@ export const StatsContainer: FC<{
           <span>Games lost: 0</span>
         </div>
       </div>
+      <GrelaDesign className={styles.footerLogo} />
     </DecoratedContainer>
   );
 };

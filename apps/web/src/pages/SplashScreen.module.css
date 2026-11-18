@@ -15,6 +15,7 @@
 }
 
 .container {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -74,4 +75,15 @@
       )
   );
   font-weight: 600;
+}
+
+.footerLogo {
+  --gd-logo-color: var(--pirates-palette-19);
+  opacity: 0.5;
+
+  position: absolute;
+  bottom: -0.75rem;
+  @media screen and (max-width: 500px) {
+    bottom: -0.25rem;
+  }
 }

@@ -30,6 +30,7 @@ import {
 } from "../components/GameHeader/GameHeader";
 import { Button } from "../components/Button";
 import { classNames } from "../utils/classNames";
+import { GrelaDesign } from "../components/GrelaDesign/GrelaDesign";
 
 const empty: TCellStatusEmpty = -1;
 
@@ -414,6 +415,7 @@ export const GamePlacement: FC = () => {
             </Button>
           </AvailableShips>
         )}
+        <GrelaDesign className={gameStyles.footerLogo} />
       </section>
     </AppLayout>
   );

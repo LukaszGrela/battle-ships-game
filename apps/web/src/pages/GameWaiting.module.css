@@ -116,12 +116,23 @@
 }
 .askBot {
   position: absolute;
-  right:0;
+  right: 0;
   @media screen and (max-width: 430px) {
     &[data-type]:not([data-type="custom"]) {
       span {
         display: none;
       }
     }
+  }
+}
+
+.footerLogo {
+  --gd-logo-color: var(--pirates-palette-19);
+  opacity: 0.5;
+
+  position: absolute;
+  bottom: -0.75rem;
+  @media screen and (max-width: 500px) {
+    bottom: -0.25rem;
   }
 }

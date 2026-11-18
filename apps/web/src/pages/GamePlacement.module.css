@@ -24,7 +24,9 @@
 
   opacity: 1;
   visibility: visible;
-  transition: opacity 0.2s ease, visibility 0.2s;
+  transition:
+    opacity 0.2s ease,
+    visibility 0.2s;
 }
 
 .ErrorPanel_hidden {

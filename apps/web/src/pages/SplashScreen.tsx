@@ -3,6 +3,7 @@ import { Ribbon } from "../components/Ribbon/Ribbon";
 import { useSocket } from "../socket";
 import { Button } from "../components/Button/Button";
 import { classNames } from "../utils/classNames";
+import { GrelaDesign } from "../components/GrelaDesign/GrelaDesign";
 
 export const SplashScreen = () => {
   const { connect } = useSocket();
@@ -24,6 +25,7 @@ export const SplashScreen = () => {
           </Ribbon>
         </Button>
       </div>
+      <GrelaDesign className={styles.footerLogo} />
     </section>
   );
 };

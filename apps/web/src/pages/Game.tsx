@@ -21,6 +21,7 @@ import { OpponentTurnModal } from "../components/OpponentTurnModal";
 import { AttackModal } from "../components/AttackModal/AttackModal";
 import { TurnIndicator } from "../components/TurnIndicator/TurnIndicator";
 import { isDestroyedShipStatus } from "@repo/game-logic";
+import { GrelaDesign } from "../components/GrelaDesign/GrelaDesign";
 
 const isInitAttackHistory = (
   test: THistoryEntry | null | undefined,
@@ -100,6 +101,8 @@ export const Game: FC = () => {
             />
           </>
         )}
+
+        <GrelaDesign className={styles.footerLogo} />
       </section>
 
       <OpponentTurnModal

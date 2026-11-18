@@ -1,0 +1,17 @@
+.GrelaDesign {
+  color: var(--gd-logo-color);
+  font-size: var(--gd-logo-font-size, 0.75rem);
+
+  & :global(.GrelaDesign_logo) {
+    fill: currentColor;
+    height: 1.5em;
+    width: auto;
+  }
+  & :global(.GrelaDesign_copy) {
+    margin-left: 0.25rem;
+    font-size: 1em;
+  }
+  & :global(.GrelaDesign_info) {
+    font-size: 0.8em;
+  }
+}

@@ -1,5 +1,9 @@
 .StatsContainer {
   --decorated-container-decoration-url: null;
+  --decorated-container-padding: 2.5rem 1.5rem 0.75rem 1.5rem;
+  @media screen and (max-width: 500px) {
+    --decorated-container-padding: 2.5rem 1.5rem 0.75rem 1.5rem;
+  }
 }
 
 .StatsContainer_content {
@@ -9,6 +13,9 @@
 
   width: 100%;
 }
+.StatsContainer_container {
+  gap: 0.75rem;
+}
 
 .statsContainer {
   display: flex;
@@ -16,6 +23,9 @@
   align-items: stretch;
 
   flex: 1 1 auto;
+  & h4 {
+    margin-top: 0;
+  }
 }
 
 .StatsContainer_user {
@@ -25,4 +35,14 @@
 
 .StatsContainer_server {
   composes: statsContainer;
+}
+
+.footerLogo {
+  --gd-logo-font-size: 0.75rem;
+  --gd-logo-color: var(--pirates-palette-16);
+  opacity: 0.5;
+
+  @media screen and (max-width: 500px) {
+    bottom: -0.25rem;
+  }
 }

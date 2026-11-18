@@ -13,6 +13,7 @@ import { BotGameDifficultyModal } from "../components/BotGameDifficultyModal/Bot
 import { FC, useCallback, useState } from "react";
 import { socket } from "../socket";
 import { TRoomIdentity } from "@repo/types";
+import { GrelaDesign } from "../components/GrelaDesign/GrelaDesign";
 
 export const GameWaiting = () => {
   const { gameState } = useGameStore();
@@ -35,6 +36,7 @@ export const GameWaiting = () => {
             <span>Abandon game</span>
           </EmitLeaveGameButton>
           <AskBotGame id={gameState.id} name={gameState.name} />
+          <GrelaDesign className={styles.footerLogo} />
         </>
       )}
     </AppLayout>

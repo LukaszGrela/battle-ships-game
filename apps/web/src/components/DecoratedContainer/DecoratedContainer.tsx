@@ -6,8 +6,9 @@ import { Ribbon } from "../Ribbon/Ribbon";
 export const DecoratedContainer: FC<{
   header?: ReactNode;
   className?: string;
+  containerClassName?: string;
   children: ReactNode;
-}> = ({ className, children, header: heading }) => {
+}> = ({ className, children, header: heading, containerClassName }) => {
   return (
     <div className={classNames(styles.DecoratedContainer, className)}>
       {heading && (
@@ -17,7 +18,14 @@ export const DecoratedContainer: FC<{
           </Ribbon>
         </h3>
       )}
-      <div className={styles.DecoratedContainer_container}>{children}</div>
+      <div
+        className={classNames(
+          styles.DecoratedContainer_container,
+          containerClassName,
+        )}
+      >
+        {children}
+      </div>
     </div>
   );
 };
