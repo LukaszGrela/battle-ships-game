@@ -28,6 +28,7 @@ export type TProps = TDataProps & {
   open: boolean;
   onClose?: () => void;
   children: React.ReactNode;
+  icon?: React.ReactNode;
   /**
    * When `true` backdrop can be clicked to close
    * Default `true`.

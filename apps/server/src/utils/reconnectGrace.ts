@@ -7,6 +7,10 @@ import {
 import ClientSessionServiceSingleton from "../services/client-session.service";
 import { emitRoomStateToPlayers } from "./emitRoomStateToPlayers";
 import ActiveGameRegistrySingleton from "../services/active-game-registry";
+import {
+  closeGameRoom,
+  scheduleFinishedRoomCleanup,
+} from "./roomLifecycle";
 
 export const DEFAULT_RECONNECT_TIMEOUT_MS = 60_000;
 
@@ -42,6 +46,17 @@ export function expireDisconnectedPlayers(
 
     if (!warRoom || warRoom.getPhase() !== EGamePhase.Playing) {
       sessions.clearSessionGame(session.id);
+
+      // A disconnected human in `Placement`/`Waiting` never comes back here:
+      // when the opponent is a bot nobody else can finish or release the room.
+      if (
+        warRoom &&
+        warRoom.getPhase() !== EGamePhase.Finished &&
+        warRoom.getOpponent(session.id)?.botLevel
+      ) {
+        closeGameRoom(io, warRoom.id, "reconnect-timeout/non-playing");
+      }
+
       continue;
     }
     if (warRoom.forfeit(session.id)) {
@@ -54,6 +69,18 @@ export function expireDisconnectedPlayers(
         "has forfeited",
       );
       emitRoomStateToPlayers(io, session.id, warRoom.id);
+
+      // Forfeited room is `Finished` now: either it waits for a rematch, or
+      // it has to be torn down (a bot cannot rematch with nobody).
+      const humansLeft = warRoom
+        .getPlayers()
+        .filter((player) => !player.botLevel && player.active);
+
+      if (humansLeft.length === 0) {
+        closeGameRoom(io, warRoom.id, "reconnect-timeout/forfeited");
+      } else {
+        scheduleFinishedRoomCleanup(io, warRoom.id);
+      }
     }
   }
 }

@@ -197,19 +197,8 @@ describe("main Socket.IO E2E", () => {
   let closeServer: (() => Promise<void>) | undefined;
   let clients: TestClient[] = [];
 
-  afterEach(async () => {
-    clients.forEach((client) => client.disconnect());
-    clients = [];
-    await closeServer?.();
-    closeServer = undefined;
-
-    activeGames.listRooms().forEach(({ id }) => activeGames.deleteRoom(id));
-    sessions
-      .listSessions()
-      .forEach((session) => sessions.deleteSession(session.id));
-  });
-
-  it("plays a full game, accepts and finishes a rematch, then lets both players leave", async () => {
+  /** Boots one isolated game server per test and returns its base URL. */
+  const startServer = async (): Promise<string> => {
     const server = createGameServer({
       sessionSecret: TEST_SESSION_SECRET,
       instrumentAdminUi: false,
@@ -238,7 +227,23 @@ describe("main Socket.IO E2E", () => {
     if (!address || typeof address === "string") {
       throw new Error("Expected the test server to listen on a TCP port");
     }
-    const url = `http://127.0.0.1:${address.port}`;
+    return `http://127.0.0.1:${address.port}`;
+  };
+
+  afterEach(async () => {
+    clients.forEach((client) => client.disconnect());
+    clients = [];
+    await closeServer?.();
+    closeServer = undefined;
+
+    activeGames.listRooms().forEach(({ id }) => activeGames.deleteRoom(id));
+    sessions
+      .listSessions()
+      .forEach((session) => sessions.deleteSession(session.id));
+  });
+
+  it("plays a full game, accepts and finishes a rematch, then lets both players leave", async () => {
+    const url = await startServer();
 
     const owner = await connectToLobby("e2e-owner", 1, url);
     clients.push(owner);
@@ -408,6 +413,7 @@ describe("main Socket.IO E2E", () => {
     expect(rematchFinishedForOpponent.phase).toBe(EGamePhase.Finished);
 
     const activeRoom = activeGames.getRoom(rematchFinished.id)!;
+    expect(activeRoom.getPhase()).toBe(EGamePhase.Finished);
     expect(activeRoom.getPlayer("e2e-owner")?.active).toBe(true);
     expect(activeRoom.getPlayer("e2e-opponent")?.active).toBe(true);
     expect(sessions.readSession("e2e-owner")?.socketId).toBe(owner.id);
@@ -429,4 +435,123 @@ describe("main Socket.IO E2E", () => {
     expect(sessions.readSession("e2e-owner")?.gameId).toBeUndefined();
     expect(sessions.readSession("e2e-opponent")?.gameId).toBeUndefined();
   }, 60_000);
+
+  // A rematch can also be refused. It runs on its own fresh room: once a
+  // rematch has been accepted the room is mid-battle again, so a rejection is
+  // only well defined directly after a finished game.
+  it("keeps the room finished when the winner rejects the loser's rematch request", async () => {
+    const url = await startServer();
+    const roomName = "E2E Rejection Room";
+    const ownerId = "e2e-reject-owner";
+    const opponentId = "e2e-reject-opponent";
+
+    const owner = await connectToLobby(ownerId, 3, url);
+    clients.push(owner);
+
+    const ownerWaiting = waitForGameState(
+      owner,
+      (state) => state.phase === EGamePhase.Waiting,
+    );
+    owner.emit("join_game", roomName);
+    const waitingState = await ownerWaiting;
+
+    const opponent = await connectToLobby(opponentId, 4, url);
+    clients.push(opponent);
+
+    const ownerPlacement = waitForGameState(
+      owner,
+      (state) => state.phase === EGamePhase.Placement,
+    );
+    const opponentPlacement = waitForGameState(
+      opponent,
+      (state) => state.phase === EGamePhase.Placement,
+    );
+    opponent.emit("join_game", { id: waitingState.id, name: roomName });
+    await Promise.all([ownerPlacement, opponentPlacement]);
+
+    const ownerReadyState = waitForGameState(
+      owner,
+      (state) => state.phase === EGamePhase.Placement && state.self.ready,
+    );
+    owner.emit("place_ships", createFleet());
+    await ownerReadyState;
+
+    const ownerPlaying = waitForGameState(
+      owner,
+      (state) => state.phase === EGamePhase.Playing,
+    );
+    const opponentPlaying = waitForGameState(
+      opponent,
+      (state) => state.phase === EGamePhase.Playing,
+    );
+    opponent.emit("place_ships", createFleet());
+    await Promise.all([ownerPlaying, opponentPlaying]);
+
+    // The owner lands every hit while the opponent only misses, so the
+    // opponent loses and is the only side allowed to ask for a rematch.
+    const finishedOwnerState = waitForGameState(
+      owner,
+      (state) => state.phase === EGamePhase.Finished,
+    );
+    const finishedOpponentState = waitForGameState(
+      opponent,
+      (state) => state.phase === EGamePhase.Finished,
+    );
+    const finished = await finishGameWithFleetAttacks(
+      owner,
+      opponent,
+      finishedOwnerState,
+    );
+    expect((await finishedOpponentState).phase).toBe(EGamePhase.Finished);
+    expect(finished.result).toEqual({
+      [ownerId]: "win",
+      [opponentId]: "lost",
+    });
+
+    const rematchRequested = waitForEvent(owner, "rematch_requested");
+    const pendingState = waitForGameState(
+      opponent,
+      (state) =>
+        state.phase === EGamePhase.Finished &&
+        state.rematchRequest?.status === "pending",
+    );
+    opponent.emit("request_rematch");
+    const [requestEvent, pending] = await Promise.all([
+      rematchRequested,
+      pendingState,
+    ]);
+    expect(requestEvent).toMatchObject({ requestorId: opponentId });
+    expect(pending.rematchRequest).toMatchObject({
+      requestorId: opponentId,
+      status: "pending",
+    });
+
+    const rejectedNotice = waitForEvent<{
+      roomId: string;
+      requestorId: string;
+      status: string;
+    }>(opponent, "rematch_rejected");
+    owner.emit("reject_rematch");
+    expect(await rejectedNotice).toMatchObject({
+      roomId: finished.id,
+      requestorId: opponentId,
+      status: "rejected",
+    });
+
+    // The rejection is terminal: the request stops being pending and the room
+    // stays finished instead of dropping back into placement or a new battle.
+    await waitForCondition(
+      () =>
+        activeGames.getRoom(finished.id)?.getGameState(ownerId)?.rematchRequest
+          ?.status !== "pending",
+      "the rejected rematch request to be recorded",
+    );
+    const room = activeGames.getRoom(finished.id)!;
+    expect(room.getPhase()).toBe(EGamePhase.Finished);
+    expect(room.getGameState(ownerId)?.rematchRequest?.status).not.toBe(
+      "pending",
+    );
+    expect(room.getPlayer(ownerId)?.active).toBe(true);
+    expect(room.getPlayer(opponentId)?.active).toBe(true);
+  }, 30_000);
 });

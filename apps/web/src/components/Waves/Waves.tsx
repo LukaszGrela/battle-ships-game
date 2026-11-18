@@ -20,7 +20,7 @@ type WavesProps = {
   /** Escape hatch for inline styles / custom properties. */
   style?: CSSProperties;
 };
-const NON_ANIMATED_TIMEOUT = 2_000;
+const NON_ANIMATED_TIMEOUT = 3000;
 export const Waves: FC<WavesProps> = ({
   className,
   direction,

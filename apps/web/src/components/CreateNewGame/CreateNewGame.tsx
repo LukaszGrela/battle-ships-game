@@ -16,6 +16,8 @@ import { Button } from "../Button/Button";
 import { AnchorIcon, RandomizeIcon } from "../icons";
 import { classNames } from "../../utils/classNames";
 import { DecoratedContainer } from "../DecoratedContainer";
+import { BotIcon } from "../icons/BotIcon";
+import { BotGameDifficultyModal } from "../BotGameDifficultyModal/BotGameDifficultyModal";
 
 export const CreateNewGame: FC<{ className?: string }> = ({ className }) => {
   const [inputValue, setInputValue] = useState("");
@@ -136,17 +138,19 @@ export const CreateNewGame: FC<{ className?: string }> = ({ className }) => {
             )}
           </div>
         </div>
-
-        <Button
-          onClick={createGameHandler}
-          disabled={!inputValue}
-          type="primary"
-          className={styles.createGame}
-        >
-          <AnchorIcon />
-          <span>Create Game</span>
-          <AnchorIcon />
-        </Button>
+        <div className={styles.action_row}>
+          <Button
+            onClick={createGameHandler}
+            disabled={!inputValue}
+            type="primary"
+            className={styles.createGame}
+          >
+            <AnchorIcon />
+            <span>Create Game</span>
+            <AnchorIcon />
+          </Button>
+          <CreateBotGame gameName={inputValue} />
+        </div>
       </div>
     </DecoratedContainer>
   );
@@ -197,3 +201,51 @@ async function requestRoomName(
     return null;
   }
 }
+
+const CreateBotGame: FC<{ gameName?: string }> = ({ gameName }) => {
+  const [open, setOpen] = useState(false);
+
+  const disabled = !gameName;
+  const createBotGameHandler = useCallback(() => {
+    setOpen(true);
+  }, []);
+
+  const emitBotGame = useCallback(
+    (difficulty: "easy" | "medium" | "hard") => {
+      setOpen(false);
+      // console.log("create_game_with_bot", gameName,difficulty)
+      if (gameName)
+        socket.emit(
+          "create_game_with_bot",
+          {
+            name: gameName,
+            difficulty,
+          },
+          (result) => {
+            console.log("Result", result);
+          },
+        );
+    },
+    [gameName],
+  );
+
+  return (
+    <>
+      <Button
+        onClick={createBotGameHandler}
+        disabled={disabled}
+        type="secondary"
+      >
+        <BotIcon />
+        <span>Create Bot Game</span>
+      </Button>
+      <BotGameDifficultyModal
+        open={open}
+        handleClose={() => {
+          setOpen(false);
+        }}
+        setDifficulty={emitBotGame}
+      />
+    </>
+  );
+};

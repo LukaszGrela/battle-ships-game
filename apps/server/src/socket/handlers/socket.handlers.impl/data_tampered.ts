@@ -6,11 +6,14 @@ import {
 import { Server, Socket } from "socket.io";
 import ClientSessionServiceSingleton from "../../../services/client-session.service";
 import ActiveGameRegistrySingleton from "../../../services/active-game-registry";
-import { warRoomNames } from "../../../services/WarRoomName.service";
 import { emitStats } from "../../../utils/emitStats";
 import { emitRoomStateToPlayers } from "../../../utils/emitRoomStateToPlayers";
 import { storeGameId } from "../../../utils/storeGameId";
 import { getSession } from "../../../security/auth";
+import {
+  closeGameRoom,
+  scheduleFinishedRoomCleanup,
+} from "../../../utils/roomLifecycle";
 
 function resolveAbandonedRoom(
   io: Server<IClientToServerEvents, IServerToClientEvents>,
@@ -28,13 +31,30 @@ function resolveAbandonedRoom(
   switch (warRoom.getPhase()) {
     case EGamePhase.Playing:
       if (warRoom.forfeit(clientId)) {
-        warRoomNames.releaseRoom(warRoom.name);
         emitRoomStateToPlayers(io, clientId, warRoom.id);
+
+        const humansLeft = warRoom
+          .getPlayers()
+          .filter((player) => !player.botLevel && player.active);
+
+        if (humansLeft.length === 0) {
+          closeGameRoom(io, gameId, "data-tampered/forfeit");
+        } else {
+          scheduleFinishedRoomCleanup(io, gameId);
+        }
       }
       break;
     case EGamePhase.Placement: {
       const opponent = warRoom.getOpponent(clientId);
       const player = warRoom.getPlayer(clientId);
+
+      // A bot opponent cannot accept anything – drop the whole room, also
+      // because `removePlayer` would revert the phase to `Waiting`.
+      if (opponent?.botLevel) {
+        closeGameRoom(io, gameId, "data-tampered/placement-bot");
+        break;
+      }
+
       if (warRoom.removePlayer(clientId)) {
         storeGameId(clientId, undefined);
         if (opponent) {
@@ -58,10 +78,7 @@ function resolveAbandonedRoom(
       break;
     }
     case EGamePhase.Waiting:
-      if (activeGameRegistry.deleteRoom(gameId)) {
-        warRoomNames.releaseRoom(warRoom.name);
-        storeGameId(clientId, undefined);
-      }
+      closeGameRoom(io, gameId, "data-tampered/waiting");
       break;
     case EGamePhase.Finished: {
       const player = warRoom.getPlayer(clientId);
@@ -80,6 +97,16 @@ function resolveAbandonedRoom(
         }
       }
       warRoom.deactivatePlayer(clientId);
+
+      const humansLeft = warRoom
+        .getPlayers()
+        .filter((player) => !player.botLevel && player.active);
+
+      if (humansLeft.length === 0) {
+        closeGameRoom(io, gameId, "data-tampered/finished");
+      } else {
+        scheduleFinishedRoomCleanup(io, gameId);
+      }
       break;
     }
   }

@@ -39,6 +39,12 @@ export interface IPlayer {
    * Owner of the war room, this user created the game.
    */
   owner?: boolean;
+  /**
+   * When `botLevel` applied the player is an AI opponent (bot) controlled by the server.
+   * The value is the difficulty level of the bot, which can be used by the client to display a bot avatar or other UI elements.
+   * The client uses it to pick a bot avatar instead of a human one.
+   */
+  botLevel?: TBotDifficulty;
 }
 
 export type TBoard<S = TCellStatus> = S[][];
@@ -97,12 +103,15 @@ export type TGameTimeStamps = {
   game_started: string | null;
   game_finished: string | null;
 };
+
 export type TRoomIdentity = {
   id: TRoomId;
   name: string;
 
+  owner: Pick<IPlayer, "id" | "name">;
   phase: TStringifiedEnum<EGamePhase>;
 } & TGameTimeStamps;
+
 export type TRematchRequest = {
   requestorId: TUserId;
 
@@ -112,7 +121,7 @@ export type TRematchRequest = {
   status: "pending" | "accepted" | "rejected";
 };
 
-export type TRoomState = TRoomIdentity & {
+export type TRoomState = Omit<TRoomIdentity, "owner"> & {
   players: Record<TUserId, IPlayer>;
   boards: Record<TUserId, TBoard>;
   ships: Record<TUserId, TShip[]>;
@@ -149,12 +158,7 @@ export type TGameState = Omit<
       }
     | {
         ships: TShip[];
-        phase: TStringifiedEnum<
-          Exclude<
-            EGamePhase,
-            EGamePhase.Waiting | EGamePhase.Placement | EGamePhase.Finished
-          >
-        > & {};
+        phase: TStringifiedEnum<EGamePhase.Playing> & {};
         enemy: IPlayer;
         enemyBoard: TBoard<Exclude<TCellStatus, TCellStatusShipId>>;
         enemyDestroyedShips: TShip[];
@@ -194,3 +198,5 @@ export type TAttackResult =
       status: TCellStatusShipHit | TCellStatusMiss;
     }
   | { ok: false; message: string };
+
+export type TBotDifficulty = "easy" | "medium" | "hard";

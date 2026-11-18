@@ -58,6 +58,7 @@ export const GameHeader: FC<{
             self={gameState.self}
             phase={gameState.phase}
             className={styles.home}
+            result={gameState.result[gameState.self.id]}
           />
         )}
         <img
@@ -71,6 +72,7 @@ export const GameHeader: FC<{
             self={gameState.enemy}
             enemy
             phase={gameState.phase}
+            result={gameState.result[gameState.enemy.id]}
           />
         )}
       </div>

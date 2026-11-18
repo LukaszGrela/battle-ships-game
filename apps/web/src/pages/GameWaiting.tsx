@@ -7,6 +7,12 @@ import { WaitingScreen } from "../components/WaitingScreen/WaitingScreen";
 import { classNames } from "../utils/classNames";
 import { LifeBuoy } from "../components/icons/LifeBuoy";
 import { EmitLeaveGameButton } from "../components/EmitLeaveGameButton/EmitLeaveGameButton";
+import { Button } from "../components/Button";
+import { BotIcon } from "../components/icons/BotIcon";
+import { BotGameDifficultyModal } from "../components/BotGameDifficultyModal/BotGameDifficultyModal";
+import { FC, useCallback, useState } from "react";
+import { socket } from "../socket";
+import { TRoomIdentity } from "@repo/types";
 
 export const GameWaiting = () => {
   const { gameState } = useGameStore();
@@ -28,6 +34,7 @@ export const GameWaiting = () => {
             <LifeBuoy />
             <span>Abandon game</span>
           </EmitLeaveGameButton>
+          <AskBotGame id={gameState.id} name={gameState.name} />
         </>
       )}
     </AppLayout>
@@ -58,6 +65,52 @@ const GameHeader = () => {
           </span>
         </div>
       )}
+    </>
+  );
+};
+
+const AskBotGame: FC<Pick<TRoomIdentity, "id" | "name">> = ({ id, name }) => {
+  const [open, setOpen] = useState(false);
+
+  const createBotGameHandler = useCallback(() => {
+    setOpen(true);
+  }, []);
+
+  const emitBotGame = useCallback(
+    (difficulty: "easy" | "medium" | "hard") => {
+      setOpen(false);
+      // if (gameName) socket.emit("create_game_with_bot", gameName);
+      // console.log("bot_opponent", id, difficulty);
+      if (id) {
+        socket.emit(
+          "bot_opponent",
+          { roomIdentifier: { id, name }, difficulty },
+          (result) => {
+            console.log("Result", result);
+          },
+        );
+      }
+    },
+    [id, name],
+  );
+
+  return (
+    <>
+      <Button
+        onClick={createBotGameHandler}
+        className={styles.askBot}
+        type="secondary"
+      >
+        <BotIcon />
+        <span>Ask Bot</span>
+      </Button>
+      <BotGameDifficultyModal
+        open={open}
+        handleClose={() => {
+          setOpen(false);
+        }}
+        setDifficulty={emitBotGame}
+      />
     </>
   );
 };

@@ -29,6 +29,25 @@
   }
 }
 
+.Avatar_img {
+  position: relative;
+}
+
+.Avatar_botLevel {
+  display: block;
+  color: var(--pirates-palette-21);
+  font-size: small;
+  width: 100%;
+  text-align: center;
+
+  position: relative;
+  top: -10px;
+
+  @media screen and (max-width: 720px) {
+    top: -24px;
+  }
+}
+
 .playerReady {
   color: var(--pirates-accented);
   font-weight: 700;
@@ -38,6 +57,30 @@
 
   @media screen and (max-width: 720px) {
     position: unset;
+    text-align: center;
+  }
+}
+
+.winnerTitle {
+  position: absolute;
+  left: 50%;
+  transform: translate(-50%, -3rem);
+  color: var(--pirates-palette-3);
+
+  @media screen and (max-width: 720px) {
+    transform: translate(-50%, 2rem);
+  }
+}
+.winnerPin {
+  width: 32px;
+  position: absolute;
+  rotate: -45deg;
+  top: -20px;
+  right: -10px;
+  [data-enemy] & {
+    rotate: 45deg;
+    right: unset;
+    left: -10px;
   }
 }
 

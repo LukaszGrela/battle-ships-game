@@ -15,6 +15,7 @@ export function Modal({
   dialogClassName,
   bodyClassName,
   headerClassName,
+  icon,
   backdrop = true,
   keyboard = true,
   "aria-describedby": ariaDescribedBy,
@@ -71,7 +72,7 @@ export function Modal({
         return { ...acc, [prop]: value };
       }, {} as TDataProps);
   }, [conditionalProps]);
-
+  // TODO: modal_dialog size in percentage when placed in another container will reference that container for measurement.
   return (
     <dialog
       className={classNames(styles.Modal, className)}
@@ -93,7 +94,10 @@ export function Modal({
               conditionalProps.header(open, onCloseHandler)}
             {!conditionalProps.header && (
               <>
-                <h2 id={ariaLabelledBy}>{conditionalProps.title}</h2>
+                <h2 id={ariaLabelledBy}>
+                  {icon}
+                  <span>{conditionalProps.title}</span>
+                </h2>
                 <Button
                   type="custom"
                   onClick={onClose}

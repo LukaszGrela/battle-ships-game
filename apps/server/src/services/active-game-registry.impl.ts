@@ -1,4 +1,4 @@
-import { EGamePhase, TRoomIdentity } from "@repo/types";
+import { EGamePhase, IPlayer, TRoomIdentity } from "@repo/types";
 import { WarRoom } from "./WarRoom";
 
 export interface IActiveGameRegistry {
@@ -9,7 +9,7 @@ export interface IActiveGameRegistry {
    */
   addRoom(id: string, room: WarRoom): void;
   /**
-   * Checks if registry holds given rom
+   * Checks if registry holds given room
    * @param id room identifier
    */
   hasRoom(id: string): boolean;
@@ -92,6 +92,7 @@ export class ActiveGameRegistry implements IActiveGameRegistry {
     return Array.from(this.warRooms.values()).map((room): TRoomIdentity => ({
       id: room.id,
       name: room.name,
+      owner: room.getOwner() as Pick<IPlayer, "id" | "name">,
       phase: room.getPhase() ?? EGamePhase.Waiting,
       ...room.getTimeStamps(),
     }));
@@ -109,6 +110,7 @@ export class ActiveGameRegistry implements IActiveGameRegistry {
       return {
         id: warRoom.id,
         name: warRoom.name,
+        owner: warRoom.getPlayer(warRoom.id) as Pick<IPlayer, "id" | "name">,
         phase: warRoom.getPhase() ?? EGamePhase.Waiting,
         ...warRoom.getTimeStamps(),
       };

@@ -10,8 +10,12 @@ export const PlayerDetails: FC<{
   enemy?: boolean;
   phase?: EGamePhase;
   className?: string;
-}> = ({ self, enemy, phase, className }) => {
-  const { name, owner, ready, active } = self;
+  result?: "win" | "lost";
+}> = ({ self, enemy, phase, className, result }) => {
+  const { name, owner, ready, active, botLevel } = self;
+
+  const enemyIsBot = !!botLevel;
+
   return (
     <div
       className={classNames(styles.PlayerDetails, className)}
@@ -20,10 +24,26 @@ export const PlayerDetails: FC<{
       data-enemy-inactive={!active && ready ? "" : undefined}
     >
       <div className={styles.Avatar}>
-        <PlayerAvatar player={self} />
+        <PlayerAvatar player={self} className={styles.Avatar_img}>
+          {enemyIsBot && (
+            <span
+              className={styles.Avatar_botLevel}
+            >{`Bot level: ${botLevel}`}</span>
+          )}
+        </PlayerAvatar>
       </div>
       <Ribbon className={classNames(styles.Ribbon, owner && styles.owner)}>
         <span>{name}</span>
+        {result === "win" && (
+          <img
+            alt="Golden Anchor Trophy"
+            src="/assets/gold-anchor-64.png"
+            className={styles.winnerPin}
+          />
+        )}
+        {result === "win" && (
+          <span className={styles.winnerTitle}>Winner!</span>
+        )}
       </Ribbon>
       {enemy && ready && phase === EGamePhase.Placement && (
         <span className={styles.playerReady}>Player Ready!</span>

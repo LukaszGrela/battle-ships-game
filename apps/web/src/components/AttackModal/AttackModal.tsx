@@ -82,12 +82,12 @@ export const AttackModal: FC<{
    * of current player attack, otherwise
    * it shows result of enemy attack.
    */
-  attack: boolean;
+  currentAttack: boolean;
   open: boolean;
   onClose: () => void;
   result: TCellStatus | null;
   shipSize: number;
-}> = ({ open, onClose, result, shipSize, attack }) => {
+}> = ({ open, onClose, result, shipSize, currentAttack }) => {
   const sprite = DECOR_SPRITES["cannon"];
   const resultSprite = useMemo(
     () =>
@@ -108,7 +108,7 @@ export const AttackModal: FC<{
       aria-labelledby="attack-modal-title"
       hideHeader
     >
-      <Title result={result} className={styles.title} attack={attack} />
+      <Title result={result} className={styles.title} attack={currentAttack} />
 
       <div className={styles.body}>
         {result == undefined ||

@@ -1,6 +1,10 @@
 .GameHeader {
   display: flex;
   flex-direction: column;
+
+  @media screen and (max-width: 720px) {
+    padding-bottom: 1rem;
+  }
 }
 .GameHeader_toolbar {
   display: flex;

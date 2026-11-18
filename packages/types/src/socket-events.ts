@@ -6,6 +6,7 @@ import {
   TGameState,
   IPlayer,
   TRematchRequest,
+  TBotDifficulty,
 } from "./game";
 import { TCoordinate, IClientSession } from "./game-logic";
 
@@ -45,6 +46,36 @@ export interface IClientToServerEvents {
   disconnect_from_server: () => void;
 
   get_stats: (callback: (stats: TStats) => void) => void;
+
+  /**
+   * Adds a bot opponent to an existing open game (the "BOT" button in the
+   * list of open games). The caller must be the owner of the room and the
+   * room must still be in the `waiting` phase.
+   * @param roomId identifier of the open game
+   * @param callback result of the operation
+   */
+  bot_opponent: (
+    payload: {
+      roomIdentifier: Pick<TRoomIdentity, "id" | "name">;
+      difficulty?: TBotDifficulty;
+    },
+    callback: (result: { ok: boolean; message?: string }) => void,
+  ) => void;
+
+  /**
+   * Creates a new game with a bot opponent already seated.
+   * The room name must be unique (see `get_war_room_name`).
+   * @param payload room name (and optional difficulty)
+   * @param callback result of the operation
+   */
+  create_game_with_bot: (
+    payload: { name: string; difficulty?: TBotDifficulty },
+    callback: (result: {
+      ok: boolean;
+      roomId?: string;
+      message?: string;
+    }) => void,
+  ) => void;
 }
 
 export interface IServerToClientEvents {
@@ -69,7 +100,10 @@ export interface IServerToClientEvents {
    * @returns
    */
   player_ready: (
-    playerName: Pick<IPlayer, "id" | "name" | "seed" | "owner" | "ready">,
+    playerName: Pick<
+      IPlayer,
+      "id" | "name" | "seed" | "owner" | "ready" | "botLevel"
+    >,
   ) => void;
   player_left: (playerName?: Pick<IPlayer, "id" | "name" | "seed">) => void;
 
@@ -79,7 +113,7 @@ export interface IServerToClientEvents {
    * @returns
    */
   opponent_connected: (
-    opponent: Pick<IPlayer, "name" | "seed" | "owner" | "ready">,
+    opponent: Pick<IPlayer, "name" | "seed" | "owner" | "ready" | "botLevel">,
   ) => void;
 
   /**

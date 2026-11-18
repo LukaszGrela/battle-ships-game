@@ -9,9 +9,9 @@ import ClientSessionServiceSingleton from "../../../services/client-session.serv
 import { emitStats } from "../../../utils/emitStats";
 import { emitRoomStateToPlayers } from "../../../utils/emitRoomStateToPlayers";
 import ActiveGameRegistrySingleton from "../../../services/active-game-registry";
-import { warRoomNames } from "../../../services/WarRoomName.service";
 import { storeGameId } from "../../../utils/storeGameId";
 import { getSession } from "../../../security/auth";
+import { closeGameRoom } from "../../../utils/roomLifecycle";
 
 type TDisconnectHandler = (reason: DisconnectReason) => void;
 
@@ -65,18 +65,19 @@ export const factoryDisconnectHandler =
 
         warRoom.deactivatePlayer(clientId);
       } else if (phase === EGamePhase.Placement) {
-        if (warRoom.playersCount === 1) {
-          if (activeGameRegistry.deleteRoom(clientSession.gameId)) {
-            warRoomNames.releaseRoom(warRoom.name);
-            storeGameId(clientId, undefined);
-          }
+        const opponent = warRoom.getOpponent(clientId);
 
-          io.emit("open_games", activeGameRegistry.getOpenGames());
-          emitStats(io);
-
+        // With a bot opponent `playersCount` is 2, but there is nobody left to
+        // play against: `removePlayer` would even revert the room to `Waiting`
+        // and hand the ownership to the bot, exposing a ghost room in
+        // `getOpenGames()`. Tear the room down instead.
+        if (opponent?.botLevel || warRoom.playersCount === 1) {
+          closeGameRoom(io, warRoom.id, "disconnect/placement");
+          socket.emit("game_updated", null);
           return;
         }
-        const remainingPlayerId = warRoom.getOpponent(clientId)?.id;
+
+        const remainingPlayerId = opponent?.id;
         if (warRoom.removePlayer(clientId)) {
           storeGameId(clientId, undefined);
         }
@@ -88,13 +89,7 @@ export const factoryDisconnectHandler =
         }
         socket.emit("game_updated", null);
       } else if (phase === EGamePhase.Waiting) {
-        if (activeGameRegistry.deleteRoom(clientSession.gameId)) {
-          warRoomNames.releaseRoom(warRoom.name);
-          storeGameId(clientId, undefined);
-        }
-
-        io.emit("open_games", activeGameRegistry.getOpenGames());
-        emitStats(io);
+        closeGameRoom(io, warRoom.id, "disconnect/waiting");
         return;
       }
 

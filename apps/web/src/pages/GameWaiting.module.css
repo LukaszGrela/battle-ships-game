@@ -106,7 +106,18 @@
 
 .abandonGame {
   position: absolute;
-  @media screen and (max-width: 500px) {
+  @media screen and (max-width: 557px) {
+    &[data-type]:not([data-type="custom"]) {
+      span {
+        display: none;
+      }
+    }
+  }
+}
+.askBot {
+  position: absolute;
+  right:0;
+  @media screen and (max-width: 430px) {
     &[data-type]:not([data-type="custom"]) {
       span {
         display: none;

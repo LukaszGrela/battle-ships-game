@@ -8,7 +8,7 @@
   container-type: inline-size;
 }
 
-.DecoratedContainer h3 {
+.DecoratedContainer > h3 {
   color: var(--pirates-foreground);
   user-select: none;
 

@@ -9,8 +9,11 @@ import { emitStats } from "../../../utils/emitStats";
 import { emitRoomStateToPlayers } from "../../../utils/emitRoomStateToPlayers";
 import { storeGameId } from "../../../utils/storeGameId";
 import ActiveGameRegistrySingleton from "../../../services/active-game-registry";
-import { warRoomNames } from "../../../services/WarRoomName.service";
 import { getSession } from "../../../security/auth";
+import {
+  closeGameRoom,
+  scheduleFinishedRoomCleanup,
+} from "../../../utils/roomLifecycle";
 
 type TLeaveGameHandler = IClientToServerEvents["leave_game"];
 
@@ -39,39 +42,56 @@ export const factoryLeaveGameHandler = (
     if (warRoom) {
       const phase = warRoom.getPhase();
       if (phase === EGamePhase.Waiting) {
-        if (activeGameRegistry.deleteRoom(clientSession.gameId)) {
-          warRoomNames.releaseRoom(warRoom.name);
-          storeGameId(clientId, undefined);
-        }
+        closeGameRoom(io, warRoom.id, "leave/waiting");
         socket.emit("game_updated", null);
       } else if (phase === EGamePhase.Placement) {
         const opponent = warRoom.getOpponent(clientId);
         const self = warRoom.getPlayer(clientId);
-        if (warRoom.removePlayer(clientId)) {
-          storeGameId(clientId, undefined);
-          if (opponent) {
-            const opponentSession = session.readSession(opponent.id);
-            if (opponentSession?.socketId) {
-              io.to(opponentSession.socketId).emit(
-                "player_left",
-                self && {
-                  id: self.id,
-                  name: self.name,
-                  seed: self.seed,
-                },
-              );
-              io.to(opponentSession.socketId).emit(
-                "game_updated",
-                warRoom.getGameState(opponent.id),
-              );
+
+        if (opponent?.botLevel) {
+          // No human opponent left in the room – nothing to keep alive.
+          closeGameRoom(io, warRoom.id, "leave/placement-bot");
+        } else {
+          if (warRoom.removePlayer(clientId)) {
+            storeGameId(clientId, undefined);
+            if (opponent) {
+              const opponentSession = session.readSession(opponent.id);
+              if (opponentSession?.socketId) {
+                io.to(opponentSession.socketId).emit(
+                  "player_left",
+                  self && {
+                    id: self.id,
+                    name: self.name,
+                    seed: self.seed,
+                  },
+                );
+                io.to(opponentSession.socketId).emit(
+                  "game_updated",
+                  warRoom.getGameState(opponent.id),
+                );
+              }
             }
           }
         }
         socket.emit("game_updated", null);
       } else if (phase === EGamePhase.Playing) {
         if (warRoom.forfeit(clientId)) {
-          warRoomNames.releaseRoom(warRoom.name);
+          // The room stays alive (Finished) only as long as somebody can still
+          // accept a rematch. The room name must NOT be released here: the
+          // room still exists and a released name can be handed out twice.
           emitRoomStateToPlayers(io, clientId, warRoom.id);
+
+          const humansLeft = warRoom
+            .getPlayers()
+            .filter((player) => !player.botLevel && player.active);
+
+          if (humansLeft.length === 0) {
+            closeGameRoom(io, warRoom.id, "forfeit/no-humans");
+            socket.emit("game_updated", null);
+            return;
+          }
+
+          scheduleFinishedRoomCleanup(io, warRoom.id);
         }
       } else if (phase === EGamePhase.Finished) {
         // notify opponent that the player has left the game, in case they are waiting for a rematch or something
@@ -95,6 +115,25 @@ export const factoryLeaveGameHandler = (
         warRoom.deactivatePlayer(clientId);
         // clear session for leaving player players
         session.clearSessionGame(clientId);
+
+        // Nobody left to play/rematch against -> tear the room (and the bot)
+        // down instead of leaving an orphaned bot polling a dead room.
+        const humansLeft = warRoom
+          .getPlayers()
+          .filter((player) => !player.botLevel && player.active);
+
+        const opponentSession = opponent
+          ? session.readSession(opponent.id)
+          : undefined;
+
+        if (humansLeft.length === 0 || !opponentSession?.gameId) {
+          closeGameRoom(io, warRoom.id, "leave/finished");
+        } else {
+          // Keep the room for a possible rematch with the remaining player.
+          scheduleFinishedRoomCleanup(io, warRoom.id);
+        }
+
+        socket.emit("game_updated", null);
         return;
       } else {
         warRoom.deactivatePlayer(clientId);
@@ -103,7 +142,7 @@ export const factoryLeaveGameHandler = (
 
         emitRoomStateToPlayers(io, clientId, warRoom.id);
         storeGameId(clientId, undefined);
-        activeGameRegistry.deleteRoom(clientSession.gameId);
+        closeGameRoom(io, warRoom.id, "leave/other-phase");
         socket.emit("game_updated", null);
       }
     } else {

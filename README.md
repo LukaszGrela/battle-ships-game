@@ -63,6 +63,9 @@ Key rules:
 - `gameId` is restored only when the room still exists.
 - `game_updated` is emitted with the real room state or `null` when there is no active room.
 - stale disconnects from playing game maintain a reconnect grace period before a room is forfeited.
+- a finished room stays alive for a short grace window (5 minutes) so the result can be read and a rematch can start, then it is torn down together with its bot.
+- `playedGames` in `server_stats` is a lifetime counter backed by the game statistics store, not by the rooms currently living in the registry.
+- a single room can host many battles: every accepted rematch starts a new battle and is counted separately.
 
 ## Player identity
 
@@ -82,6 +85,31 @@ Flow:
 
 This is handled in the room lifecycle and socket event layer, not by creating a brand-new room.
 
+## Bot opponents
+
+A room can be filled with a server-side bot instead of a waiting human. The bot is a regular `IPlayer` with `botLevel` set (`easy`, `medium`, `hard`), so it travels through the same room state and socket broadcasts as a human opponent.
+
+- `bot_opponent` — seat a bot in an existing room (optional `difficulty`)
+- `create_game_with_bot` — create a room with the bot already seated
+- the difficulty is validated at runtime; unknown values are rejected instead of being stored
+- bot ids are prefixed with `bot-` and are scoped to a single room
+- a bot acts through the same room API as a human (`room.attack(...)`), so it cannot bypass turn or board rules
+- a room with a bot leaves `open_games` as soon as the bot is seated (it is no longer waiting), and the bot is disposed together with its room
+
+## Game statistics
+
+Finished battles are appended to a dedicated statistics store (`GameStatsService`) instead of being derived from live rooms. `server_stats` carries `TStats`:
+
+- `activePlayers` — connected sessions
+- `activeGames` — rooms currently in play
+- `playedGames` — lifetime number of finished battles
+
+Every battle is stored at most once under the key `<roomId>#<battleIndex>`, so a finished room can be deleted (leave, forfeit, rematch, TTL) without decreasing the counter, and a rematch is counted as a separate battle in the same room.
+
+A record keeps the room identity and name, the battle index, the finish timestamp, a `byForfeit` flag, the result for every participant (`win` / `lost`) and a free-form `meta` bag for future game data (rounds, duration, sunk ships, …). Per-player aggregates (played / wins / losses, including forfeits) are derived from those records; bots are stored in the record but skipped in per-player aggregation, because their ids only exist inside one room.
+
+The store lives in server memory, so the lifetime counter resets when the server restarts. Replacing it with a database means implementing `IGameStatsService` and keeping the existing singleton.
+
 ## Shared contracts
 
 The game contract is defined in the shared types package. It includes the room lifecycle phases, session shape, and all Socket.IO events used by the server and web client.
@@ -95,4 +123,4 @@ cd apps/server
 pnpm test
 ```
 
-The server suite covers reconnect restoration, room lifecycle transitions, disconnect handling, and the rematch flow.
+The suite covers reconnect restoration, room lifecycle transitions, disconnect handling, the rematch flow, the bot lifecycle (`src/bots/BotRunner.e2e.test.ts`), the finished-game summary and the statistics store (`src/services/game-stats.service.test.ts`).

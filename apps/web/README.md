@@ -59,6 +59,9 @@ The main client-to-server events are:
 - `reject_rematch`: reject the rematch request
 - `get_rooms`: request the current room list
 - `get_war_room_name`: request or validate a room name
+- `bot_opponent`: seat a bot in an owned room that is still waiting (optional `difficulty`)
+- `create_game_with_bot`: create a room with a bot already seated
+- `get_stats`: request the current lobby statistics (`TStats`)
 
 The main server-to-client events are:
 
@@ -124,6 +127,16 @@ sequenceDiagram
 ## Rematch flow on the client
 
 After a finished game, the losing side may request a rematch. The UI should listen for `rematch_requested` and present the choice to accept or reject. If the winner accepts, the game room is reset to `placement` and the same room continues for a new round. If the winner rejects, the loser is blocked from issuing another request for that same finished match.
+
+## Bot opponent
+
+A waiting room can be started against a server-side bot instead of another human. The difficulty is chosen in `BotGameDifficultyModal` (`easy`, `medium`, `hard`) and sent with `create_game_with_bot` or `bot_opponent`.
+
+The bot arrives as a regular player with `botLevel` set, so the same `game_updated` payload drives the view. `PlayerDetails` marks such a player with a bot badge and a `Bot level: <difficulty>` label, and the board/attack components do not need a separate code path.
+
+## Lobby statistics
+
+`useGameStatsStore` calls `get_stats` on connect and keeps the `server_stats` payload (`activeGames`, `playedGames`, `activePlayers`). `playedGames` is a lifetime counter maintained by the server's game statistics store, so it does not drop when a finished room is closed; the per-player wins/losses block in `StatsContainer` is still a placeholder and is not fed by this store yet.
 
 ## Application structure
 

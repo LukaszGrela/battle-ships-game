@@ -1,32 +1,33 @@
-import { IPlayer } from "@repo/types";
 import styles from "./PirateAvatar.module.css";
-import { FC, useMemo } from "react";
+import { FC, ReactNode, useMemo } from "react";
+import { IPlayer } from "@repo/types";
 import { seedRandom } from "@repo/game-logic";
 import { classNames } from "../../utils/classNames";
 
 export const PirateAvatar: FC<{
+  isBot?: boolean;
   avatarIndex?: number;
   className?: string;
-}> = ({ avatarIndex = 1, className }) => {
+  children?: ReactNode;
+}> = ({ avatarIndex = 1, className, isBot, children }) => {
   return (
     <div
       className={classNames(styles.PirateAvatar, className)}
       data-index={avatarIndex}
-      data-wtf
       style={{
-        color: "red",
-        backgroundImage: `url("/assets/avatars/avatar-${avatarIndex}.png")`,
+        backgroundImage: `url("/assets/avatars/${isBot ? "bot/" : ""}avatar-${avatarIndex}.png")`,
       }}
     >
-      &nbsp;
+      {children || <>&nbsp;</>}
     </div>
   );
 };
 const MAX_AVATAR_SPRITES = 3 * 4 * 4;
 export const PlayerAvatar: FC<{
-  player: Pick<IPlayer, "seed">;
+  player: Pick<IPlayer, "seed" | "botLevel">;
   className?: string;
-}> = ({ player, className }) => {
+  children?: ReactNode;
+}> = ({ player, className, children }) => {
   const avatarIndex = useMemo(() => {
     const random = seedRandom(player.seed);
 
@@ -35,5 +36,13 @@ export const PlayerAvatar: FC<{
     return rnd;
   }, [player.seed]);
 
-  return <PirateAvatar avatarIndex={avatarIndex} className={className} />;
+  return (
+    <PirateAvatar
+      isBot={!!player.botLevel}
+      avatarIndex={avatarIndex}
+      className={className}
+    >
+      {children}
+    </PirateAvatar>
+  );
 };

@@ -9,6 +9,7 @@ import { createSocket } from "./handlers/socket.handlers.impl/__tests/utils";
 import { registerRoomHandlers } from "./handlers/room.handlers";
 import { registerGameHandlers } from "./handlers/game.handlers";
 import { registerServerHandlers } from "./handlers/server.handlers";
+import { registerBotGameHandlers } from "./handlers/bot.handlers";
 
 vi.mock("./handlers/room.handlers", () => ({
   registerRoomHandlers: vi.fn(),
@@ -20,6 +21,10 @@ vi.mock("./handlers/game.handlers", () => ({
 
 vi.mock("./handlers/server.handlers", () => ({
   registerServerHandlers: vi.fn(),
+}));
+
+vi.mock("./handlers/bot.handlers", () => ({
+  registerBotGameHandlers: vi.fn(),
 }));
 
 vi.mock("../utils/emitStats", () => ({
@@ -76,6 +81,7 @@ describe("factoryConnectHandler", () => {
     expect(registerRoomHandlers).toHaveBeenCalledWith(io, socket);
     expect(registerGameHandlers).toHaveBeenCalledWith(io, socket);
     expect(registerServerHandlers).toHaveBeenCalledWith(io, socket);
+    expect(registerBotGameHandlers).toHaveBeenCalledWith(io, socket);
     expect(socket.emit).toHaveBeenCalledWith(
       "session_created",
       expect.objectContaining({ id: "new-player", socketId: "new-socket" }),

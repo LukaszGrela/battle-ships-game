@@ -678,6 +678,38 @@ export class BattleShips
     return {};
   }
 
+  /**
+   * Compact description of how this game ended – the raw material for any
+   * statistics layer (played games, wins / losses, forfeits).
+   *
+   * Returns `undefined` while the game is still running, so callers can use it
+   * as an idempotent "is this battle over?" check.
+   */
+  getFinishSummary():
+    | {
+        finishedAt: string;
+        winnerId: string;
+        loserId?: string;
+        byForfeit: boolean;
+      }
+    | undefined {
+    if (this.getPhase() !== EGamePhase.Finished) return undefined;
+
+    const finish = this.history.at(-1);
+    if (!finish || !("finish" in finish)) return undefined;
+
+    const loser = Array.from(this.players.values()).find(
+      (player) => player.id !== finish.whoWon,
+    );
+
+    return {
+      finishedAt: this.game_finished ?? new Date().toISOString(),
+      winnerId: finish.whoWon,
+      loserId: loser?.id,
+      byForfeit: Boolean(finish.byForfeit),
+    };
+  }
+
   getPhase(): TStringifiedEnum<EGamePhase> {
     return this.phase;
   }
@@ -705,12 +737,22 @@ export class BattleShips
     return undefined;
   }
 
+  getPlayers() {
+    return Array.from(this.players.values()).map((player) =>
+      structuredClone(player),
+    );
+  }
+
   getPlayersCount() {
     return this.players.size;
   }
 
   setRematchRequest(request: TRematchRequest | undefined) {
     this.#rematchRequest = request;
+  }
+
+  getOwner(): IPlayer | undefined {
+    return this.getPlayer(this.owner ?? "");
   }
 
   #validTurn(playerId: string): boolean {
@@ -853,10 +895,7 @@ function normalizeShipId(
   return hitStatus;
 }
 
-function initPlayer(
-  player: Omit<IPlayer, "ready">,
-  isOwner: boolean,
-): IPlayer {
+function initPlayer(player: Omit<IPlayer, "ready">, isOwner: boolean): IPlayer {
   const initializedPlayer: IPlayer = {
     ...player,
     ready: false,
