@@ -1,5 +1,5 @@
 .Modal {
-  --modal-width: min(65dvw, 640px);
+  --modal-width: min(65dvw, 480px);
 }
 @media (max-width: 480px) {
   .Modal {
@@ -13,6 +13,9 @@
 
 .Modal_body {
   padding: 1rem 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .title {
