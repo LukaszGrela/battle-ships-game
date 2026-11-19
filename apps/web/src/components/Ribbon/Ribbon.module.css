@@ -57,8 +57,10 @@
   );
 
   /* Marginesy zapewniające miejsce na "wypustki" */
-  margin: var(--margin-top, 0px) var(--margin-right, 0px)
-    var(--margin-bottom, 0px) var(--margin-left, 0px);
+  margin: calc(var(--margin-top, 0px) + var(--ribbon-margin-top-offset, 0px))
+    calc(var(--margin-right, 0px) + var(--ribbon-margin-right-offset, 0px))
+    calc(var(--margin-bottom, 0px) + var(--ribbon-margin-bottom-offset, 0px))
+    calc(var(--margin-left, 0px) + var(--ribbon-margin-left-offset, 0px));
 }
 
 .ribbon {
@@ -76,7 +78,7 @@
 
   width: var(--ribbon-width, unset);
 
-  padding: 0.5rem 1rem;
+  padding: var(--ribbon-padding, 0.5rem 1rem);
 
   transition: var(--transition);
   box-shadow: var(--ribbon-box-shadow);
@@ -185,4 +187,33 @@
     var(--ribbon-fold-right-width) var(--ribbon-fold-right-height),
     0 var(--ribbon-fold-right-height)
   );
+}
+
+/* ── Kształt a treść zakończenia ──────────────────────────────────────────
+   `clip-path` przycina wszystko, co wychodzi poza obrys elementu, także
+   dzieci — dlatego wycięcie nie może być na tym samym pudełku co treść.
+   Warstwa kształtu (`.ribbon-fold-shape`) jest pusta i rysuje tylko tło
+   z wycięciem. Warstwa treści (`.ribbon-fold-content`) to bliźniak o tej
+   samej geometrii, bez tła i bez przycięcia, więc `ribbonFold*Children`
+   może wystawać poza obrys chorągiewki. */
+
+.ribbon-fold-shape {
+  /* Element dekoracyjny — nigdy nie przechwytuje kliknięć. */
+  pointer-events: none;
+}
+
+/* Selektor złożony, żeby nadpisać tło i `clip-path` z `.ribbon-fold-left`
+   i `.ribbon-fold-right` niezależnie od kolejności reguł w pliku. */
+.ribbon-fold.ribbon-fold-content {
+  /* Ponad panelem wstążki, inaczej wystająca treść schowałaby się pod nim. */
+  z-index: 1;
+  background: none;
+  clip-path: none;
+  /* Pusty pas nachodzący na panel nie może zabierać kliknięć panelowi;
+     interaktywne dzieci włączają je sobie same. */
+  pointer-events: none;
+}
+
+.ribbon-fold.ribbon-fold-content > * {
+  pointer-events: auto;
 }
