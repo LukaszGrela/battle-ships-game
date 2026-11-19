@@ -103,7 +103,7 @@
 .Header_mobile_title {
   height: 36px;
   flex: 0 0 auto;
-  width: fit-content;
+  width: auto;
 }
 
 .Header_mobile_toolbar {
