@@ -71,9 +71,13 @@ ol {
 
   /* Block flow gives the width; no 100vw, which counted the scrollbar and
      caused horizontal overflow on phones. */
-  min-height: calc(100dvh - calc(2 * var(--root-margin, 1rem)));
+  min-height: max(393px, calc(100dvh - calc(2 * var(--root-margin, 1rem))));
+
   box-sizing: border-box;
-  padding-bottom: max(var(--root-padding, 1rem), env(safe-area-inset-bottom, 0px));
+  padding-bottom: max(
+    var(--root-padding, 1rem),
+    env(safe-area-inset-bottom, 0px)
+  );
 
   @media screen and (max-width: 500px) {
     --root-margin: 0.5rem;
