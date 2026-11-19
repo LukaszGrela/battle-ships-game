@@ -66,23 +66,18 @@ export const RematchRequestSentModal: FC<{
   }, [open]);
 
   useEffect(() => {
-    if (status !== "pending") {
-      setCancelling(false);
-      return;
-    }
+    if (status !== "pending") return;
 
-    setRemainingSeconds(getRemainingSeconds(request?.expiresAt));
-
-    const interval = setInterval(() => {
+    const updateRemaining = () =>
       setRemainingSeconds(getRemainingSeconds(request?.expiresAt));
-    }, 1000);
+    const timeout = setTimeout(updateRemaining, 0);
+    const interval = setInterval(updateRemaining, 1000);
 
-    return () => clearInterval(interval);
+    return () => {
+      clearTimeout(timeout);
+      clearInterval(interval);
+    };
   }, [status, request?.expiresAt]);
-
-  useEffect(() => {
-    if (status === "pending") setDismissed(false);
-  }, [status]);
 
   const handleCancel = () => {
     if (cancelling) return;
