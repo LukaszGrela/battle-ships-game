@@ -5,7 +5,6 @@
 }
 
 html {
-  scrollbar-gutter: stable;
   background-color: var(--pirates-background);
   color: var(--pirates-foreground);
   /* Verdana is what the previous cascade actually resolved to. */

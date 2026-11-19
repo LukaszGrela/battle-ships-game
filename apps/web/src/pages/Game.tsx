@@ -101,9 +101,9 @@ export const Game: FC = () => {
             />
           </>
         )}
-
-        <GrelaDesign className={styles.footerLogo} />
       </section>
+
+      <GrelaDesign className={styles.footerLogo} />
 
       <OpponentTurnModal
         open={!myTurn && !attackResult}

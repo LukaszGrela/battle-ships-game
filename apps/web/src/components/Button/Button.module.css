@@ -93,6 +93,9 @@
 
     & svg {
       stroke: currentColor;
+    }
+
+    &:not(:disabled) svg {
       --svg-filter: drop-shadow(1px 1px 1px var(--pirates-palette-2));
     }
 

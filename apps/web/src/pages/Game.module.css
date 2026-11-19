@@ -4,6 +4,7 @@
   flex-wrap: wrap;
   justify-content: center;
   gap: 2rem;
+  padding-bottom: 2rem;
   @media screen and (max-width: 500px) {
     gap: 0.5rem;
   }
@@ -42,6 +43,8 @@
   --gd-logo-color: var(--pirates-palette-19);
   opacity: 0.5;
   flex: 0 0 100%;
+  position: absolute;
+  bottom: 0;
   @media screen and (min-width: 500px) {
     margin-bottom: -0.5rem;
   }
