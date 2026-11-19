@@ -8,7 +8,7 @@
     calc(var(--root-border-width) * 2) + calc(var(--root-margin) * 2) +
       calc(var(--root-padding) * 2)
   );
-  height: calc(100dvh - var(--offset));
+  height: max(393px, calc(100dvh - var(--offset)));
   width: 100%;
 
   position: relative;
