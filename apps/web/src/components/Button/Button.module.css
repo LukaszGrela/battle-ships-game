@@ -15,7 +15,8 @@
     border-style: solid;
     border-width: var(--border-width, 2px);
 
-    -webkit-text-stroke: var(--text-stroke, 3px) var(--pirates-palette-16);
+    -webkit-text-stroke: var(--text-stroke, 3px)
+      var(--text-stroke-color, var(--pirates-palette-16));
     paint-order: stroke fill;
 
     text-transform: uppercase;
@@ -29,8 +30,8 @@
     margin: var(--outline-width, 2px);
 
     & svg {
-      stroke: var(--pirates-palette-20);
-      filter: drop-shadow(1px 1px 1px rgba(0, 0, 0, 0.5));
+      stroke: var(--svg-stroke, currentColor);
+      filter: var(--svg-filter, drop-shadow(1px 1px 1px rgba(0, 0, 0, 0.5)));
       height: var(--svg-size, 100%);
     }
 
@@ -40,9 +41,8 @@
   }
 
   &[data-type="primary"] {
-    /* Slightly darker green keeps white labels at 4.4:1 or better. */
-    --button-top: color-mix(in srgb, var(--pirates-palette-28), #14100d 12%);
-    --button-bottom: color-mix(in srgb, var(--pirates-palette-28), #14100d 30%);
+    --button-top: var(--pirates-primary);
+    --button-bottom: var(--pirates-palette-38);
 
     color: var(--pirates-palette-20);
 
@@ -72,7 +72,10 @@
   }
   &[data-type="secondary"] {
     /* Yellow needs dark ink: white on #fcd02e was 1.36:1. */
-    --text-stroke: 0;
+    &:not(:disabled) {
+      --text-stroke: 2px;
+      --text-stroke-color: var(--pirates-palette-2);
+    }
 
     color: var(--pirates-palette-10);
 
@@ -87,6 +90,11 @@
       var(--pirates-palette-4) 50%,
       var(--pirates-palette-4)
     );
+
+    & svg {
+      stroke: currentColor;
+      --svg-filter: drop-shadow(1px 1px 1px var(--pirates-palette-2));
+    }
 
     @media (hover: hover) {
       &:hover {
@@ -196,6 +204,17 @@
       var(--pirates-palette-14) 50%,
       var(--pirates-palette-14)
     );
+    @media (hover: hover) {
+      &:hover {
+        background: linear-gradient(
+          to top,
+          var(--pirates-palette-17),
+          var(--pirates-palette-17) 49%,
+          var(--pirates-palette-14) 50%,
+          var(--pirates-palette-14)
+        );
+      }
+    }
   }
 }
 

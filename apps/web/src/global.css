@@ -35,6 +35,8 @@
   --pirates-palette-34: hsl(212, 100%, 20%);
   --pirates-palette-35: hsl(4, 100%, 22%);
   --pirates-palette-36: hsl(4, 100%, 19%);
+  --pirates-palette-37: #248000;
+  --pirates-palette-38: #1e6800;
 }
 
 :root {
@@ -43,7 +45,7 @@
   --pirates-foreground: var(--pirates-palette-20);
   --pirates-accented: var(--pirates-palette-3);
 
-  --pirates-primary: var(--pirates-palette-27);
+  --pirates-primary: var(--pirates-palette-37);
   --pirates-secondary: var(--pirates-palette-3);
   --pirates-info: var(--pirates-palette-24);
   --pirates-danger: var(--pirates-palette-30);
