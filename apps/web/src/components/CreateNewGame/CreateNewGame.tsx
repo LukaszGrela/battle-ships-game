@@ -149,7 +149,7 @@ export const CreateNewGame: FC<{ className?: string }> = ({ className }) => {
             <span>Create Game</span>
             <AnchorIcon />
           </Button>
-          <CreateBotGame gameName={inputValue} />
+          <CreateBotGame gameName={inputValue} className={styles.botGame} />
         </div>
       </div>
     </DecoratedContainer>
@@ -202,7 +202,10 @@ async function requestRoomName(
   }
 }
 
-const CreateBotGame: FC<{ gameName?: string }> = ({ gameName }) => {
+const CreateBotGame: FC<{ gameName?: string; className?: string }> = ({
+  gameName,
+  className,
+}) => {
   const [open, setOpen] = useState(false);
 
   const disabled = !gameName;
@@ -234,6 +237,7 @@ const CreateBotGame: FC<{ gameName?: string }> = ({ gameName }) => {
         onClick={createBotGameHandler}
         disabled={disabled}
         type="secondary"
+        className={className}
       >
         <BotIcon />
         <span>Create Bot Game</span>
