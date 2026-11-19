@@ -62,9 +62,8 @@ export function WaitingScreen({
     const handleOpponentConnected = (
       player: Pick<IPlayer, "name" | "seed" | "owner" | "ready">,
     ) => {
-      bellSound.current?.play().catch((err) => {
-        console.warn("Audio play blocked by browser:", err);
-      });
+      // Autoplay can be blocked until the first gesture; not fatal for the UI.
+      bellSound.current?.play().catch(() => {});
       onOpponentFound?.(player);
     };
 

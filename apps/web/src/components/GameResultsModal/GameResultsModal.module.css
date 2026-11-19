@@ -1,20 +1,22 @@
-/* .GameResultsModal {
-} */
+.GameResultsModal {
+  --modal-width: min(65dvw, 640px);
+}
 .GameResultsModal_panel {
-  --modal-dialog-width: min(26rem, 100vw);
+  --modal-dialog-width: 100%;
 }
 
 @media screen and (max-width: 500px) {
   .GameResultsModal {
     --modal-margin: 0;
-    --modal-max-width: 100vw;
+    --modal-width: 100dvw;
+    --modal-max-width: 100dvw;
     --modal-max-height: 100dvh;
-    --modal-dialog-width: 100vw;
+    --modal-dialog-width: 100%;
     --modal-dialog-height: 100dvh;
     --modal-dialog-radius: 0;
   }
   .GameResultsModal_panel {
-    --modal-dialog-width: 100vw;
+    --modal-dialog-width: 100%;
     display: grid;
     grid-template-rows: 44px 1fr 44px;
   }
@@ -43,7 +45,6 @@
 .decor {
   background-image: url("/assets/decoration-sprites.png");
   background-repeat: no-repeat;
-  /* image-rendering: pixelated; /* usuń, jeśli nie pixel-art */
   filter: drop-shadow(0 0 18px rgba(252, 208, 46, 0.22));
   animation: floatIn 400ms ease-out 100ms backwards;
 }

@@ -1,10 +1,17 @@
+.Modal {
+  --modal-width: min(65dvw, 480px);
+}
+.Modal_dialog {
+  --modal-dialog-width: 100%;
+}
 @media screen and (max-width: 500px) {
   .Modal {
     --modal-margin: 0;
-    --modal-max-width: 100vw;
-    --modal-max-height: 100vh;
-    --modal-dialog-width: 100vw;
-    --modal-dialog-height: 100vh;
+    --modal-width: 100dvw;
+    --modal-max-width: 100dvw;
+    --modal-max-height: 100dvh;
+    --modal-dialog-width: 100%;
+    --modal-dialog-height: 100dvh;
     --modal-dialog-radius: 0;
   }
 

@@ -24,15 +24,19 @@
   display: flex;
   justify-content: space-between;
   width: 100%;
+  margin-top: 0.5rem;
 }
-.Header_title {
-  height: var(--header-logo-size, 120px);
-  flex: 0 0 var(--header-logo-size, 120px);
 
-  @media screen and (max-width: 720px) {
-    --header-logo-size: 90px;
-    margin-top: -30px;
-  }
+.Header_mobile_title {
+  --header-logo-size: 90px;
+}
+
+.Header_title {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  width: var(--header-logo-size, 120px);
+  height: auto;
 }
 
 .home {

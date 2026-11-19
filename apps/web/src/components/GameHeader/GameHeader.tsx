@@ -7,6 +7,8 @@ import { LifeBuoy } from "../icons/LifeBuoy";
 import { Flag } from "../icons/Flag";
 import { EmitForfeitGameButton } from "../EmitForfaitGameButton/EmitForfaitGameButton";
 import { RequestRematchButton } from "../RequestRematchButton/RequestRematchButton";
+import { useMediaQuery } from "../../utils/screen/useMediaQuery";
+import { classNames } from "../../utils/classNames";
 
 export type TGameHeaderAllowedState = TGameState & {
   phase: EGamePhase.Placement | EGamePhase.Playing | EGamePhase.Finished;
@@ -18,8 +20,25 @@ export const GameHeader: FC<{
   showRevenge?: boolean;
   showLeave?: boolean;
 }> = ({ gameState, showAbandon, showForfait, showLeave, showRevenge }) => {
+  const isMobile = useMediaQuery("(max-width: 500px), (max-height: 500px)");
   return (
     <div className={styles.GameHeader}>
+      {isMobile ? (
+        <img
+          alt="Pirates - BattleShips"
+          src={"/assets/title-2-128.png"}
+          className={classNames(
+            styles.Header_title,
+            styles.Header_mobile_title,
+          )}
+        />
+      ) : (
+        <img
+          alt="Pirates - BattleShips"
+          src="/assets/title-120.png"
+          className={styles.Header_title}
+        />
+      )}
       <div className={styles.GameHeader_toolbar}>
         {showAbandon && (
           <EmitLeaveGameButton
@@ -61,11 +80,6 @@ export const GameHeader: FC<{
             result={gameState.result[gameState.self.id]}
           />
         )}
-        <img
-          alt="Pirates - BattleShips"
-          src="/assets/title-120.png"
-          className={styles.Header_title}
-        />
         {gameState && (
           <PlayerDetails
             className={styles.away}

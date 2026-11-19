@@ -1,7 +1,11 @@
 import { Server, Socket } from "socket.io";
 import { registerRoomHandlers } from "./handlers/room.handlers";
 import { registerGameHandlers } from "./handlers/game.handlers";
-import { IClientToServerEvents, IServerToClientEvents } from "@repo/types";
+import {
+  EGamePhase,
+  IClientToServerEvents,
+  IServerToClientEvents,
+} from "@repo/types";
 import { emitStats } from "../utils/emitStats";
 import ActiveUsersServiceSingleton from "../services/users.service";
 import ActiveGameRegistrySingleton from "../services/active-game-registry";
@@ -95,6 +99,20 @@ export const factoryConnectHandler =
       ClientSessionServiceSingleton.getInstance()
         .listSessions()
         .filter(({ disconnectedAt }) => !disconnectedAt).length,
+    );
+
+    console.log(
+      "[factoryConnectHandler]",
+      "[STATS] active games",
+      "Count games",
+      ActiveGameRegistrySingleton.getInstance().activeGames(),
+      ActiveGameRegistrySingleton.getInstance()
+        .listRooms()
+        .filter(
+          (needle) =>
+            needle.phase === EGamePhase.Placement ||
+            needle.phase === EGamePhase.Playing,
+        ),
     );
 
     emitStats(io);

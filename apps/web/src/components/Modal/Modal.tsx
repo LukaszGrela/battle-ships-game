@@ -38,7 +38,6 @@ export function Modal({
   const handleCancel: React.KeyboardEventHandler<HTMLDialogElement> =
     useCallback(
       (e) => {
-        console.log("onCancel", keyboard);
         if (!keyboard && e.key === "Escape") {
           e.preventDefault();
         }
@@ -72,7 +71,10 @@ export function Modal({
         return { ...acc, [prop]: value };
       }, {} as TDataProps);
   }, [conditionalProps]);
-  // TODO: modal_dialog size in percentage when placed in another container will reference that container for measurement.
+  // Rozmiar dialogu jest w jednostkach viewportowych (--modal-dialog-width,
+  // domyślnie min(26rem, 90dvw)), bo procent liczyłby się od najbliższego
+  // containing blocku — np. od kontenera z container-type: inline-size.
+  // Do pełnej szerokości okna służy --modal-width (np. 100dvw).
   return (
     <dialog
       className={classNames(styles.Modal, className)}

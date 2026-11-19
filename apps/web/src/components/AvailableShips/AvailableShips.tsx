@@ -23,11 +23,8 @@ export const AvailableShips: FC<{
   disabled,
   children,
 }) => {
-  console.log("AvailableShips", ships);
-
   const handleClick = useCallback(
     (ship: TShip) => () => {
-      console.log("handleClick", ship);
       if (ship.id === selected) {
         onSelection(null);
       } else {

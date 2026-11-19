@@ -2,6 +2,14 @@
 
 A one-on-one battle-ships game built as a TypeScript monorepo with a Socket.IO game server and a React/Vite web client.
 
+<p align="center">
+  <img src="./docs/01-splash.png" width="800" alt="Splash screen" />
+</p>
+
+[Screenshots](#screenshots)
+
+
+
 ## Repository overview
 
 The monorepo is organized as follows:
@@ -124,3 +132,27 @@ pnpm test
 ```
 
 The suite covers reconnect restoration, room lifecycle transitions, disconnect handling, the rematch flow, the bot lifecycle (`src/bots/BotRunner.e2e.test.ts`), the finished-game summary and the statistics store (`src/services/game-stats.service.test.ts`).
+
+## Screenshots
+
+<p align="center">
+  <img src="./docs/01-splash.png" width="800" alt="Splash screen" />
+</p>
+<p align="center">
+  <img src="./docs/02-lobby-mobile.png" width="320" alt="Lobby screen" />
+  <img src="./docs/02-lobby-desktop.png" width="800" alt="Lobby screen" />
+</p>
+<p align="center">
+  <img src="./docs/03-placement-desktop.png" width="800" alt="Ship placement screen" />
+</p>
+<p align="center">
+  <img src="./docs/04-game-opponents-turn.png" width="800" alt="Game screen" />
+  <img src="./docs/04-game-your-turn.png" width="800" alt="Game screen" />
+  <img src="./docs/04-game-hit.png" width="800" alt="Game screen" />
+</p>
+<p align="center">
+  <img src="./docs/04-game-with-bot.png" width="800" alt="Game screen - game with bot" />
+</p>
+<p align="center">
+  <img src="./docs/05-victory.png" width="800" alt="Victory" />
+</p>

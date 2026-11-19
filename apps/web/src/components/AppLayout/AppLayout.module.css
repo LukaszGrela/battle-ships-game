@@ -2,4 +2,12 @@
   position: relative;
   max-width: var(--layout-max-width, 1200px);
   margin: 0 auto;
+
+  min-height: max(
+    393px,
+    calc(
+      100dvh - calc(2 * var(--root-margin)) - calc(2 * var(--root-padding)) -
+        calc(2 * var(--root-border-width))
+    )
+  );
 }

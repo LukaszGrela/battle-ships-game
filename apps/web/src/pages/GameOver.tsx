@@ -17,8 +17,6 @@ import { GrelaDesign } from "../components/GrelaDesign/GrelaDesign";
 export const GameOver: FC = () => {
   const { gameState, revengeRequest } = useGameStore();
 
-  console.log("[GameOver] gameState", gameState);
-
   const state =
     gameState && gameState.phase === "finished" ? gameState : undefined;
   const myResults = state?.result[state.self.id];

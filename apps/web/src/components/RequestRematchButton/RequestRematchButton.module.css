@@ -1,0 +1,9 @@
+.RequestRematchButton_button {
+  @media screen and (max-width: 500px), (max-height: 500px) {
+    &[data-type]:not([data-type="custom"]) {
+      span {
+        display: none;
+      }
+    }
+  }
+}

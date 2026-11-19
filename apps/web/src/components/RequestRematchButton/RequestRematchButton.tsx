@@ -1,3 +1,4 @@
+import styles from "./RequestRematchButton.module.css";
 import { FC, useEffect, useState } from "react";
 import { Button, TButtonProps } from "../Button";
 import { socket } from "../../socket";
@@ -34,11 +35,12 @@ export const RequestRematchButton: FC<Pick<TButtonProps, "size">> = ({
 
   return (
     <Button
+      className={styles.RequestRematchButton_button}
       size={size}
       onClick={handleRequestRematch}
       disabled={requestSent || !!gameState?.rematchRequest || !opponentActive}
     >
-      Give me revenge
+      <span>Give me </span>revenge
     </Button>
   );
 };

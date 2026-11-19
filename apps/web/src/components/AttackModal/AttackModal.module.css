@@ -4,7 +4,30 @@
 
 .panel {
   --modal-dialog-width: 100%;
+}
+.backdrop {
+  --modal-width: min(65dvw, 640px);
+}
 
+/* Phone in landscape: the panel gets ~250 px of height, so the 256 px
+   body reserved room for nothing and the footer went off screen. */
+@media (max-height: 500px) {
+  .panel {
+    --modal-max-height: 100dvh;
+  }
+
+  .body {
+    min-height: 0;
+  }
+
+  .title {
+    font-size: var(--font-size-medium);
+  }
+}
+@media (max-width: 480px) {
+  .backdrop {
+    --modal-width: 90dvw;
+  }
 }
 
 .panel_body {

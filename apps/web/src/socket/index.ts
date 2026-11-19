@@ -53,7 +53,6 @@ export const useSocket = () => {
 };
 
 document.addEventListener("visibilitychange", () => {
-  console.log("VisibilityChange", document.visibilityState, socket.disconnect);
   if (document.visibilityState === "visible" && socket.disconnected) {
     socket.connect(); // nie czekaj na timer reconnectu, łącz od razu
   }

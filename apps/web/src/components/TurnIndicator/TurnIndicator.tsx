@@ -14,7 +14,9 @@ export const TurnIndicator: FC<{
         ribbonFoldLeftChildren={<span className={styles.decoration}>⚔️</span>}
         ribbonFoldRightChildren={<span className={styles.decoration}>⚔️</span>}
       >
-        <span className={"TurnIndicator_label"}>{children}</span>
+        <span className="TurnIndicator_label" aria-live="polite">
+          {children}
+        </span>
       </Ribbon>
     </div>
   );

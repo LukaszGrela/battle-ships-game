@@ -17,18 +17,12 @@ function App() {
   useSocketGameState();
   useOpenGamesStatus();
 
-  const { connected, clientSession } = useConnectionStatus();
-  console.log("clientSession", clientSession);
+  const { connected } = useConnectionStatus();
   const { gameState, selfId } = useGameStore();
-  console.log("[App]", gameState);
 
   const page = useMemo(() => {
-    console.log("connected", connected);
     if (connected) {
-      console.log("selfId", selfId);
-      console.log("gameState", gameState);
       if (selfId && gameState) {
-        console.log("gameState.phase", gameState.phase);
         const phase = gameState.phase;
         if (phase === "waiting") {
           return "game-waiting" as const;
@@ -47,8 +41,6 @@ function App() {
       return "init" as const;
     }
   }, [connected, gameState, selfId]);
-
-  console.log("page", page);
 
   return (
     <>

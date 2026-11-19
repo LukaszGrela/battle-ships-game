@@ -26,9 +26,6 @@ export const GameWaiting = () => {
             <WaitingScreen
               player={gameState.self}
               className={styles.GameWaiting_message}
-              onOpponentFound={(player) => {
-                console.log("Opponent joined", player);
-              }}
             />
           </div>
           <EmitLeaveGameButton type="danger" className={styles.abandonGame}>
@@ -82,13 +79,12 @@ const AskBotGame: FC<Pick<TRoomIdentity, "id" | "name">> = ({ id, name }) => {
     (difficulty: "easy" | "medium" | "hard") => {
       setOpen(false);
       // if (gameName) socket.emit("create_game_with_bot", gameName);
-      // console.log("bot_opponent", id, difficulty);
       if (id) {
         socket.emit(
           "bot_opponent",
           { roomIdentifier: { id, name }, difficulty },
           (result) => {
-            console.log("Result", result);
+            console.warn("TODO: Handle response", result);
           },
         );
       }

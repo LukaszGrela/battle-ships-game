@@ -33,11 +33,9 @@ export const useSocketConnection = () => {
       setIsConnected(false);
     }
     function onSessionRestored(session: IClientSession) {
-      console.log("Restored session", session);
       setClientSession(session);
     }
     function onSessionCreated(session: IClientSession) {
-      console.log("Created new session");
       setClientSession(session);
     }
 

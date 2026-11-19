@@ -32,7 +32,6 @@ export function useShipImages(ships: TShip[]) {
       ),
     ).then((entries) => {
       if (!cancelled) {
-        console.log("[useShipImages]", entries);
         setImages(Object.fromEntries(entries) as TImagesRecord);
       }
     });

@@ -17,7 +17,7 @@ export const ShipsBoard: FC<
     className?: string;
   } & TInteractivityProps
 > = ({ owner, board, ships, className, ...interactivity }) => {
-  const isMobile = useMediaQuery("(max-width: 500px");
+  const isMobile = useMediaQuery("(max-width: 500px)");
 
   const gridCellSize = isMobile ? CELL_MOBILE : CELL;
 

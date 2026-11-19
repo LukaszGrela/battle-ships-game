@@ -35,6 +35,8 @@
   --pirates-palette-34: hsl(212, 100%, 20%);
   --pirates-palette-35: hsl(4, 100%, 22%);
   --pirates-palette-36: hsl(4, 100%, 19%);
+  --pirates-palette-37: #248000;
+  --pirates-palette-38: #1e6800;
 }
 
 :root {
@@ -43,7 +45,7 @@
   --pirates-foreground: var(--pirates-palette-20);
   --pirates-accented: var(--pirates-palette-3);
 
-  --pirates-primary: var(--pirates-palette-27);
+  --pirates-primary: var(--pirates-palette-37);
   --pirates-secondary: var(--pirates-palette-3);
   --pirates-info: var(--pirates-palette-24);
   --pirates-danger: var(--pirates-palette-30);
@@ -68,9 +70,25 @@
   --gap-small: 0.25rem;
   --gap-xsmall: 0.125rem;
 
-  /* */
+  /* Radii */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 0.5rem;
+  --radius-xl: 1rem;
+
+  /* Shadows */
+  --shadow-dialog: 0 18px 40px rgb(0 0 0 / 45%), 0 2px 6px rgb(0 0 0 / 35%);
+  --shadow-raised: 0 6px 10px 2px rgb(0 0 0 / 25%);
 
   --layout-max-width: 1200px;
+
+  /* Breakpoints — media queries cannot read custom properties, so these are
+     the only thresholds the app uses. Keep new rules on this scale:
+       phone  500px   (single small-screen tier: root padding, board column)
+       tablet 720px   (two-column layouts collapse)
+       desk   924px   (container query in Game.module.css)
+     px values stay valid inside media/container queries, so the tokens above
+     remain the reference and are checked by hand. */
 }
 
 .shadow {

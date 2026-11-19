@@ -26,8 +26,6 @@ export const ShipsLayer: FC<{
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const images = useShipImages(ships);
-  console.log("[ShipsLayer]", images);
-  console.log("[ShipsLayer]", ships);
 
   const canvasPxW = columns * gridCellSize + 2 * gridCellSize;
   const canvasPxH = rows * gridCellSize + 2 * gridCellSize;
@@ -58,12 +56,10 @@ export const ShipsLayer: FC<{
     ctx.imageSmoothingQuality = "high";
 
     for (const ship of ships) {
-      console.log("Ship size", ship.size);
       if (ship.type !== "pending" && ship.type !== "placed") continue;
       if (ship.type === "pending" && !ship.placed) continue;
 
       if (!images[ship.size]) {
-        console.warn("Not found image sources for ship size", ship.size);
         continue;
       }
       const [img, destroyedImg] = images[ship.size] as [

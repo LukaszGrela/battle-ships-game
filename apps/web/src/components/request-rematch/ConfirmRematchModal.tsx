@@ -47,8 +47,8 @@ export const ConfirmRematchModal: FC<{
     wasOpen.current = open;
   }, [open]);
 
-  // after emiting rematch response, state update is received and modal 
-  // is closed, closing calls onClose which calls handleReject. 
+  // after emiting rematch response, state update is received and modal
+  // is closed, closing calls onClose which calls handleReject.
   // Thats why we need `rematchResponseEmitted` gate.
 
   const handleReject = () => {
@@ -91,8 +91,8 @@ export const ConfirmRematchModal: FC<{
       headerClassName={styles.title}
       bodyClassName={styles.Modal_body}
 
-      // className={styles.Modal}
-      // dialogClassName={styles.Modal_dialog}
+      className={styles.Modal}
+      dialogClassName={styles.Modal_dialog}
     >
       <p className={styles.message1}>
         {challengeMessages[copyIndex.message]?.(request?.name ?? "Unknown") ??

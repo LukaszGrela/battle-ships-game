@@ -15,6 +15,11 @@
   gap: 0.25rem;
   align-items: center;
 }
+.botGame {
+  display: flex;
+  gap: 0.25rem;
+  align-items: center;
+}
 
 .input_row {
   position: relative;
@@ -24,7 +29,7 @@
   width: 100%;
 }
 .action_row {
-  display:flex;
+  display: flex;
   flex-direction: row;
   flex-wrap: wrap;
   align-items: center;
