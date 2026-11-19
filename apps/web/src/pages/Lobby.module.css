@@ -6,6 +6,10 @@
       0,
       1fr
     );
+  @media screen and (max-width: 500px), (max-height: 500px) {
+    display: flex;
+    flex-direction: column;
+  }
 }
 
 .self {
@@ -17,21 +21,31 @@
   justify-self: end;
   align-items: flex-end;
 
-  @media screen and (max-width: 720px) {
+  --avatar-size: 128px;
+  @media screen and (max-width: 500px), (max-height: 500px) {
     align-items: center;
+    --avatar-size: 96px;
+    min-height: 96px;
+    justify-content: flex-end;
   }
 
-  --avatar-size: 128px;
   --player-details-width: auto;
 }
 .Avatar {
   margin-bottom: -3rem;
 
-  @media screen and (max-width: 720px) {
-    margin-bottom: -0.75rem;
+  @media screen and (max-width: 500px), (max-height: 500px) {
+    margin-bottom: 0;
   }
+
   z-index: 1;
 }
+
+.Avatar_holder:global(.ribbon-fold) {
+  /* ribbon fold children */
+  align-items: flex-end;
+}
+
 .Ribbon {
   --ribbon-right-y-offset: 0.75rem;
   --ribbon-fold-right-height: 2.5rem;
@@ -46,13 +60,16 @@
   --offset: 100%;
   --ribbon-max-width: 100%;
 
-  @media screen and (max-width: 720px) {
+  /* @media screen and (max-width: 720px) {
     --ribbon-fold-left-width: 2rem;
     --ribbon-fold-left-height: 1.5rem;
     --ribbon-left-y-offset: -0.5rem;
     --ribbon-fold-right-width: 2rem;
     --ribbon-fold-right-height: 1.5rem;
     --ribbon-right-y-offset: -0.5rem;
+  } */
+  @media screen and (max-width: 500px), (max-height: 500px) {
+    --ribbon-margin-top-offset: 2.5rem;
   }
 
   --background: linear-gradient(
@@ -73,8 +90,7 @@
   --background-left: var(--pirates-palette-7);
 
   --ribbon-box-shadow:
-    var(--shadow-raised),
-    inset 0px 0 2px 0px rgba(0, 0, 0, 0.25);
+    var(--shadow-raised), inset 0px 0 2px 0px rgba(0, 0, 0, 0.25);
 
   font-weight: bold;
   -webkit-text-stroke: 3px var(--pirates-palette-16);
@@ -84,13 +100,34 @@
 .Header_title {
   height: var(--header-logo-size, 120px);
 }
+.Header_mobile_title {
+  height: 36px;
+  flex: 0 0 auto;
+  width: fit-content;
+}
+
+.Header_mobile_toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
 
 .Header_disconnect {
   min-width: 0;
   justify-self: start;
 }
 
-@media screen and (max-width: 500px) {
+.Greetings {
+  display: flex;
+  flex-direction: column;
+
+  font-size: var(--font-size-small);
+}
+.Greetings_name {
+  font-size: var(--font-size-normal);
+}
+
+@media screen and (max-width: 500px), (max-height: 500px) {
   .Lobby_header {
     grid-template-columns: minmax(0, 2fr) var(--header-logo-size, 120px) minmax(
         0,
