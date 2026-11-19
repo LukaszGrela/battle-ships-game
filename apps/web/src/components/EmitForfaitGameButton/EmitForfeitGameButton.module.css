@@ -1,3 +1,9 @@
+.Modal {
+  --modal-width: min(65dvw, 480px);
+}
+.Modal_dialog {
+  --modal-dialog-width: 100%;
+}
 @media screen and (max-width: 500px) {
   .Modal {
     --modal-margin: 0;
