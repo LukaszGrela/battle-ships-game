@@ -118,7 +118,13 @@ export type TRematchRequest = {
   name: string;
   seed: number;
 
-  status: "pending" | "accepted" | "rejected";
+  status: "pending" | "accepted" | "rejected" | "cancelled";
+
+  /** ISO timestamp after which a pending request is cancelled automatically. */
+  expiresAt?: string;
+
+  /** Why the request stopped being pending; set when `status` is cancelled. */
+  cancelledReason?: "cancelled" | "timeout";
 };
 
 export type TRoomState = Omit<TRoomIdentity, "owner"> & {

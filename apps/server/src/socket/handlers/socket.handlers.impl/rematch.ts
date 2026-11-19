@@ -4,10 +4,16 @@ import ClientSessionServiceSingleton from "../../../services/client-session.serv
 import { emitRoomStateToPlayers } from "../../../utils/emitRoomStateToPlayers";
 import ActiveGameRegistrySingleton from "../../../services/active-game-registry";
 import { getSession } from "../../../security/auth";
+import {
+  cancelRematchTimeout,
+  notifyRematchCancelled,
+  scheduleRematchTimeout,
+} from "../../../utils/rematchTimeout";
 
 type TRequestRematchHandler = IClientToServerEvents["request_rematch"];
 type TAcceptRematchHandler = IClientToServerEvents["accept_rematch"];
 type TRejectRematchHandler = IClientToServerEvents["reject_rematch"];
+type TCancelRematchHandler = IClientToServerEvents["cancel_rematch"];
 
 const warRoomFinder = (
   socket: Socket<IClientToServerEvents, IServerToClientEvents>,
@@ -51,6 +57,7 @@ export const factoryRequestRematchHandler = (
       } else {
         // success
         socket.emit("game_updated", warRoom.getGameState(clientId));
+        scheduleRematchTimeout(io, warRoom.id, clientId);
       }
 
       const requestor = warRoom.getPlayer(clientId);
@@ -104,6 +111,8 @@ export const factoryAcceptRematchHandler = (
       updateSession(acceptor?.id, warRoom.id);
       updateSession(requestor?.id, warRoom.id);
 
+      cancelRematchTimeout(warRoom.id);
+
       io.to(warRoom.id).emit("rematch_accepted", {
         roomId: warRoom.id,
         status: "accepted",
@@ -141,6 +150,7 @@ export const factoryRejectRematchHandler = (
         socket.emit("error", "Rematch cannot be rejected");
         return;
       }
+      cancelRematchTimeout(warRoom.id);
       const requestorSession =
         ClientSessionServiceSingleton.getInstance().readSession(requestorId);
       if (requestorSession) {
@@ -152,6 +162,33 @@ export const factoryRejectRematchHandler = (
       }
 
       emitRoomStateToPlayers(io, clientId, warRoom.id);
+    }
+  };
+};
+
+export const factoryCancelRematchHandler = (
+  io: Server<IClientToServerEvents, IServerToClientEvents>,
+  socket: Socket<IClientToServerEvents, IServerToClientEvents>,
+): TCancelRematchHandler => {
+  return () => {
+    const clientId = getSession(socket).playerId;
+
+    const warRoom = warRoomFinder(socket, clientId);
+
+    if (warRoom) {
+      const cancelResult = warRoom.cancelRematch(clientId);
+
+      if (cancelResult < 1) {
+        console.log(
+          "[factoryCancelRematchHandler] Failed to cancel rematch",
+          cancelResult,
+        );
+        socket.emit("error", "Rematch cannot be cancelled");
+        return;
+      }
+
+      cancelRematchTimeout(warRoom.id);
+      notifyRematchCancelled(io, warRoom.id, clientId, "cancelled");
     }
   };
 };

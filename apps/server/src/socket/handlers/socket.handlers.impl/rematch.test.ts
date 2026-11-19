@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { EGamePhase, IPlayer, TCellStatusShipId, TShip } from "@repo/types";
 import ActiveGameRegistrySingleton from "../../../services/active-game-registry";
 import ClientSessionServiceSingleton from "../../../services/client-session.service";
@@ -6,6 +6,7 @@ import { WarRoom } from "../../../services/WarRoom";
 import { createIo, createSocket } from "./__tests/utils";
 import {
   factoryAcceptRematchHandler,
+  factoryCancelRematchHandler,
   factoryRejectRematchHandler,
   factoryRequestRematchHandler,
 } from "./rematch";
@@ -75,6 +76,7 @@ describe("rematch handlers", () => {
       status: "pending",
       name: "opponent-name",
       seed: 80,
+      expiresAt: expect.any(String),
     });
     expect(socket.emit).toHaveBeenCalledWith(
       "game_updated",
@@ -123,6 +125,83 @@ describe("rematch handlers", () => {
     );
   });
 
+  it("cancels a pending rematch and notifies both players", () => {
+    const room = createFinishedWarRoom("rematch-cancelled-room");
+    createSessions();
+    expect(room.requestRematch("opponent")).toBe(1);
+
+    const io = createIo();
+    const socket = createSocket("opponent");
+    factoryCancelRematchHandler(io, socket)();
+
+    expect(room.getPhase()).toBe(EGamePhase.Finished);
+    expect(room.getGameState("owner")?.rematchRequest).toMatchObject({
+      requestorId: "opponent",
+      status: "cancelled",
+      cancelledReason: "cancelled",
+    });
+    expect(io._toSpy).toHaveBeenCalledWith("rematch_cancelled", {
+      roomId: room.id,
+      requestorId: "opponent",
+      status: "cancelled",
+      reason: "cancelled",
+    });
+    expect(io._toSpy).toHaveBeenCalledWith(
+      "game_updated",
+      expect.objectContaining({
+        id: room.id,
+        rematchRequest: expect.objectContaining({ status: "cancelled" }),
+      }),
+    );
+    expect(room.requestRematch("owner")).toBe(-4);
+  });
+
+  it("does not let the other player cancel the request", () => {
+    const room = createFinishedWarRoom("rematch-cancel-forbidden-room");
+    createSessions();
+    expect(room.requestRematch("opponent")).toBe(1);
+
+    const io = createIo();
+    const socket = createSocket("owner");
+    factoryCancelRematchHandler(io, socket)();
+
+    expect(room.getGameState("owner")?.rematchRequest?.status).toBe("pending");
+    expect(socket.emit).toHaveBeenCalledWith(
+      "error",
+      "Rematch cannot be cancelled",
+    );
+  });
+
+  it("auto-cancels a pending rematch after the timeout", () => {
+    vi.useFakeTimers();
+    try {
+      const room = createFinishedWarRoom("rematch-timeout-room");
+      createSessions();
+
+      const io = createIo();
+      const socket = createSocket("opponent");
+      factoryRequestRematchHandler(io, socket)();
+      expect(room.getGameState("owner")?.rematchRequest?.status).toBe("pending");
+
+      vi.advanceTimersByTime(60_000);
+
+      expect(room.getGameState("owner")?.rematchRequest).toMatchObject({
+        requestorId: "opponent",
+        status: "cancelled",
+        cancelledReason: "timeout",
+      });
+      expect(io._toSpy).toHaveBeenCalledWith("rematch_cancelled", {
+        roomId: room.id,
+        requestorId: "opponent",
+        status: "cancelled",
+        reason: "timeout",
+      });
+      expect(room.requestRematch("owner")).toBe(-4);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("rejects a pending rematch and notifies the requestor", () => {
     const room = createFinishedWarRoom("rematch-rejected-room");
     createSessions();
@@ -138,6 +217,7 @@ describe("rematch handlers", () => {
       status: "rejected",
       name: "opponent-name",
       seed: 80,
+      expiresAt: expect.any(String),
     });
     expect(io._toSpy).toHaveBeenCalledWith("rematch_rejected", {
       roomId: room.id,

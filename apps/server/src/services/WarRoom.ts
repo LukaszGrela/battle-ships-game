@@ -14,6 +14,8 @@ import {
   TStringifiedEnum,
 } from "@repo/types";
 
+import { REMATCH_REQUEST_TIMEOUT_MS } from "../config/rematch";
+
 const deserializeToken = Symbol("WarRoom");
 
 const EMPTY_TIMESTAMP: TGameTimeStamps = {
@@ -202,7 +204,10 @@ export class WarRoom implements ISerializable {
           return -3;
         }
 
-        if (this.#rematchRequest?.status === "rejected") {
+        if (
+          this.#rematchRequest?.status === "rejected" ||
+          this.#rematchRequest?.status === "cancelled"
+        ) {
           return -4;
         }
         const requestor = this.currentGame.getPlayer(requestorId);
@@ -215,6 +220,9 @@ export class WarRoom implements ISerializable {
           status: "pending",
           name: requestor.name,
           seed: requestor.seed,
+          expiresAt: new Date(
+            Date.now() + REMATCH_REQUEST_TIMEOUT_MS,
+          ).toISOString(),
         };
         return 1;
       }
@@ -246,6 +254,44 @@ export class WarRoom implements ISerializable {
       return -2;
     }
     return -1;
+  }
+
+  cancelRematch(requestorId: string) {
+    if (
+      this.currentGame &&
+      this.currentGame.getPhase() === EGamePhase.Finished
+    ) {
+      if (this.currentGame.hasPlayer(requestorId)) {
+        if (
+          !this.#rematchRequest ||
+          this.#rematchRequest.status !== "pending"
+        ) {
+          return -3;
+        }
+        if (this.#rematchRequest.requestorId !== requestorId) {
+          return -4;
+        }
+
+        this.#rematchRequest.status = "cancelled";
+        this.#rematchRequest.cancelledReason = "cancelled";
+        return 1;
+      }
+      return -2;
+    }
+    return -1;
+  }
+
+  expireRematch() {
+    if (
+      this.currentGame &&
+      this.currentGame.getPhase() === EGamePhase.Finished &&
+      this.#rematchRequest?.status === "pending"
+    ) {
+      this.#rematchRequest.status = "cancelled";
+      this.#rematchRequest.cancelledReason = "timeout";
+      return 1;
+    }
+    return -3;
   }
   acceptRematch(winnerId: string) {
     if (
