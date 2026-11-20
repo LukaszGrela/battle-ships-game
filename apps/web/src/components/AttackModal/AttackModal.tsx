@@ -88,7 +88,7 @@ export const AttackModal: FC<{
   result: TCellStatus | null;
   shipSize: number;
 }> = ({ open, onClose, result, shipSize, currentAttack }) => {
-  const sprite = DECOR_SPRITES["cannon"];
+  const cannonSprite = DECOR_SPRITES["cannon"];
   const resultSprite = useMemo(
     () =>
       result == undefined || result === 0
@@ -110,15 +110,17 @@ export const AttackModal: FC<{
     >
       <Title result={result} className={styles.title} attack={currentAttack} />
 
-      <div className={styles.body}>
-        {result == undefined ||
-          (!isDestroyedShipStatus(result) && (
-            <div
-              // className={styles.decor}
-              aria-hidden={true}
-              style={getSpriteStyle(sprite, 128)}
-            />
-          ))}
+      <div
+        className={styles.body}
+        data-side={currentAttack ? "attack" : "defend"}
+      >
+        {(result == undefined || !isDestroyedShipStatus(result)) && (
+          <div
+            className={styles.cannon}
+            aria-hidden={true}
+            style={getSpriteStyle(cannonSprite, 128)}
+          />
+        )}
 
         {result != null && !isDestroyedShipStatus(result) && resultSprite && (
           <div
