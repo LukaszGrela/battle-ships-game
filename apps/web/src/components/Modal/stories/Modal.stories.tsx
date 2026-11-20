@@ -6,6 +6,7 @@ import { Button } from "../../Button";
 import { Swords } from "../../icons";
 
 const meta = {
+  title: "components/Modal",
   component: Modal,
   tags: ["autodocs"],
   args: {

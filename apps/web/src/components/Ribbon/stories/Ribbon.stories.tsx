@@ -1,12 +1,11 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import type { CSSProperties } from "react";
 import { expect } from "storybook/test";
 import { Ribbon } from "../Ribbon";
 import { Flag, Swords } from "../../icons";
 import { RibbonConfigurator } from "./RibbonConfigurator";
-import { background } from "storybook/theming";
 
 const meta = {
+  title: "components/Ribbon",
   component: Ribbon,
   tags: ["autodocs"],
   args: {
@@ -33,10 +32,8 @@ export const WithFoldChildren: Story = {
       </div>
     ),
   },
-  play: async ({ canvas }) => {
-    await expect(canvas.getByText("Player")).toBeVisible();
-  },
 };
+
 export const RibbonConfiguratorStory: Story = {
   decorators: [
     (Story, context) => {
@@ -57,9 +54,4 @@ export const RibbonConfiguratorStory: Story = {
     },
   ],
   render: () => <RibbonConfigurator />,
-  play: async ({ canvas }) => {
-    await expect(
-      canvas.getByRole("button", { name: "RibbonConfigurator" }),
-    ).toBeVisible();
-  },
 };

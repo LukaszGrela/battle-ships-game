@@ -1,11 +1,12 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useState } from "react";
 import { expect, fn } from "storybook/test";
-import { RoomNameInput } from "./RoomNameInput";
+import { RoomNameInput } from "../RoomNameInput";
 
 const STATUSES = ["idle", "invalid", "valid", "taken", "pending"] as const;
 
 const meta = {
+  title: "components/RoomNameInput",
   component: RoomNameInput,
   tags: ["autodocs"],
   argTypes: {

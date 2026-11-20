@@ -3,6 +3,7 @@ import { expect } from 'storybook/test'
 import { DotLoader } from '../DotLoader'
 
 const meta = {
+  title: "components/DotLoader",
   component: DotLoader,
   tags: ['autodocs'],
 } satisfies Meta<typeof DotLoader>

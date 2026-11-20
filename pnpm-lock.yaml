@@ -97,9 +97,6 @@ importers:
       '@storybook/addon-a11y':
         specifier: 10.6.7
         version: 10.6.7(storybook@10.6.7(@types/react@19.2.18)(prettier@3.9.6)(react@19.2.8))
-      '@storybook/addon-backgrounds':
-        specifier: ^9.0.8
-        version: 9.0.8
       '@storybook/addon-docs':
         specifier: 10.6.7
         version: 10.6.7(@types/react-dom@19.2.5(@types/react@19.2.18))(@types/react@19.2.18)(storybook@10.6.7(@types/react@19.2.18)(prettier@3.9.6)(react@19.2.8))
@@ -1203,9 +1200,6 @@ packages:
     resolution: {integrity: sha512-ARd+bjfOYoICe00+svRgFsCVqV7RbN+wgi8yfRhk31kESR7NnTMBGiZD8vWv/r3xqul/Ddr1uR6mUK4lpH7sqw==}
     peerDependencies:
       storybook: ^10.6.7
-
-  '@storybook/addon-backgrounds@9.0.8':
-    resolution: {integrity: sha512-4Vvr4wYHtiZ8UVWdCahK0XEMU4zNgInnNcVQ31YkUg41MVSY+aoZqtNuxOuRbFzUtjL9/aVsbY0Sg9Lp1/EJ4g==}
 
   '@storybook/addon-docs@10.6.7':
     resolution: {integrity: sha512-R0SxB+sv99/V1H51JFh5CjiN5Ufpuh8Bho7iT8hhl1NMGLk76BBqq9l63XgCp4d+1k9mXz7BVu7zFLWdf+j/Rg==}
@@ -3937,8 +3931,6 @@ snapshots:
       '@storybook/global': 5.0.0
       axe-core: 4.14.1
       storybook: 10.6.7(@types/react@19.2.18)(prettier@3.9.6)(react@19.2.8)
-
-  '@storybook/addon-backgrounds@9.0.8': {}
 
   '@storybook/addon-docs@10.6.7(@types/react-dom@19.2.5(@types/react@19.2.18))(@types/react@19.2.18)(storybook@10.6.7(@types/react@19.2.18)(prettier@3.9.6)(react@19.2.8))':
     dependencies:
