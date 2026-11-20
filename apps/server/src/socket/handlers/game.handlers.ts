@@ -4,6 +4,7 @@ import { factoryAttackCoordinateHandler } from "./socket.handlers.impl/attack_co
 import { factoryPlaceShipsHandler } from "./socket.handlers.impl/place_ships";
 import {
   factoryAcceptRematchHandler,
+  factoryCancelRematchHandler,
   factoryRejectRematchHandler,
   factoryRequestRematchHandler,
 } from "./socket.handlers.impl/rematch";
@@ -17,4 +18,5 @@ export const registerGameHandlers = (
   socket.on("request_rematch", factoryRequestRematchHandler(io, socket));
   socket.on("accept_rematch", factoryAcceptRematchHandler(io, socket));
   socket.on("reject_rematch", factoryRejectRematchHandler(io, socket));
+  socket.on("cancel_rematch", factoryCancelRematchHandler(io, socket));
 };

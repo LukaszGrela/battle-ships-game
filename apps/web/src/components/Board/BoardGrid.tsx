@@ -12,8 +12,6 @@ export const BoardGrid: FC<TProps> = ({
   gridCellSize,
   ...interactiveProps
 }) => {
-  console.log("BoardGrid", board);
-  console.log("BoardGrid.interactiveProps", interactiveProps);
   return (
     <BoardGridContainer
       pad={pad}

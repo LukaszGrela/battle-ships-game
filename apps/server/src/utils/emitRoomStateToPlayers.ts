@@ -4,6 +4,7 @@ import ClientSessionServiceSingleton from "../services/client-session.service";
 import ActiveGameRegistrySingleton from "../services/active-game-registry";
 import { BotRunnerService } from "../bots";
 import { scheduleFinishedRoomCleanup } from "./roomLifecycle";
+import { ensureRematchTimeout } from "./rematchTimeout";
 import { recordFinishedGame } from "./recordFinishedGame";
 import { emitStats } from "./emitStats";
 
@@ -20,6 +21,18 @@ export function emitRoomStateToPlayers(
   console.log("[emitRoomStateToPlayers] playerId", playerId);
   console.log("[emitRoomStateToPlayers] warRoom", roomId, warRoom?.name);
   if (!warRoom) return;
+
+  const roomState = warRoom.getGameState(playerId);
+  const rematchRequest = roomState?.rematchRequest;
+
+  if (rematchRequest?.status === "pending") {
+    ensureRematchTimeout(
+      io,
+      roomId,
+      rematchRequest.requestorId,
+      rematchRequest.expiresAt,
+    );
+  }
 
   const player = warRoom.getPlayer(playerId);
   const opponent = warRoom.getOpponent(playerId);

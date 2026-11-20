@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import { MAX_COMBINATIONS } from "../utils/generateWarRoomName";
 import { WarRoomNameService } from "./WarRoomName.service";
 

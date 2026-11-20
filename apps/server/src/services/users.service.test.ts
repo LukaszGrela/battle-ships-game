@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import ActiveUsersServiceSingleton from "./users.service";
 import { ActiveUsersService } from "./users.service.impl";
 

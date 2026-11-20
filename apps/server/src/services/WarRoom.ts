@@ -1,4 +1,4 @@
-import { AVAILABLE_SHIPS, BattleShipsBoard } from "@repo/game-logic";
+import { AVAILABLE_SHIPS } from "@repo/game-logic";
 import { BattleShips } from "@repo/game-logic/src/game/BattleShips";
 import {
   EGamePhase,
@@ -13,6 +13,9 @@ import {
   TShip,
   TStringifiedEnum,
 } from "@repo/types";
+
+import { REMATCH_REQUEST_TIMEOUT_MS } from "../config/rematch";
+import { createId } from "../utils/createId";
 
 const deserializeToken = Symbol("WarRoom");
 
@@ -192,17 +195,40 @@ export class WarRoom implements ISerializable {
     return undefined;
   }
 
+  /**
+   * Enforces the deadline inside the state transition itself. A pending request
+   * can outlive `expiresAt` when the event loop is busy and the timeout callback
+   * has not run yet; accepting, rejecting or cancelling it after the deadline
+   * must behave exactly like an automatic timeout.
+   */
+  #expireOverdueRematch(): boolean {
+    if (this.#rematchRequest?.status !== "pending") return false;
+    if (!this.#rematchRequest.expiresAt) return false;
+
+    const expiresAt = Date.parse(this.#rematchRequest.expiresAt);
+    if (Number.isNaN(expiresAt) || expiresAt > Date.now()) return false;
+
+    this.#rematchRequest.status = "cancelled";
+    this.#rematchRequest.cancelledReason = "timeout";
+    return true;
+  }
+
   requestRematch(requestorId: string) {
     if (
       this.currentGame &&
       this.currentGame.getPhase() === EGamePhase.Finished
     ) {
       if (this.currentGame.hasPlayer(requestorId)) {
+        this.#expireOverdueRematch();
+
         if (this.#rematchRequest?.status === "pending") {
           return -3;
         }
 
-        if (this.#rematchRequest?.status === "rejected") {
+        if (
+          this.#rematchRequest?.status === "rejected" ||
+          this.#rematchRequest?.status === "cancelled"
+        ) {
           return -4;
         }
         const requestor = this.currentGame.getPlayer(requestorId);
@@ -211,10 +237,14 @@ export class WarRoom implements ISerializable {
         }
 
         this.#rematchRequest = {
+          requestId: createId(),
           requestorId,
           status: "pending",
           name: requestor.name,
           seed: requestor.seed,
+          expiresAt: new Date(
+            Date.now() + REMATCH_REQUEST_TIMEOUT_MS,
+          ).toISOString(),
         };
         return 1;
       }
@@ -229,6 +259,8 @@ export class WarRoom implements ISerializable {
       this.currentGame.getPhase() === EGamePhase.Finished
     ) {
       if (this.currentGame.hasPlayer(winnerId)) {
+        if (this.#expireOverdueRematch()) return -5;
+
         if (
           !this.#rematchRequest ||
           this.#rematchRequest.status !== "pending"
@@ -247,6 +279,46 @@ export class WarRoom implements ISerializable {
     }
     return -1;
   }
+
+  cancelRematch(requestorId: string) {
+    if (
+      this.currentGame &&
+      this.currentGame.getPhase() === EGamePhase.Finished
+    ) {
+      if (this.currentGame.hasPlayer(requestorId)) {
+        if (this.#expireOverdueRematch()) return -5;
+
+        if (
+          !this.#rematchRequest ||
+          this.#rematchRequest.status !== "pending"
+        ) {
+          return -3;
+        }
+        if (this.#rematchRequest.requestorId !== requestorId) {
+          return -4;
+        }
+
+        this.#rematchRequest.status = "cancelled";
+        this.#rematchRequest.cancelledReason = "cancelled";
+        return 1;
+      }
+      return -2;
+    }
+    return -1;
+  }
+
+  expireRematch() {
+    if (
+      this.currentGame &&
+      this.currentGame.getPhase() === EGamePhase.Finished &&
+      this.#rematchRequest?.status === "pending"
+    ) {
+      this.#rematchRequest.status = "cancelled";
+      this.#rematchRequest.cancelledReason = "timeout";
+      return 1;
+    }
+    return -3;
+  }
   acceptRematch(winnerId: string) {
     if (
       this.currentGame &&
@@ -255,6 +327,8 @@ export class WarRoom implements ISerializable {
       const winner = this.getPlayer(winnerId);
 
       if (winner) {
+        if (this.#expireOverdueRematch()) return -5;
+
         if (
           !this.#rematchRequest ||
           this.#rematchRequest.status !== "pending"

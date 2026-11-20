@@ -136,6 +136,21 @@ export const useSocketGameState = () => {
       setRematchRequest(request);
     };
 
+    const rematchCancelledHandler = (payload: {
+      requestorId: string;
+      status: "cancelled";
+      reason: "cancelled" | "timeout";
+    }) => {
+      const current = useGameStore.getState().rematchRequest;
+      if (!current || current.requestorId !== payload.requestorId) return;
+
+      setRematchRequest({
+        ...current,
+        status: "cancelled",
+        cancelledReason: payload.reason,
+      });
+    };
+
     socket.on("player_ready", playerReadyCallback);
     socket.on("player_left", playerLeftCallback);
 
@@ -143,6 +158,7 @@ export const useSocketGameState = () => {
     socket.on("welcome", onWelcome);
     socket.on("error", onError);
     socket.on("rematch_requested", opponentRequestRematchHandler);
+    socket.on("rematch_cancelled", rematchCancelledHandler);
 
     return () => {
       socket.off("game_updated", onUpdate);
@@ -151,6 +167,7 @@ export const useSocketGameState = () => {
       socket.off("player_ready", playerReadyCallback);
       socket.off("player_left", playerLeftCallback);
       socket.off("rematch_requested", opponentRequestRematchHandler);
+      socket.off("rematch_cancelled", rematchCancelledHandler);
     };
   }, [
     setAttackHistory,

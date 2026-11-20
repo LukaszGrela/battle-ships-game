@@ -25,6 +25,7 @@ export interface IClientToServerEvents {
     callback: (result: TAttackResult) => void,
   ) => void;
   request_rematch: () => void;
+  cancel_rematch: () => void;
   accept_rematch: () => void;
   reject_rematch: () => void;
   /**
@@ -129,6 +130,12 @@ export interface IServerToClientEvents {
     roomId: string;
     requestorId: string;
     status: "rejected";
+  }) => void;
+  rematch_cancelled: (payload: {
+    roomId: string;
+    requestorId: string;
+    status: "cancelled";
+    reason: "cancelled" | "timeout";
   }) => void;
   /**
    * Emited when known user connects and session object exists

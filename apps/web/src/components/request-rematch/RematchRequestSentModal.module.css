@@ -43,3 +43,24 @@
   content: "\201D";
   color: var(--accent);
 }
+
+.notice {
+  margin: 0;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  color: var(--text-soft);
+  text-wrap: balance;
+}
+
+.timer {
+  margin: 0.75rem 0 0;
+  font-size: 0.875rem;
+  color: var(--text-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+.actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 1rem;
+}

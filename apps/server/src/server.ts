@@ -16,6 +16,7 @@ import { getVersion } from "./utils/version";
 import { isProd } from "./utils/isProd";
 import { BotRunnerService as BotRunnerServiceSingleton } from "./bots";
 import { disposeRoomLifecycle } from "./utils/roomLifecycle";
+import { disposeRematchTimeouts } from "./utils/rematchTimeout";
 
 export interface IGameServerOptions {
   instrumentAdminUi?: boolean;
@@ -138,8 +139,10 @@ export function createGameServer({
 
       // Bots hold timers (unref'd, but they still mutate room state).
       BotRunnerServiceSingleton.getInstance().disposeAll();
-      // Finished-room TTL timers would otherwise fire against a closed io.
+      // Finished-room TTL and rematch timers would otherwise fire against a
+      // closed io.
       disposeRoomLifecycle();
+      disposeRematchTimeouts();
       detachBotRunner();
       liveIo = undefined as unknown as typeof io;
 
