@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import { IClientSession } from "@repo/types";
 import ClientSessionServiceSingleton from "./client-session.service";
 import { ClientSessionService } from "./client-session.service.impl";

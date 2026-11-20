@@ -113,6 +113,9 @@ export type TRoomIdentity = {
 } & TGameTimeStamps;
 
 export type TRematchRequest = {
+  /** Unique identity for this request, not just for its room or players. */
+  requestId: string;
+
   requestorId: TUserId;
 
   name: string;

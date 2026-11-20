@@ -50,6 +50,7 @@ import { RematchRequestSentModal } from "./RematchRequestSentModal";
 const createRequest = (
   overrides: Partial<TRematchRequest> = {},
 ): TRematchRequest => ({
+  requestId: "00000000-0000-4000-8000-000000000001",
   requestorId: "player-1",
   name: "Captain Black",
   seed: 42,
@@ -117,9 +118,7 @@ describe("RematchRequestSentModal", () => {
 
     expect(socketMock.emit).toHaveBeenCalledTimes(1);
     expect(socketMock.emit).toHaveBeenCalledWith("cancel_rematch");
-    expect(
-      screen.getByRole("button", { name: "Cancelling…" }),
-    ).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Cancelling…" })).toBeDisabled();
 
     fireEvent.click(screen.getByRole("button", { name: "Cancelling…" }));
 
@@ -138,9 +137,7 @@ describe("RematchRequestSentModal", () => {
     );
 
     expect(
-      screen.getByText(
-        "The rematch request timed out and was cancelled.",
-      ),
+      screen.getByText("The rematch request timed out and was cancelled."),
     ).toBeInTheDocument();
     expect(
       screen.getByText(
@@ -188,9 +185,7 @@ describe("RematchRequestSentModal", () => {
     );
 
     expect(
-      screen.getByText(
-        "The rematch request timed out and was cancelled.",
-      ),
+      screen.getByText("The rematch request timed out and was cancelled."),
     ).toBeInTheDocument();
     expect(
       screen.queryByRole("button", { name: "Cancel request" }),
@@ -214,7 +209,7 @@ describe("RematchRequestSentModal", () => {
   });
 
   it("shows a new pending request after a cancellation was dismissed", () => {
-    const { rerender } = render(
+    const { rerender, container } = render(
       <RematchRequestSentModal
         open
         request={createRequest({
@@ -230,7 +225,11 @@ describe("RematchRequestSentModal", () => {
     rerender(
       <RematchRequestSentModal
         open
-        request={createRequest({ requestorId: "player-2", seed: 77 })}
+        request={createRequest({
+          requestId: "00000000-0000-4000-8000-000000000002",
+          requestorId: "player-2",
+          seed: 77,
+        })}
       />,
     );
 
@@ -239,9 +238,7 @@ describe("RematchRequestSentModal", () => {
       screen.getByRole("button", { name: "Cancel request" }),
     ).toBeEnabled();
     expect(
-      screen.queryByText(
-        "The rematch request timed out and was cancelled.",
-      ),
+      screen.queryByText("The rematch request timed out and was cancelled."),
     ).not.toBeInTheDocument();
   });
 
@@ -249,9 +246,7 @@ describe("RematchRequestSentModal", () => {
     render(<RematchRequestSentModal open request={createRequest()} />);
 
     fireEvent.click(screen.getByRole("button", { name: "Cancel request" }));
-    expect(
-      screen.getByRole("button", { name: "Cancelling…" }),
-    ).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Cancelling…" })).toBeDisabled();
 
     const errorCall = socketMock.on.mock.calls.find(
       ([event]) => event === "error",
@@ -272,9 +267,7 @@ describe("RematchRequestSentModal", () => {
     render(<RematchRequestSentModal open request={createRequest()} />);
 
     fireEvent.click(screen.getByRole("button", { name: "Cancel request" }));
-    expect(
-      screen.getByRole("button", { name: "Cancelling…" }),
-    ).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Cancelling…" })).toBeDisabled();
 
     act(() => {
       vi.advanceTimersByTime(10_000);
@@ -291,14 +284,16 @@ describe("RematchRequestSentModal", () => {
     );
 
     fireEvent.click(screen.getByRole("button", { name: "Cancel request" }));
-    expect(
-      screen.getByRole("button", { name: "Cancelling…" }),
-    ).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Cancelling…" })).toBeDisabled();
 
     rerender(
       <RematchRequestSentModal
         open
-        request={createRequest({ requestorId: "player-2", seed: 77 })}
+        request={createRequest({
+          requestId: "00000000-0000-4000-8000-000000000002",
+          requestorId: "player-2",
+          seed: 77,
+        })}
       />,
     );
 
@@ -313,18 +308,12 @@ describe("RematchRequestSentModal", () => {
     );
 
     fireEvent.click(screen.getByRole("button", { name: "Cancel request" }));
-    expect(
-      screen.getByRole("button", { name: "Cancelling…" }),
-    ).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Cancelling…" })).toBeDisabled();
 
     // Socket broadcasts deserialize into a new object for the same request.
-    rerender(
-      <RematchRequestSentModal open request={createRequest()} />,
-    );
+    rerender(<RematchRequestSentModal open request={createRequest()} />);
 
-    expect(
-      screen.getByRole("button", { name: "Cancelling…" }),
-    ).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Cancelling…" })).toBeDisabled();
     expect(socketMock.emit).toHaveBeenCalledTimes(1);
   });
 

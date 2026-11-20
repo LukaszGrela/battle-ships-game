@@ -26,7 +26,6 @@ const GREETINGS = [
 
 export const Lobby: FC = () => {
   const isMobile = useMediaQuery("(max-width: 500px), (max-height: 500px)");
-  console.log("[Lobby] isMobile", isMobile);
 
   return (
     <AppLayout

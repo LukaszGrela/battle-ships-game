@@ -1,4 +1,4 @@
-import { AVAILABLE_SHIPS, BattleShipsBoard } from "@repo/game-logic";
+import { AVAILABLE_SHIPS } from "@repo/game-logic";
 import { BattleShips } from "@repo/game-logic/src/game/BattleShips";
 import {
   EGamePhase,
@@ -15,6 +15,7 @@ import {
 } from "@repo/types";
 
 import { REMATCH_REQUEST_TIMEOUT_MS } from "../config/rematch";
+import { createId } from "../utils/createId";
 
 const deserializeToken = Symbol("WarRoom");
 
@@ -236,6 +237,7 @@ export class WarRoom implements ISerializable {
         }
 
         this.#rematchRequest = {
+          requestId: createId(),
           requestorId,
           status: "pending",
           name: requestor.name,

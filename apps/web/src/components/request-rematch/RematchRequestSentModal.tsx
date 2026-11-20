@@ -29,16 +29,7 @@ const randomItem = (items: readonly string[]) =>
 
 const CANCEL_ACK_TIMEOUT_MS = 10_000;
 
-const getRequestKey = (request?: TRematchRequest) =>
-  request
-    ? JSON.stringify([
-        request.requestorId,
-        request.name,
-        request.seed,
-        request.status,
-        request.cancelledReason ?? null,
-      ])
-    : null;
+const getRequestKey = (request?: TRematchRequest) => request?.requestId ?? null;
 
 const getRemainingSeconds = (expiresAt?: string) => {
   if (!expiresAt) return null;

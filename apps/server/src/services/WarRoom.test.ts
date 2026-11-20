@@ -1,4 +1,4 @@
-import { expect, describe, it } from "vitest";
+import { expect, describe, it, vi } from "vitest";
 import { EGamePhase, IPlayer, TCellStatusShipId, TShip } from "@repo/types";
 import { WarRoom } from "./WarRoom";
 
@@ -47,6 +47,10 @@ const createExpiredRematchWarRoom = () => {
   return WarRoom.deserialize(JSON.stringify(serialized));
 };
 
+vi.mock("../utils/createId", () => ({
+  createId: vi.fn(() => "00000000-0000-4000-8000-000000000001"),
+}));
+
 describe("WarRoom", () => {
   describe("requestRematch", () => {
     it("rejects requests when the current game is not finished", () => {
@@ -71,6 +75,7 @@ describe("WarRoom", () => {
       expect(room.requestRematch("opponent")).toBe(1);
       expect(room.requestRematch("owner")).toBe(-3);
       expect(room.getGameState("owner")?.rematchRequest).toEqual({
+        requestId: "00000000-0000-4000-8000-000000000001",
         requestorId: "opponent",
         status: "pending",
         name: "opponent-name",
@@ -125,7 +130,9 @@ describe("WarRoom", () => {
       expect(room.requestRematch("opponent")).toBe(1);
 
       expect(room.rejectRematch("opponent")).toBe(-4);
-      expect(room.getGameState("owner")?.rematchRequest?.status).toBe("pending");
+      expect(room.getGameState("owner")?.rematchRequest?.status).toBe(
+        "pending",
+      );
     });
 
     it("marks a pending rematch request as rejected", () => {
@@ -134,6 +141,7 @@ describe("WarRoom", () => {
 
       expect(room.rejectRematch("owner")).toBe(1);
       expect(room.getGameState("owner")?.rematchRequest).toEqual({
+        requestId: "00000000-0000-4000-8000-000000000001",
         requestorId: "opponent",
         status: "rejected",
         name: "opponent-name",
@@ -218,6 +226,7 @@ describe("WarRoom", () => {
 
       expect(previousBattle.phase).toBe(EGamePhase.Finished);
       expect(previousBattle.rematchRequest).toEqual({
+        requestId: "00000000-0000-4000-8000-000000000001",
         requestorId: "owner",
         status: "accepted",
         name: "owner-name",
@@ -263,7 +272,9 @@ describe("WarRoom", () => {
       expect(room.requestRematch("opponent")).toBe(1);
 
       expect(room.cancelRematch("owner")).toBe(-4);
-      expect(room.getGameState("owner")?.rematchRequest?.status).toBe("pending");
+      expect(room.getGameState("owner")?.rematchRequest?.status).toBe(
+        "pending",
+      );
     });
 
     it("marks the request as cancelled and blocks another request", () => {
@@ -336,6 +347,7 @@ describe("WarRoom", () => {
       expect(restored.name).toBe(room.name);
       expect(restored.getPhase()).toBe(EGamePhase.Finished);
       expect(restored.getGameState("owner")?.rematchRequest).toEqual({
+        requestId: "00000000-0000-4000-8000-000000000001",
         requestorId: "opponent",
         status: "pending",
         name: "opponent-name",

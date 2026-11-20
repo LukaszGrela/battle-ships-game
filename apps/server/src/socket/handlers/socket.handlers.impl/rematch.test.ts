@@ -56,6 +56,10 @@ const createSessions = () => {
   sessionService.createSession("opponent", 2, "opponent-socket");
 };
 
+vi.mock("../../../utils/createId", () => ({
+  createId: vi.fn(() => "00000000-0000-4000-8000-000000000001"),
+}));
+
 describe("rematch handlers", () => {
   afterEach(() => {
     activeGames.listRooms().forEach(({ id }) => activeGames.deleteRoom(id));
@@ -72,6 +76,7 @@ describe("rematch handlers", () => {
 
     expect(room.getPhase()).toBe(EGamePhase.Finished);
     expect(room.getGameState("opponent")?.rematchRequest).toEqual({
+      requestId: "00000000-0000-4000-8000-000000000001",
       requestorId: "opponent",
       status: "pending",
       name: "opponent-name",
@@ -181,7 +186,9 @@ describe("rematch handlers", () => {
       const io = createIo();
       const socket = createSocket("opponent");
       factoryRequestRematchHandler(io, socket)();
-      expect(room.getGameState("owner")?.rematchRequest?.status).toBe("pending");
+      expect(room.getGameState("owner")?.rematchRequest?.status).toBe(
+        "pending",
+      );
 
       vi.advanceTimersByTime(60_000);
 
@@ -213,6 +220,7 @@ describe("rematch handlers", () => {
 
     expect(room.getPhase()).toBe(EGamePhase.Finished);
     expect(room.getGameState("owner")?.rematchRequest).toEqual({
+      requestId: "00000000-0000-4000-8000-000000000001",
       requestorId: "opponent",
       status: "rejected",
       name: "opponent-name",
