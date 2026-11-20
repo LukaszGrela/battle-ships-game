@@ -1,0 +1,375 @@
+.root {
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: minmax(0, 1fr);
+  font-family: inherit;
+  color: inherit;
+}
+
+@media (min-width: 960px) {
+  .root {
+    grid-template-columns: minmax(0, 1fr) 26rem;
+    align-items: start;
+  }
+}
+
+/* ── Podglądy ───────────────────────────────────────────────────────────── */
+
+.previewArea {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.preview {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 16rem;
+  padding: 4rem 2rem;
+  overflow: auto;
+  border: 1px dashed color-mix(in srgb, currentColor 25%, transparent);
+  border-radius: 0.75rem;
+  background-image:
+    linear-gradient(
+      45deg,
+      color-mix(in srgb, currentColor 6%, transparent) 25%,
+      transparent 25%,
+      transparent 75%,
+      color-mix(in srgb, currentColor 6%, transparent) 75%
+    ),
+    linear-gradient(
+      45deg,
+      color-mix(in srgb, currentColor 6%, transparent) 25%,
+      transparent 25%,
+      transparent 75%,
+      color-mix(in srgb, currentColor 6%, transparent) 75%
+    );
+  background-position: 0 0, 0.5rem 0.5rem;
+  background-size: 1rem 1rem;
+  /* Wstążka sama dokłada marginesy na wystające końcówki — tu dajemy tylko
+     trochę luzu, żeby widać było, co się dzieje poza panelem. */
+  outline: 1px solid color-mix(in srgb, currentColor 12%, transparent);
+  outline-offset: -1px;
+}
+
+.previewInner {
+  transition: opacity 0.15s ease-out;
+}
+
+/* ── Panel ──────────────────────────────────────────────────────────────── */
+
+.panel {
+  display: grid;
+  gap: 0.75rem;
+  align-content: start;
+  max-height: 46rem;
+  overflow: auto;
+  padding: 0.75rem;
+  border: 1px solid color-mix(in srgb, currentColor 18%, transparent);
+  border-radius: 0.75rem;
+  background: color-mix(in srgb, currentColor 4%, transparent);
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.toolbarSpacer {
+  flex: 1 1 auto;
+}
+
+.group {
+  border: 1px solid color-mix(in srgb, currentColor 14%, transparent);
+  border-radius: 0.5rem;
+  background: color-mix(in srgb, currentColor 3%, transparent);
+}
+
+/* `<details>` jako akordeon — bez JS-a, domyślnie otwarte. */
+.group > summary {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.5rem 0.625rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+  user-select: none;
+  list-style: none;
+}
+
+.group > summary::-webkit-details-marker {
+  display: none;
+}
+
+.group > summary::before {
+  content: "▸";
+  transition: transform 0.15s ease-out;
+}
+
+.group[open] > summary::before {
+  transform: rotate(90deg);
+}
+
+.groupBadge {
+  margin-left: auto;
+  padding: 0 0.375rem;
+  border-radius: 999px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  line-height: 1.4;
+  background: color-mix(in srgb, currentColor 14%, transparent);
+}
+
+.groupBody {
+  display: grid;
+  gap: 0.625rem;
+  padding: 0 0.625rem 0.75rem;
+}
+
+/* ── Pole ───────────────────────────────────────────────────────────────── */
+
+.field {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.fieldHead {
+  display: flex;
+  gap: 0.5rem;
+  align-items: baseline;
+  font-size: 0.75rem;
+}
+
+.fieldLabel {
+  font-weight: 500;
+}
+
+.fieldVar {
+  margin-left: auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.65rem;
+  opacity: 0.55;
+  white-space: nowrap;
+}
+
+.fieldControls {
+  display: flex;
+  gap: 0.375rem;
+  align-items: center;
+}
+
+.slider {
+  flex: 1 1 auto;
+  min-width: 0;
+  accent-color: #b83b2d;
+}
+
+.number {
+  flex: 0 0 4.5rem;
+  width: 4.5rem;
+  padding: 0.25rem 0.375rem;
+  border: 1px solid color-mix(in srgb, currentColor 22%, transparent);
+  border-radius: 0.375rem;
+  font: inherit;
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  color: inherit;
+  background: transparent;
+}
+
+.number:focus-visible,
+.text:focus-visible,
+.output:focus-visible {
+  outline: 2px solid #b83b2d;
+  outline-offset: 1px;
+}
+
+.unit {
+  font-size: 0.7rem;
+  opacity: 0.55;
+}
+
+.text {
+  width: 100%;
+  padding: 0.3125rem 0.4375rem;
+  border: 1px solid color-mix(in srgb, currentColor 22%, transparent);
+  border-radius: 0.375rem;
+  font: inherit;
+  font-size: 0.75rem;
+  color: inherit;
+  background: transparent;
+}
+
+.text::placeholder {
+  opacity: 0.5;
+}
+
+.colorRow {
+  display: flex;
+  gap: 0.375rem;
+  align-items: center;
+}
+
+.swatchButton {
+  flex: 0 0 1.75rem;
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0;
+  border: 1px solid color-mix(in srgb, currentColor 25%, transparent);
+  border-radius: 0.375rem;
+  background:
+    linear-gradient(45deg, transparent 45%, currentColor 45%, currentColor 55%, transparent 55%),
+    transparent;
+  cursor: pointer;
+  opacity: 0.7;
+}
+
+.swatch {
+  flex: 0 0 1.75rem;
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0.125rem;
+  border: 1px solid color-mix(in srgb, currentColor 22%, transparent);
+  border-radius: 0.375rem;
+  background: transparent;
+  cursor: pointer;
+}
+
+.swatch::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.swatch::-webkit-color-swatch {
+  border: none;
+  border-radius: 0.25rem;
+}
+
+.hint {
+  font-size: 0.65rem;
+  line-height: 1.35;
+  opacity: 0.55;
+}
+
+/* ── Przyciski ──────────────────────────────────────────────────────────── */
+
+.button {
+  display: inline-flex;
+  gap: 0.375rem;
+  align-items: center;
+  padding: 0.3125rem 0.625rem;
+  border: 1px solid color-mix(in srgb, currentColor 25%, transparent);
+  border-radius: 0.375rem;
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: inherit;
+  background: transparent;
+  cursor: pointer;
+  transition: background-color 0.15s ease-out, border-color 0.15s ease-out;
+}
+
+.button:hover {
+  background: color-mix(in srgb, currentColor 10%, transparent);
+}
+
+.button:focus-visible {
+  outline: 2px solid #b83b2d;
+  outline-offset: 1px;
+}
+
+.button[data-active="true"] {
+  border-color: #b83b2d;
+  background: color-mix(in srgb, #b83b2d 16%, transparent);
+}
+
+.buttonPrimary {
+  border-color: #b83b2d;
+  background: color-mix(in srgb, #b83b2d 22%, transparent);
+}
+
+.buttonPrimary[data-copied="true"],
+.sideCopyButton[data-copied="true"] {
+  border-color: #185f78;
+  background: color-mix(in srgb, #185f78 28%, transparent);
+}
+
+/* ── Lustro zakończeń ───────────────────────────────────────────────────── */
+
+/* Przycisk siedzi w `<summary>`, więc zdejmujemy z niego uppercase
+   i zmniejszamy, żeby nie rozpychał nagłówka grupy. */
+.sideCopyButton {
+  margin-left: auto;
+  padding: 0.1875rem 0.5rem;
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+/* Gdy obok jest licznik zmian, to on trzyma prawo — przycisk idzie tuż za nim. */
+.groupBadge + .sideCopyButton {
+  margin-left: 0;
+}
+
+.sideCopyButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.sideCopyButton:disabled:hover {
+  background: transparent;
+}
+
+/* ── Wyjście ────────────────────────────────────────────────────────────── */
+
+.outputSection {
+  display: grid;
+  gap: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid color-mix(in srgb, currentColor 14%, transparent);
+}
+
+.outputHead {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  align-items: center;
+}
+
+.outputTitle {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.output {
+  width: 100%;
+  min-height: 9rem;
+  max-height: 16rem;
+  padding: 0.5rem 0.625rem;
+  border: 1px solid color-mix(in srgb, currentColor 22%, transparent);
+  border-radius: 0.375rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.7rem;
+  line-height: 1.5;
+  tab-size: 2;
+  color: inherit;
+  background: color-mix(in srgb, currentColor 6%, transparent);
+  resize: vertical;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
