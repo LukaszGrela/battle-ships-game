@@ -72,9 +72,9 @@
 
   position: relative;
   background: var(--background);
-  min-width: var(--ribbon-min-width, 0rem);
-  max-width: var(--ribbon-max-width, 0rem);
-  min-height: var(--ribbon-min-height, 0rem);
+  min-width: var(--ribbon-min-width, unset);
+  max-width: var(--ribbon-max-width, unset);
+  min-height: var(--ribbon-min-height, unset);
 
   width: var(--ribbon-width, unset);
 
