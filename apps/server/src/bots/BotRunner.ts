@@ -1,9 +1,9 @@
-import { randomUUID } from "node:crypto";
 import type { IPlayer, TBotDifficulty } from "@repo/types";
 import { getShortPirateName } from "../utils/getPirateyName";
 import { BotPlayer, type IBotOptions } from "./BotPlayer";
 import { ProbabilityBrain } from "./ProbabilityBrain";
 import { WarRoom } from "../services/WarRoom";
+import { createId } from "../utils/createId";
 
 export interface TBotsConfig extends IBotOptions {
   difficulty: TBotDifficulty;
@@ -36,8 +36,7 @@ export const BOT_DIFFICULTIES: TBotDifficulty[] = ["easy", "medium", "hard"];
 
 /** Runtime guard for values coming from the socket layer. */
 export const isBotDifficulty = (value: unknown): value is TBotDifficulty =>
-  typeof value === "string" &&
-  (BOT_DIFFICULTIES as string[]).includes(value);
+  typeof value === "string" && (BOT_DIFFICULTIES as string[]).includes(value);
 
 /**
  * Never let an unvalidated value reach `DIFFICULTY_DELAYS[...]` – an unknown
@@ -94,7 +93,7 @@ export class BotRunner {
     }
 
     const safeDifficulty = normalizeBotDifficulty(difficulty);
-    const id = `${BOT_ID_PREFIX}${randomUUID()}`;
+    const id = `${BOT_ID_PREFIX}${createId()}`;
     const seed = Math.floor(Math.random() * 1_000_000_000);
     const player: IPlayer = {
       id,

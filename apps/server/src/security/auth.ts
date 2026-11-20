@@ -18,8 +18,9 @@
  */
 
 import { stableHash } from "@repo/game-logic";
-import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
+import { createHmac, timingSafeEqual } from "node:crypto";
 import type { Socket } from "socket.io";
+import { createId } from "../utils/createId";
 
 /** 30 days, renewed on every connect. */
 export const DEFAULT_SESSION_TTL_SECONDS = 30 * 24 * 60 * 60;
@@ -131,7 +132,7 @@ export function createSessionAuthMiddleware(
     const token = readToken(socket);
     const verified = token ? verifySession(token, secret) : null;
 
-    const playerId = verified?.playerId ?? randomUUID();
+    const playerId = verified?.playerId ?? createId();
     const seed = verified?.seed ?? stableHash(playerId);
     const now = Math.floor(Date.now() / 1000);
     const session: ISessionPayload = verified ?? {
