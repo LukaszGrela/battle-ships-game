@@ -194,12 +194,32 @@ export class WarRoom implements ISerializable {
     return undefined;
   }
 
+  /**
+   * Enforces the deadline inside the state transition itself. A pending request
+   * can outlive `expiresAt` when the event loop is busy and the timeout callback
+   * has not run yet; accepting, rejecting or cancelling it after the deadline
+   * must behave exactly like an automatic timeout.
+   */
+  #expireOverdueRematch(): boolean {
+    if (this.#rematchRequest?.status !== "pending") return false;
+    if (!this.#rematchRequest.expiresAt) return false;
+
+    const expiresAt = Date.parse(this.#rematchRequest.expiresAt);
+    if (Number.isNaN(expiresAt) || expiresAt > Date.now()) return false;
+
+    this.#rematchRequest.status = "cancelled";
+    this.#rematchRequest.cancelledReason = "timeout";
+    return true;
+  }
+
   requestRematch(requestorId: string) {
     if (
       this.currentGame &&
       this.currentGame.getPhase() === EGamePhase.Finished
     ) {
       if (this.currentGame.hasPlayer(requestorId)) {
+        this.#expireOverdueRematch();
+
         if (this.#rematchRequest?.status === "pending") {
           return -3;
         }
@@ -237,6 +257,8 @@ export class WarRoom implements ISerializable {
       this.currentGame.getPhase() === EGamePhase.Finished
     ) {
       if (this.currentGame.hasPlayer(winnerId)) {
+        if (this.#expireOverdueRematch()) return -5;
+
         if (
           !this.#rematchRequest ||
           this.#rematchRequest.status !== "pending"
@@ -262,6 +284,8 @@ export class WarRoom implements ISerializable {
       this.currentGame.getPhase() === EGamePhase.Finished
     ) {
       if (this.currentGame.hasPlayer(requestorId)) {
+        if (this.#expireOverdueRematch()) return -5;
+
         if (
           !this.#rematchRequest ||
           this.#rematchRequest.status !== "pending"
@@ -301,6 +325,8 @@ export class WarRoom implements ISerializable {
       const winner = this.getPlayer(winnerId);
 
       if (winner) {
+        if (this.#expireOverdueRematch()) return -5;
+
         if (
           !this.#rematchRequest ||
           this.#rematchRequest.status !== "pending"

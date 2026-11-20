@@ -35,6 +35,18 @@ const createFinishedWarRoom = () => {
   return room;
 };
 
+const createExpiredRematchWarRoom = () => {
+  const room = createFinishedWarRoom();
+  expect(room.requestRematch("opponent")).toBe(1);
+
+  const serialized = JSON.parse(room.serialize());
+  serialized.rematchRequest.expiresAt = new Date(
+    Date.now() - 1_000,
+  ).toISOString();
+
+  return WarRoom.deserialize(JSON.stringify(serialized));
+};
+
 describe("WarRoom", () => {
   describe("requestRematch", () => {
     it("rejects requests when the current game is not finished", () => {
@@ -77,6 +89,17 @@ describe("WarRoom", () => {
 
       expect(restored.requestRematch("owner")).toBe(-4);
     });
+
+    it("treats an overdue pending request as timed out and blocks a new one", () => {
+      const room = createExpiredRematchWarRoom();
+
+      expect(room.requestRematch("owner")).toBe(-4);
+      expect(room.getGameState("owner")?.rematchRequest).toMatchObject({
+        requestorId: "opponent",
+        status: "cancelled",
+        cancelledReason: "timeout",
+      });
+    });
   });
 
   describe("rejectRematch", () => {
@@ -118,6 +141,17 @@ describe("WarRoom", () => {
         expiresAt: expect.any(String),
       });
       expect(room.rejectRematch("owner")).toBe(-3);
+    });
+
+    it("does not reject an expired request after its deadline", () => {
+      const room = createExpiredRematchWarRoom();
+
+      expect(room.rejectRematch("owner")).toBe(-5);
+      expect(room.getGameState("owner")?.rematchRequest).toMatchObject({
+        requestorId: "opponent",
+        status: "cancelled",
+        cancelledReason: "timeout",
+      });
     });
   });
 
@@ -192,6 +226,18 @@ describe("WarRoom", () => {
       });
       expect(serialized.rematchRequest).toBeUndefined();
     });
+
+    it("does not accept a request after its deadline even if the timer callback has not run", () => {
+      const room = createExpiredRematchWarRoom();
+
+      expect(room.acceptRematch("owner")).toBe(-5);
+      expect(room.getPhase()).toBe(EGamePhase.Finished);
+      expect(room.getGameState("owner")?.rematchRequest).toMatchObject({
+        requestorId: "opponent",
+        status: "cancelled",
+        cancelledReason: "timeout",
+      });
+    });
   });
 
   describe("cancelRematch", () => {
@@ -233,6 +279,17 @@ describe("WarRoom", () => {
       expect(room.cancelRematch("opponent")).toBe(-3);
       expect(room.requestRematch("owner")).toBe(-4);
       expect(room.requestRematch("opponent")).toBe(-4);
+    });
+
+    it("does not let a late cancel overwrite an expired request", () => {
+      const room = createExpiredRematchWarRoom();
+
+      expect(room.cancelRematch("opponent")).toBe(-5);
+      expect(room.getGameState("owner")?.rematchRequest).toMatchObject({
+        requestorId: "opponent",
+        status: "cancelled",
+        cancelledReason: "timeout",
+      });
     });
   });
 

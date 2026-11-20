@@ -3,6 +3,7 @@ import { Server, Socket } from "socket.io";
 import ClientSessionServiceSingleton from "../../../services/client-session.service";
 import { emitRoomStateToPlayers } from "../../../utils/emitRoomStateToPlayers";
 import ActiveGameRegistrySingleton from "../../../services/active-game-registry";
+import type { WarRoom } from "../../../services/WarRoom";
 import { getSession } from "../../../security/auth";
 import {
   cancelRematchTimeout,
@@ -36,6 +37,25 @@ const warRoomFinder = (
   return warRoom;
 };
 
+/**
+ * A late accept/reject/cancel may itself discover that the deadline passed
+ * before the timeout callback ran. Broadcast the same cancellation the timer
+ * would have produced and drop the now-redundant timer.
+ */
+const notifyOverdueRematch = (
+  io: Server<IClientToServerEvents, IServerToClientEvents>,
+  warRoom: WarRoom,
+  clientId: string,
+) => {
+  const request = warRoom.getGameState(clientId)?.rematchRequest;
+  if (request?.status !== "cancelled" || request.cancelledReason !== "timeout") {
+    return;
+  }
+
+  cancelRematchTimeout(warRoom.id);
+  notifyRematchCancelled(io, warRoom.id, request.requestorId, "timeout");
+};
+
 export const factoryRequestRematchHandler = (
   io: Server<IClientToServerEvents, IServerToClientEvents>,
   socket: Socket<IClientToServerEvents, IServerToClientEvents>,
@@ -45,9 +65,13 @@ export const factoryRequestRematchHandler = (
 
     const warRoom = warRoomFinder(socket, clientId);
     if (warRoom) {
+      const previousRequest = warRoom.getGameState(clientId)?.rematchRequest;
       const rematchResult = warRoom.requestRematch(clientId);
 
       if (rematchResult < 1) {
+        if (previousRequest?.status === "pending") {
+          notifyOverdueRematch(io, warRoom, clientId);
+        }
         console.log(
           "[factoryRequestRematchHandler] Failed to request rematch",
           rematchResult,
@@ -93,6 +117,9 @@ export const factoryAcceptRematchHandler = (
           "[factoryAcceptRematchHandler] Failed to accept rematch",
           acceptStatus,
         );
+        if (acceptStatus === -5) {
+          notifyOverdueRematch(io, warRoom, clientId);
+        }
         socket.emit("error", "Rematch cannot be accepted");
         return;
       }
@@ -141,6 +168,9 @@ export const factoryRejectRematchHandler = (
           "[factoryRejectRematchHandler] Failed to reject rematch",
           rejectResult,
         );
+        if (rejectResult === -5) {
+          notifyOverdueRematch(io, warRoom, clientId);
+        }
         socket.emit("error", "Rematch cannot be rejected");
         return;
       }
@@ -183,6 +213,9 @@ export const factoryCancelRematchHandler = (
           "[factoryCancelRematchHandler] Failed to cancel rematch",
           cancelResult,
         );
+        if (cancelResult === -5) {
+          notifyOverdueRematch(io, warRoom, clientId);
+        }
         socket.emit("error", "Rematch cannot be cancelled");
         return;
       }

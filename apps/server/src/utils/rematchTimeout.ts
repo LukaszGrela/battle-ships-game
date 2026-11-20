@@ -36,7 +36,14 @@ export const scheduleRematchTimeout = (
     const warRoom = ActiveGameRegistrySingleton.getInstance().getRoom(roomId);
     if (!warRoom) return;
 
-    if (warRoom.expireRematch() < 1) return;
+    // A late accept/reject/cancel may have already marked the request as timed
+    // out. In that case `expireRematch()` returns -3, but both players still
+    // need the cancellation notification.
+    const request = warRoom.getGameState(requestorId)?.rematchRequest;
+    const alreadyTimedOut =
+      request?.status === "cancelled" && request.cancelledReason === "timeout";
+
+    if (warRoom.expireRematch() < 1 && !alreadyTimedOut) return;
 
     notifyRematchCancelled(io, roomId, requestorId, "timeout");
   }, timeoutMs);
@@ -64,6 +71,18 @@ export const ensureRematchTimeout = (
 
   scheduleRematchTimeout(io, roomId, requestorId, remaining);
 };
+
+/** Server shutdown: drop every pending rematch timer. */
+export const disposeRematchTimeouts = (): void => {
+  for (const timer of pendingRematchTimeouts.values()) {
+    clearTimeout(timer);
+  }
+  pendingRematchTimeouts.clear();
+};
+
+/** Number of rooms with a pending rematch timer (tests / diagnostics). */
+export const pendingRematchTimeoutCount = (): number =>
+  pendingRematchTimeouts.size;
 
 /** Emits `rematch_cancelled` to both human players and refreshes room state. */
 export const notifyRematchCancelled = (

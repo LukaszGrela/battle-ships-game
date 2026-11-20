@@ -10,6 +10,7 @@ import { BotRunnerService } from "../bots";
 import { storeGameId } from "./storeGameId";
 import { emitStats } from "./emitStats";
 import { recordFinishedGame } from "./recordFinishedGame";
+import { cancelRematchTimeout } from "./rematchTimeout";
 
 /** A finished room is kept alive for a possible rematch, but not forever. */
 export const FINISHED_ROOM_TTL_MS = 5 * 60 * 1000;
@@ -20,7 +21,7 @@ const pendingFinishedCleanups = new Map<string, NodeJS.Timeout>();
  * Single teardown path for a room that will never be played again.
  *
  * Order matters:
- *  1. cancel the finished-room TTL timer (no double teardown),
+ *  1. cancel the finished-room TTL and rematch timers (no work after teardown),
  *  2. dispose the bot – it holds timers and a reference to the room,
  *  3. delete the room from the registry,
  *  4. release the room name only after the room is really gone,
@@ -36,6 +37,7 @@ export const closeGameRoom = (
   reason = "unknown",
 ): boolean => {
   cancelFinishedRoomCleanup(roomId);
+  cancelRematchTimeout(roomId);
 
   const registry = ActiveGameRegistrySingleton.getInstance();
   const warRoom = registry.getRoom(roomId);
