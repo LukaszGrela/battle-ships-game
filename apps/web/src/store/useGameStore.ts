@@ -140,7 +140,7 @@ export const useSocketGameState = () => {
       status: "cancelled";
       reason: "cancelled" | "timeout";
     }) => {
-      const current = useGameStore.getState().rematchRequest;
+      const current = useGameStore.getState().revengeRequest;
       if (!current || current.requestorId !== payload.requestorId) return;
 
       setRematchRequest({

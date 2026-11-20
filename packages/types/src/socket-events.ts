@@ -124,7 +124,7 @@ export interface IServerToClientEvents {
    */
   server_stats: (stats: TStats) => void;
 
-  rematch_requested: (payload: Omit<TRematchRequest, "requestId">) => void;
+  rematch_requested: (payload: TRematchRequest) => void;
   rematch_accepted: (payload: { roomId: string; status: "accepted" }) => void;
   rematch_rejected: (payload: {
     roomId: string;

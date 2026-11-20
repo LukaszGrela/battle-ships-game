@@ -95,10 +95,12 @@ describe("rematch handlers", () => {
       }),
     );
     expect(io._toSpy).toHaveBeenCalledWith("rematch_requested", {
+      requestId: "00000000-0000-4000-8000-000000000001",
       requestorId: "opponent",
       status: "pending",
       name: "opponent-name",
       seed: 80,
+      expiresAt: expect.any(String),
     });
   });
 

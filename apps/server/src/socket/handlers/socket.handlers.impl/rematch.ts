@@ -70,6 +70,10 @@ export const factoryRequestRematchHandler = (
     if (warRoom) {
       const previousRequest = warRoom.getGameState(clientId)?.rematchRequest;
       const rematchResult = warRoom.requestRematch(clientId);
+      const createdRequest =
+        rematchResult > 0
+          ? warRoom.getGameState(clientId)?.rematchRequest
+          : undefined;
 
       if (rematchResult < 1) {
         if (previousRequest?.status === "pending") {
@@ -92,12 +96,14 @@ export const factoryRequestRematchHandler = (
       if (otherPlayer) {
         const sessionService = ClientSessionServiceSingleton.getInstance();
         const otherPlayerSession = sessionService.readSession(otherPlayer.id);
-        if (otherPlayerSession) {
+        if (otherPlayerSession && createdRequest) {
           io.to(otherPlayerSession.socketId).emit("rematch_requested", {
+            requestId: createdRequest.requestId,
             requestorId: clientId,
             status: "pending",
             name: requestor?.name ?? "",
             seed: requestor?.seed ?? 0,
+            expiresAt: createdRequest.expiresAt,
           });
         }
       }
