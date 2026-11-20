@@ -29,7 +29,6 @@ export const Cell: FC<TCell> = ({
   frameIndex = 0,
   ...interactiveProps
 }) => {
-
   const Tag = interactiveProps.isInteractive ? "button" : "div";
   const handleClick = useCallback(
     (e: MouseEvent) => {

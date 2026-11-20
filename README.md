@@ -8,8 +8,6 @@ A one-on-one battle-ships game built as a TypeScript monorepo with a Socket.IO g
 
 [Screenshots](#screenshots)
 
-
-
 ## Repository overview
 
 The monorepo is organized as follows:

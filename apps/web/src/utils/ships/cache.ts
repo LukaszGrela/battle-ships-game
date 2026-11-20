@@ -16,6 +16,7 @@ export function loadImage(src: string): Promise<HTMLImageElement> {
 }
 
 // np. /assets/ships/ship-3.png dla trzymasztowca
-export const shipSrc = (length: number) => `/assets/ships/ship-64-${length}.png`;
+export const shipSrc = (length: number) =>
+  `/assets/ships/ship-64-${length}.png`;
 export const shipDestroyedSrc = (length: number) =>
   `/assets/ships/ship-64-${length}-destroyed.png`;

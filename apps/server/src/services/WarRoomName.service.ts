@@ -1,4 +1,7 @@
-import { generateWarRoomName, MAX_COMBINATIONS } from "../utils/generateWarRoomName";
+import {
+  generateWarRoomName,
+  MAX_COMBINATIONS,
+} from "../utils/generateWarRoomName";
 
 export class WarRoomNameService {
   private activeRooms = new Set<string>();
@@ -29,6 +32,5 @@ export class WarRoomNameService {
     this.activeRooms.delete(name);
   }
 }
-
 
 export const warRoomNames = new WarRoomNameService();

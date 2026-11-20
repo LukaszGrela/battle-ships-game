@@ -13,9 +13,7 @@ import type {
  *  - 1000+id  -> ship `id` destroyed
  */
 export type TAttackOutcome =
-  | TCellStatusMiss
-  | TCellStatusShipHit
-  | TCellStatusShipDestroyed;
+  TCellStatusMiss | TCellStatusShipHit | TCellStatusShipDestroyed;
 
 /**
  * Pure decision logic. Knows nothing about sockets, rooms or serialization.

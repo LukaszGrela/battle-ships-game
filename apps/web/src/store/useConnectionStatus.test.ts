@@ -24,7 +24,10 @@ vi.mock("../socket", () => ({
   socket: socketMock,
 }));
 
-import { useConnectionStatus, useSocketConnection } from "./useConnectionStatus";
+import {
+  useConnectionStatus,
+  useSocketConnection,
+} from "./useConnectionStatus";
 
 describe("useConnectionStatus", () => {
   afterEach(() => {
@@ -41,7 +44,10 @@ describe("useConnectionStatus", () => {
 
     expect(useConnectionStatus.getState().connected).toBe(true);
     expect(socketMock.on).toHaveBeenCalledWith("connect", expect.any(Function));
-    expect(socketMock.on).toHaveBeenCalledWith("disconnect", expect.any(Function));
+    expect(socketMock.on).toHaveBeenCalledWith(
+      "disconnect",
+      expect.any(Function),
+    );
     expect(socketMock.on).toHaveBeenCalledWith(
       "session_created",
       expect.any(Function),
@@ -88,11 +94,15 @@ describe("useConnectionStatus", () => {
     act(() => {
       listeners.session_created?.(createdSession);
     });
-    expect(useConnectionStatus.getState().clientSession).toEqual(createdSession);
+    expect(useConnectionStatus.getState().clientSession).toEqual(
+      createdSession,
+    );
 
     act(() => {
       listeners.session_restored?.(restoredSession);
     });
-    expect(useConnectionStatus.getState().clientSession).toEqual(restoredSession);
+    expect(useConnectionStatus.getState().clientSession).toEqual(
+      restoredSession,
+    );
   });
 });

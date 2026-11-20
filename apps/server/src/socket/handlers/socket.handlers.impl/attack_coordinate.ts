@@ -28,7 +28,7 @@ export const factoryAttackCoordinateHandler = (
     const session = ClientSessionServiceSingleton.getInstance();
 
     const clientId = getSession(socket).playerId;
-    
+
     const clientSession = session.readSession(clientId);
     if (!clientSession || !clientSession.gameId) {
       dataTampered(io, socket);

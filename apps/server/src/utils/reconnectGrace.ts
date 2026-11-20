@@ -7,10 +7,7 @@ import {
 import ClientSessionServiceSingleton from "../services/client-session.service";
 import { emitRoomStateToPlayers } from "./emitRoomStateToPlayers";
 import ActiveGameRegistrySingleton from "../services/active-game-registry";
-import {
-  closeGameRoom,
-  scheduleFinishedRoomCleanup,
-} from "./roomLifecycle";
+import { closeGameRoom, scheduleFinishedRoomCleanup } from "./roomLifecycle";
 
 export const DEFAULT_RECONNECT_TIMEOUT_MS = 60_000;
 

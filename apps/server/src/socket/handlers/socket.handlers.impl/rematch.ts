@@ -48,7 +48,10 @@ const notifyOverdueRematch = (
   clientId: string,
 ) => {
   const request = warRoom.getGameState(clientId)?.rematchRequest;
-  if (request?.status !== "cancelled" || request.cancelledReason !== "timeout") {
+  if (
+    request?.status !== "cancelled" ||
+    request.cancelledReason !== "timeout"
+  ) {
     return;
   }
 

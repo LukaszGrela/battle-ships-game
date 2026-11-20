@@ -72,7 +72,9 @@ describe("ActiveGameRegistry", () => {
       expect(
         registry.findFinishedRoomForPlayer("waiting-player"),
       ).toBeUndefined();
-      expect(registry.findFinishedRoomForPlayer("unknown-player")).toBeUndefined();
+      expect(
+        registry.findFinishedRoomForPlayer("unknown-player"),
+      ).toBeUndefined();
     });
 
     it("returns the first matching finished room when a player has multiple", () => {

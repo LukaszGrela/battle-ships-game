@@ -22,18 +22,18 @@ export const classNamesToCssSelector = (
 ): string | undefined => {
   if (classes.length === 0) return undefined;
 
-  let out = '';
+  let out = "";
 
   for (let i = 0; i < classes.length; i++) {
     const c = classes[i];
     // eslint-disable-next-line no-extra-boolean-cast
     if (Boolean(c)) {
       if (i > 0) {
-        out += '.';
+        out += ".";
       }
       out += c;
     }
   }
 
-  return out.length > 0 ? '.' + out : undefined;
+  return out.length > 0 ? "." + out : undefined;
 };

@@ -209,7 +209,7 @@ describe("RematchRequestSentModal", () => {
   });
 
   it("shows a new pending request after a cancellation was dismissed", () => {
-    const { rerender, container } = render(
+    const { rerender } = render(
       <RematchRequestSentModal
         open
         request={createRequest({

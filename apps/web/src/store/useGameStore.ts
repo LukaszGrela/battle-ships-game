@@ -95,7 +95,6 @@ export const useSocketGameState = () => {
   } = useGameStore();
   useEffect(() => {
     function onUpdate(state: TGameState | null) {
-
       setGameState(state);
       if (state === null) {
         setSelfId(null);

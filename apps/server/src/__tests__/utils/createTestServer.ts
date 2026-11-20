@@ -142,7 +142,9 @@ export function waitForConnectError(client: ClientSocket): Promise<Error> {
   return new Promise((resolve, reject) => {
     client.once("connect_error", (error) => resolve(error));
     client.once("connect", () =>
-      reject(new Error("expected the handshake to be rejected, but it connected")),
+      reject(
+        new Error("expected the handshake to be rejected, but it connected"),
+      ),
     );
   });
 }

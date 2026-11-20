@@ -259,7 +259,10 @@ describe("automatic opponent – end to end", () => {
     expect(bot!.id.startsWith(BOT_ID_PREFIX)).toBe(true);
     expect(isBotPlayerId(bot!.id)).toBe(true);
     expect(bot!.seed).toBeTypeOf("number");
-    expect(room.getPlayer(bot!.id)).toMatchObject({ id: bot!.id, botLevel: "hard" });
+    expect(room.getPlayer(bot!.id)).toMatchObject({
+      id: bot!.id,
+      botLevel: "hard",
+    });
 
     // A second call in the same room must not seat another bot.
     expect(runner.spawnBot(room.id)?.id).toBe(bot!.id);

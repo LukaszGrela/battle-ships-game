@@ -30,7 +30,7 @@ const normalizeQuery = (query: string): string => {
         ? `[useMediaQuery] Za dużo nawiasów zamykających w zapytaniu: ${JSON.stringify(query)}. ` +
             "Zapytanie nie zostało poprawione — napraw literówkę w miejscu wywołania."
         : `[useMediaQuery] Brak nawiasu zamykającego w zapytaniu: ${JSON.stringify(query)}. ` +
-            `Użyto: ${JSON.stringify(fixed)}. Popraw literówkę w miejscu wywołania.`
+            `Użyto: ${JSON.stringify(fixed)}. Popraw literówkę w miejscu wywołania.`,
     );
   }
 
@@ -46,12 +46,12 @@ export const useMediaQuery = (query: string, defaultValue = false): boolean => {
       media.addEventListener("change", onStoreChange);
       return () => media.removeEventListener("change", onStoreChange);
     },
-    [normalizedQuery]
+    [normalizedQuery],
   );
 
   const getSnapshot = useCallback(
     () => window.matchMedia(normalizedQuery).matches,
-    [normalizedQuery]
+    [normalizedQuery],
   );
 
   return useSyncExternalStore(subscribe, getSnapshot, () => defaultValue);

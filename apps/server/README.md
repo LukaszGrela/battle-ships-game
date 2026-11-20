@@ -2,9 +2,6 @@
 
 This package contains the authoritative multiplayer game server for the Battleship project. It manages client sessions, room lifecycle, reconnect behavior, and the Socket.IO event flow used by the web client.
 
-
-
-
 ## Quick start
 
 To run only the server:
@@ -12,6 +9,7 @@ To run only the server:
 ```sh
 pnpm --filter @repo/server dev
 ```
+
 ## Environment variables
 
 The server expects a few environment variables when it starts (`via process.env.*`). In local development, you can place them in an `.env` file inside `apps/server`.

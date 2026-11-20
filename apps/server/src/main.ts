@@ -58,7 +58,11 @@ httpServer.listen(PORT, "0.0.0.0", async () => {
       res.writeHead(200, { "Content-Type": "application/json" });
       const version = await getVersion();
       return res.end(
-        JSON.stringify({ status: "ok", sockets: io.engine.clientsCount, version }),
+        JSON.stringify({
+          status: "ok",
+          sockets: io.engine.clientsCount,
+          version,
+        }),
       );
     }
     res.writeHead(404).end();

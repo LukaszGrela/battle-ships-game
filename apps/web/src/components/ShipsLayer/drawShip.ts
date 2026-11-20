@@ -34,17 +34,17 @@ export function drawShip(
       return;
     }
 
-  // ── H: obrót -90° wokół rufy ─────────────────────
+    // ── H: obrót -90° wokół rufy ─────────────────────
     ctx.save();
     ctx.translate(px, py);
     ctx.rotate(-Math.PI / 2);
 
-  // pas 3-kolumnowy: lx = -2*cell
+    // pas 3-kolumnowy: lx = -2*cell
     const lx = -((cols + 1) / 2) * cell;
     ctx.drawImage(img, src.sx, src.sy, src.sw, src.sh, lx, 0, dw, dh);
     ctx.restore();
   };
-  
+
   if (ship.type === "pending" && ship.placed && ship.selected) {
     // cień liczony z kanału alfa PNG → dokładnie kształt statku
     ctx.save();

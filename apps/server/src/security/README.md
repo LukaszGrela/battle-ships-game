@@ -30,34 +30,34 @@ starting point, not a measured value.
 A socket flood can arrive in four different ways, and each one needs its own
 guard. They are listed in the order a connection passes through them:
 
-| # | Layer | Hook | What it stops |
-|---|---|---|---|
-| 1 | Handshake | engine.io `allowRequest` | Connection floods, cross-site WS hijacking, idle-socket floods |
-| 2 | Authentication | `io.use` | Forged / stolen identities, seat hijacking |
-| 3 | Per-packet | `socket.use` | Event floods, single-event spam, unknown-event probes |
-| 4 | Payload | `maxHttpBufferSize`, no deflate | Memory bombs, zip bombs |
+| #   | Layer          | Hook                            | What it stops                                                  |
+| --- | -------------- | ------------------------------- | -------------------------------------------------------------- |
+| 1   | Handshake      | engine.io `allowRequest`        | Connection floods, cross-site WS hijacking, idle-socket floods |
+| 2   | Authentication | `io.use`                        | Forged / stolen identities, seat hijacking                     |
+| 3   | Per-packet     | `socket.use`                    | Event floods, single-event spam, unknown-event probes          |
+| 4   | Payload        | `maxHttpBufferSize`, no deflate | Memory bombs, zip bombs                                        |
 
 Two traps that are easy to get wrong:
 
 - **`cors` does not protect a WebSocket.** CORS is a browser rule; a `ws://`
   client ignores it. The only hook that sees the raw upgrade is `allowRequest`.
 - **`socket.onAny` cannot block a packet.** By the time it fires, the handler
-  has already run. `socket.use` is the one that can drop it — by *not* calling
+  has already run. `socket.use` is the one that can drop it — by _not_ calling
   `next()`.
 
 ---
 
 ## Files
 
-| File | Role |
-|---|---|
-| `security/guards.ts` | `createSocketSecurity()` → `{ engineOptions, install, dispose, stats }`. Wires everything together. |
-| `security/auth.ts` | HMAC session tokens, `createSessionAuthMiddleware`, `getSession`, `takeIssuedToken`. |
-| `security/rateLimit.ts` | `TokenBucket`, `SocketRateLimiter`, `IpLimiter`. All in-memory. |
-| `security/__tests__/security.test.ts` | Vitest specs (written, never run). |
-| `server.ts` | Creates the server, fails fast, installs the security layer. |
-| `socket/index.ts` | The `connection` handler — reads identity from `socket.data`, not from the handshake. |
-| `../../socket/getClientId.ts` (client) | Stores/reads the session token. |
+| File                                   | Role                                                                                                |
+| -------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `security/guards.ts`                   | `createSocketSecurity()` → `{ engineOptions, install, dispose, stats }`. Wires everything together. |
+| `security/auth.ts`                     | HMAC session tokens, `createSessionAuthMiddleware`, `getSession`, `takeIssuedToken`.                |
+| `security/rateLimit.ts`                | `TokenBucket`, `SocketRateLimiter`, `IpLimiter`. All in-memory.                                     |
+| `security/__tests__/security.test.ts`  | Vitest specs (written, never run).                                                                  |
+| `server.ts`                            | Creates the server, fails fast, installs the security layer.                                        |
+| `socket/index.ts`                      | The `connection` handler — reads identity from `socket.data`, not from the handshake.               |
+| `../../socket/getClientId.ts` (client) | Stores/reads the session token.                                                                     |
 
 The split in `guards.ts` is deliberate: `maxHttpBufferSize`,
 `perMessageDeflate`, `transports` and `allowRequest` only exist as
@@ -67,13 +67,16 @@ Middleware and listeners go in via `install(io)`.
 ```ts
 const security = createSocketSecurity({ sessionSecret, allowedOrigins });
 
-const io = new Server<IClientToServerEvents, IServerToClientEvents>(httpServer, {
-  cors: { origin: corsOrigin, methods: ["GET", "POST"], credentials: true },
-  ...security.engineOptions,   // allowRequest, size cap, no deflate
-});
+const io = new Server<IClientToServerEvents, IServerToClientEvents>(
+  httpServer,
+  {
+    cors: { origin: corsOrigin, methods: ["GET", "POST"], credentials: true },
+    ...security.engineOptions, // allowRequest, size cap, no deflate
+  },
+);
 
-security.install(io);          // io.use(auth) + socket.use(rate limit)
-io.on("connection", factoryConnectHandler(io));  // registered after
+security.install(io); // io.use(auth) + socket.use(rate limit)
+io.on("connection", factoryConnectHandler(io)); // registered after
 ```
 
 ---
@@ -106,7 +109,7 @@ if (!sessionSecret) {
 **The server operator.** Concretely:
 
 - It belongs to the **server process**, not to any player. Players never see
-  it; they only hold the *token* it signs.
+  it; they only hold the _token_ it signs.
 - It is **shared by every instance** of the backend. Two replicas of the same
   game = one secret, not two.
 - It is **not** the admin UI credential. The admin UI currently runs
@@ -130,12 +133,12 @@ node -e "console.log(require('node:crypto').randomBytes(32).toString('base64'))"
 
 **2. Put it in the environment where the server process starts:**
 
-| Environment | Where |
-|---|---|
-| Local dev | `.env` in the server package root + `import "dotenv/config"` at the top of the entry file |
-| Docker | `environment:` in compose, or `--env-file` |
-| Railway / Render / Fly / Heroku | Project settings → Environment variables (mark it secret) |
-| Kubernetes | `Secret` mounted as an env var — not baked into the image |
+| Environment                     | Where                                                                                     |
+| ------------------------------- | ----------------------------------------------------------------------------------------- |
+| Local dev                       | `.env` in the server package root + `import "dotenv/config"` at the top of the entry file |
+| Docker                          | `environment:` in compose, or `--env-file`                                                |
+| Railway / Render / Fly / Heroku | Project settings → Environment variables (mark it secret)                                 |
+| Kubernetes                      | `Secret` mounted as an env var — not baked into the image                                 |
 
 **3. Commit only the template, never the value:**
 
@@ -221,24 +224,24 @@ The token is read from `handshake.auth.token` or from an
 
 ### Server-side API (`security/auth.ts`)
 
-| Export | Purpose |
-|---|---|
-| `signSession({ playerId }, secret, ttlSeconds)` | Issues a token. |
-| `verifySession(token, secret)` | Returns the payload or `null`. Checks version, presence, signature, non-empty `playerId`, `exp > now`. |
+| Export                                             | Purpose                                                                                                    |
+| -------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `signSession({ playerId }, secret, ttlSeconds)`    | Issues a token.                                                                                            |
+| `verifySession(token, secret)`                     | Returns the payload or `null`. Checks version, presence, signature, non-empty `playerId`, `exp > now`.     |
 | `createSessionAuthMiddleware(secret, ttlSeconds?)` | The `io.use` middleware. Sets `socket.data.session`, `socket.data.isNewPlayer`, `socket.data.issuedToken`. |
-| `getSession(socket)` | Reads `socket.data.session`. Throws if the middleware is not installed. |
-| `takeIssuedToken(socket)` | Hands the freshly signed token to the caller and clears it from `socket.data`. |
-| `DEFAULT_SESSION_TTL_SECONDS` | 30 days. |
+| `getSession(socket)`                               | Reads `socket.data.session`. Throws if the middleware is not installed.                                    |
+| `takeIssuedToken(socket)`                          | Hands the freshly signed token to the caller and clears it from `socket.data`.                             |
+| `DEFAULT_SESSION_TTL_SECONDS`                      | 30 days.                                                                                                   |
 
 ---
 
 ## Client-side changes
 
-| Before | After |
-|---|---|
+| Before                                                               | After                                                                  |
+| -------------------------------------------------------------------- | ---------------------------------------------------------------------- |
 | `localStorage["battleships-game:client-id"]` = client-generated UUID | `localStorage["battleships-game:session-token"]` = server-signed token |
-| `auth: { clientId: getClientId() }` | `auth: (cb) => cb({ token: getSessionToken() })` |
-| — | `socket.on("session_token", setSessionToken)` |
+| `auth: { clientId: getClientId() }`                                  | `auth: (cb) => cb({ token: getSessionToken() })`                       |
+| —                                                                    | `socket.on("session_token", setSessionToken)`                          |
 
 - The `auth` option must be a **function**: it is evaluated on every connection
   attempt, so a reconnect always sends the most recent (renewed) token. A
@@ -312,26 +315,26 @@ far has a socket but no room membership and no reconnect-grace slot yet.
 
 All of these are defaults; override them through `createSocketSecurity(...)`.
 
-| Option | Default | Effect |
-|---|---|---|
-| `maxConnectionsPerIp` | `5` | Concurrent sockets per IP |
-| `maxHttpBufferSize` | `65536` | Max packet size in bytes |
-| `transports` | `["websocket", "polling"]` | Drop `"polling"` to kill HTTP floods |
-| `trustProxy` | `false` | Read `x-forwarded-for` — **only** behind a proxy you control |
-| `sessionTtlSeconds` | `2592000` (30d) | Token lifetime, renewed on each connect |
-| `knownEvents` | `[]` | Client→server event allowlist (see backlog) |
-| `rateLimit.burst` | `40` | Global event burst |
-| `rateLimit.perSecond` | `10` | Global sustained rate |
-| `rateLimit.eventBurst` | `12` | Per-event burst |
-| `rateLimit.eventPerSecond` | `4` | Per-event sustained rate |
-| `rateLimit.maxViolationsBeforeDisconnect` | `20` | Drops before the socket is kicked |
-| `rateLimit.violationWindowMs` | `10000` | Violation window |
-| `rateLimit.maxTrackedEventTypes` | `32` | Hard cap on tracked event names |
-| `ipLimit.capacity` | `10` | Handshake burst per IP |
-| `ipLimit.refillPerSecond` | `0.5` | Handshake sustained rate per IP |
-| `ipLimit.denialsBeforeBan` | `20` | Denials before the ban |
-| `ipLimit.banMs` | `60000` | Ban duration |
-| `ipLimit.idleTtlMs` | `600000` | Idle-IP eviction |
+| Option                                    | Default                    | Effect                                                       |
+| ----------------------------------------- | -------------------------- | ------------------------------------------------------------ |
+| `maxConnectionsPerIp`                     | `5`                        | Concurrent sockets per IP                                    |
+| `maxHttpBufferSize`                       | `65536`                    | Max packet size in bytes                                     |
+| `transports`                              | `["websocket", "polling"]` | Drop `"polling"` to kill HTTP floods                         |
+| `trustProxy`                              | `false`                    | Read `x-forwarded-for` — **only** behind a proxy you control |
+| `sessionTtlSeconds`                       | `2592000` (30d)            | Token lifetime, renewed on each connect                      |
+| `knownEvents`                             | `[]`                       | Client→server event allowlist (see backlog)                  |
+| `rateLimit.burst`                         | `40`                       | Global event burst                                           |
+| `rateLimit.perSecond`                     | `10`                       | Global sustained rate                                        |
+| `rateLimit.eventBurst`                    | `12`                       | Per-event burst                                              |
+| `rateLimit.eventPerSecond`                | `4`                        | Per-event sustained rate                                     |
+| `rateLimit.maxViolationsBeforeDisconnect` | `20`                       | Drops before the socket is kicked                            |
+| `rateLimit.violationWindowMs`             | `10000`                    | Violation window                                             |
+| `rateLimit.maxTrackedEventTypes`          | `32`                       | Hard cap on tracked event names                              |
+| `ipLimit.capacity`                        | `10`                       | Handshake burst per IP                                       |
+| `ipLimit.refillPerSecond`                 | `0.5`                      | Handshake sustained rate per IP                              |
+| `ipLimit.denialsBeforeBan`                | `20`                       | Denials before the ban                                       |
+| `ipLimit.banMs`                           | `60000`                    | Ban duration                                                 |
+| `ipLimit.idleTtlMs`                       | `600000`                   | Idle-IP eviction                                             |
 
 The event defaults are tuned for a turn-based board game: ~10 events/s
 sustained is far above normal play, ~4/s per event type is generous even for a
@@ -348,9 +351,9 @@ These block a correct deployment:
       and the token never reaches the browser.
 
       ```ts
-      // IServerToClientEvents
-      session_token: (token: string) => void;
-      ```
+          // IServerToClientEvents
+          session_token: (token: string) => void;
+          ```
 
 - [ ] **Run `vitest` and `tsc`.** Neither has been executed against this code.
 
@@ -369,23 +372,23 @@ Ordered by how much damage the gap causes.
       (the limiter stays permissive and only the map cap protects you).
 
       ```ts
-      const CLIENT_EVENTS = [
-        "game:move",
-        // ...every event in IClientToServerEvents
-      ] as const satisfies readonly (keyof IClientToServerEvents)[];
+          const CLIENT_EVENTS = [
+            "game:move",
+            // ...every event in IClientToServerEvents
+          ] as const satisfies readonly (keyof IClientToServerEvents)[];
 
-      createSocketSecurity({ sessionSecret, knownEvents: CLIENT_EVENTS });
-      ```
+          createSocketSecurity({ sessionSecret, knownEvents: CLIENT_EVENTS });
+          ```
 
-      Keep it in sync with `IClientToServerEvents` — a stale list silently
-      drops legitimate events.
+          Keep it in sync with `IClientToServerEvents` — a stale list silently
+          drops legitimate events.
 
 ### Authorization and payloads
 
 - [ ] Never trust `playerId` from an event payload — only from
       `socket.data.session`.
 - [ ] Re-check authorization per event (`is it this player's turn? do they own
-      that ship? is the phase right?`). Rate limiting is not authorization:
+    that ship? is the phase right?`). Rate limiting is not authorization:
       3 legitimate-looking but forged moves per second still break the game.
 - [ ] Validate every payload (`zod` / `valibot`) before it reaches game logic.
 - [ ] Validate against your own state, not just the shape: turn order, room
@@ -448,9 +451,9 @@ import { RateLimiterRedis } from "rate-limiter-flexible";
 const limiter = new RateLimiterRedis({
   storeClient: redis,
   keyPrefix: "rl:events",
-  points: 40,          // = burst
-  duration: 4,         // seconds; points/duration = sustained rate
-  blockDuration: 10,   // 10s of silence after the budget is blown
+  points: 40, // = burst
+  duration: 4, // seconds; points/duration = sustained rate
+  blockDuration: 10, // 10s of silence after the budget is blown
 });
 
 socket.use(async ([event], next) => {

@@ -89,7 +89,6 @@ export class BotRunnerService {
 
   /** Removes the bot from the room (human left / room cleaned up). */
   removeBot(roomId: string): void {
-    
     this.runner.disposeBot(roomId);
     this.ioByRoom.delete(roomId);
   }

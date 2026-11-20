@@ -17,13 +17,13 @@ export const classNames = (
 export const classNames = (
   ...classes: (string | undefined | null | false | number)[]
 ): string => {
-  let out = '';
+  let out = "";
   for (let i = 0; i < classes.length; i++) {
     const c = classes[i];
     // eslint-disable-next-line no-extra-boolean-cast
     if (Boolean(c)) {
       if (i > 0) {
-        out += ' ';
+        out += " ";
       }
       out += c;
     }

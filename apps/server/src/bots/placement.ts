@@ -1,7 +1,4 @@
-import type {
-  TCoordinate,
-  TShipPlacementOrientation,
-} from "@repo/types";
+import type { TCoordinate, TShipPlacementOrientation } from "@repo/types";
 
 export type TFleetPlacement = {
   coords: TCoordinate;

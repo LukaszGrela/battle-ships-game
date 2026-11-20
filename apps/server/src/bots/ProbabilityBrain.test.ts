@@ -52,9 +52,7 @@ class FakeEnemyBoard {
     const hits = (this.hits.get(ship.id) ?? 0) + 1;
     this.hits.set(ship.id, hits);
 
-    return hits === ship.size
-      ? sunkOutcome(ship.id)
-      : hitOutcome(ship.id);
+    return hits === ship.size ? sunkOutcome(ship.id) : hitOutcome(ship.id);
   }
 
   get sunkCount(): number {
@@ -206,7 +204,11 @@ describe("ProbabilityBrain", () => {
       const firsts = new Set<string>();
 
       for (let seed = 1; seed <= 25; seed++) {
-        const brain = new ProbabilityBrain({ size: 10, seed, blunderChance: 1 });
+        const brain = new ProbabilityBrain({
+          size: 10,
+          seed,
+          blunderChance: 1,
+        });
         brain.setFleet(FLEET);
         firsts.add(key(brain.nextShot()));
       }

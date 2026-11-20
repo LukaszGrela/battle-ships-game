@@ -18,7 +18,6 @@ export const paddedArray = <T, C = T>(
   return paddedList as T[];
 };
 
-
 /*
 console.group("TEST PADDED ARRAY");
 console.log(

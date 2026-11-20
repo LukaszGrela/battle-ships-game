@@ -1,6 +1,6 @@
 import { TBoard, TCellStatus, TCellStatusEmpty } from "@repo/types";
 
-const empty:TCellStatusEmpty = -1;
+const empty: TCellStatusEmpty = -1;
 
 export function createEmptyBoard<S = TCellStatus>(
   size = 10,

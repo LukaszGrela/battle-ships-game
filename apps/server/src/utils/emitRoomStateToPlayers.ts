@@ -1,4 +1,8 @@
-import { EGamePhase, IClientToServerEvents, IServerToClientEvents } from "@repo/types";
+import {
+  EGamePhase,
+  IClientToServerEvents,
+  IServerToClientEvents,
+} from "@repo/types";
 import { Server } from "socket.io";
 import ClientSessionServiceSingleton from "../services/client-session.service";
 import ActiveGameRegistrySingleton from "../services/active-game-registry";

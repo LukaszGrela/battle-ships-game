@@ -1,11 +1,11 @@
-import { seedRandom } from './seedRandom';
+import { seedRandom } from "./seedRandom";
 
-describe('utils', () => {
-  describe('seedRandom', () => {
+describe("utils", () => {
+  describe("seedRandom", () => {
     // // Example usage:
     const seed = 1979;
 
-    it('returns seeded random float', () => {
+    it("returns seeded random float", () => {
       const random = seedRandom(seed);
 
       const nextFloatNum = 0.003034226130694151;
@@ -16,7 +16,7 @@ describe('utils', () => {
       expect(random2.nextFloat()).toBe(nextFloatNum);
     });
 
-    it('returns seeded random int', () => {
+    it("returns seeded random int", () => {
       const random = seedRandom(seed);
 
       const nextIntNum = 78;
@@ -29,7 +29,7 @@ describe('utils', () => {
       expect(random2.nextInt(100)).toBe(nextIntNum);
     });
 
-    it('returns seeded random range int', () => {
+    it("returns seeded random range int", () => {
       const random = seedRandom(seed);
 
       const nextIntNum = 44;
