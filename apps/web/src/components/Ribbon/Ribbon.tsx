@@ -1,45 +1,39 @@
 import { classNames } from "../../utils/classNames";
 import styles from "./Ribbon.module.css";
-import { FC, ReactNode } from "react";
-
-interface IProps {
-  children: ReactNode;
-  ribbonFoldLeftChildren?: ReactNode;
-  ribbonFoldRightChildren?: ReactNode;
-  className?: string;
-
-  ribbonFoldLeftClassName?: string;
-  ribbonFoldRightClassName?: string;
-}
+import { FC } from "react";
+import { IProps } from "./types";
 
 /**
  * Chorągiewka z wyciętymi zakończeniami.
- *
- * `clip-path` przycina wszystko, co wychodzi poza obrys elementu — również
- * dzieci — więc treść nie może siedzieć w tym samym pudełku co kształt.
- * Dlatego każde zakończenie składa się z dwóch warstw:
- *
- * 1. **kształt** (`.ribbon-fold-shape`) — puste, pomalowane tło z `clip-path`,
- *    czyli wycięcie zostaje dokładnie takie jak wcześniej;
- * 2. **treść** (`.ribbon-fold-content`) — ten sam prostokąt, ale bez tła,
- *    bez `clip-path` i ponad panelem wstążki, więc `ribbonFold*Children`
- *    może być dowolnie duże i nic nie zostanie odcięte.
- *
- * Obie warstwy dostają klasy `ribbon-fold-left` / `-right`, żeby nie
- * duplikować wyliczeń pozycji, wysokości i szerokości.
  */
 export const Ribbon: FC<IProps> = ({
   children,
   className,
+  style,
   ribbonFoldRightChildren,
   ribbonFoldLeftChildren,
   ribbonFoldLeftClassName,
   ribbonFoldRightClassName,
 }) => {
   return (
-    <div className={classNames(styles.Ribbon, className)}>
+    <div className={classNames(styles.Ribbon, className)} style={style}>
       <div className={styles.ribbon}>
         {children}
+        {/*
+          *
+          * `clip-path` przycina wszystko, co wychodzi poza obrys elementu — również
+          * dzieci — więc treść nie może siedzieć w tym samym pudełku co kształt.
+          * Dlatego każde zakończenie składa się z dwóch warstw:
+          *
+          * 1. **kształt** (`.ribbon-fold-shape`) — puste, pomalowane tło z `clip-path`,
+          *    czyli wycięcie zostaje dokładnie takie jak wcześniej;
+          * 2. **treść** (`.ribbon-fold-content`) — ten sam prostokąt, ale bez tła,
+          *    bez `clip-path` i ponad panelem wstążki, więc `ribbonFold*Children`
+          *    może być dowolnie duże i nic nie zostanie odcięte.
+          *
+          * Obie warstwy dostają klasy `ribbon-fold-left` / `-right`, żeby nie
+          * duplikować wyliczeń pozycji, wysokości i szerokości.        
+          */}
         <div
           aria-hidden="true"
           className={classNames(
