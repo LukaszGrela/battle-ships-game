@@ -155,3 +155,16 @@ Production builds are generated in `apps/web/dist` by `pnpm build`. The producti
 ```sh
 pnpm --filter @repo/web test
 ```
+
+## Storybook worker
+
+Some stories mock HTTP with MSW. That needs a service worker at
+`.storybook/public/mockServiceWorker.js`.
+
+The file is gitignored (MSW generates it; do not commit it). `npm i` / `npm ci`
+do not create it. After a clone, or if Storybook mocking fails, from this
+package root run:
+
+```bash
+npx msw init .storybook/public
+```

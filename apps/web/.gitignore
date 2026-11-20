@@ -24,3 +24,7 @@ raw-assets
 *.njsproj
 *.sln
 *.sw?
+
+*storybook.log
+storybook-static
+.storybook/public/mockServiceWorker.js
