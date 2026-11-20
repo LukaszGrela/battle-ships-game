@@ -6,6 +6,8 @@ import type { TRematchRequest } from "@repo/types";
 const { socketMock } = vi.hoisted(() => ({
   socketMock: {
     emit: vi.fn(),
+    on: vi.fn(),
+    off: vi.fn(),
   },
 }));
 
@@ -207,6 +209,140 @@ describe("RematchRequestSentModal", () => {
     );
 
     fireEvent.click(screen.getByRole("button", { name: "Close" }));
+
+    expect(screen.queryByTestId("rematch-modal")).not.toBeInTheDocument();
+  });
+
+  it("shows a new pending request after a cancellation was dismissed", () => {
+    const { rerender } = render(
+      <RematchRequestSentModal
+        open
+        request={createRequest({
+          status: "cancelled",
+          cancelledReason: "timeout",
+        })}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Close" }));
+    expect(screen.queryByTestId("rematch-modal")).not.toBeInTheDocument();
+
+    rerender(
+      <RematchRequestSentModal
+        open
+        request={createRequest({ requestorId: "player-2", seed: 77 })}
+      />,
+    );
+
+    expect(screen.getByTestId("rematch-modal")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Cancel request" }),
+    ).toBeEnabled();
+    expect(
+      screen.queryByText(
+        "The rematch request timed out and was cancelled.",
+      ),
+    ).not.toBeInTheDocument();
+  });
+
+  it("re-enables the Cancel button when cancellation fails", () => {
+    render(<RematchRequestSentModal open request={createRequest()} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Cancel request" }));
+    expect(
+      screen.getByRole("button", { name: "Cancelling…" }),
+    ).toBeDisabled();
+
+    const errorCall = socketMock.on.mock.calls.find(
+      ([event]) => event === "error",
+    );
+    const handleError = errorCall?.[1] as (() => void) | undefined;
+
+    act(() => {
+      handleError?.();
+    });
+
+    expect(
+      screen.getByRole("button", { name: "Cancel request" }),
+    ).toBeEnabled();
+  });
+
+  it("re-enables the Cancel button when the acknowledgement is lost", () => {
+    vi.useFakeTimers();
+    render(<RematchRequestSentModal open request={createRequest()} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Cancel request" }));
+    expect(
+      screen.getByRole("button", { name: "Cancelling…" }),
+    ).toBeDisabled();
+
+    act(() => {
+      vi.advanceTimersByTime(10_000);
+    });
+
+    expect(
+      screen.getByRole("button", { name: "Cancel request" }),
+    ).toBeEnabled();
+  });
+
+  it("resets cancelling when a different pending request arrives", () => {
+    const { rerender } = render(
+      <RematchRequestSentModal open request={createRequest()} />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Cancel request" }));
+    expect(
+      screen.getByRole("button", { name: "Cancelling…" }),
+    ).toBeDisabled();
+
+    rerender(
+      <RematchRequestSentModal
+        open
+        request={createRequest({ requestorId: "player-2", seed: 77 })}
+      />,
+    );
+
+    expect(
+      screen.getByRole("button", { name: "Cancel request" }),
+    ).toBeEnabled();
+  });
+
+  it("keeps cancelling across a re-broadcast of the same pending request", () => {
+    const { rerender } = render(
+      <RematchRequestSentModal open request={createRequest()} />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Cancel request" }));
+    expect(
+      screen.getByRole("button", { name: "Cancelling…" }),
+    ).toBeDisabled();
+
+    // Socket broadcasts deserialize into a new object for the same request.
+    rerender(
+      <RematchRequestSentModal open request={createRequest()} />,
+    );
+
+    expect(
+      screen.getByRole("button", { name: "Cancelling…" }),
+    ).toBeDisabled();
+    expect(socketMock.emit).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps the cancellation dismissed after the same request is re-broadcast", () => {
+    const cancelled = {
+      status: "cancelled" as const,
+      cancelledReason: "timeout" as const,
+    };
+    const { rerender } = render(
+      <RematchRequestSentModal open request={createRequest(cancelled)} />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Close" }));
+    expect(screen.queryByTestId("rematch-modal")).not.toBeInTheDocument();
+
+    rerender(
+      <RematchRequestSentModal open request={createRequest(cancelled)} />,
+    );
 
     expect(screen.queryByTestId("rematch-modal")).not.toBeInTheDocument();
   });

@@ -27,6 +27,19 @@ const loaderLabels = [
 const randomItem = (items: readonly string[]) =>
   items[Math.floor(Math.random() * items.length)];
 
+const CANCEL_ACK_TIMEOUT_MS = 10_000;
+
+const getRequestKey = (request?: TRematchRequest) =>
+  request
+    ? JSON.stringify([
+        request.requestorId,
+        request.name,
+        request.seed,
+        request.status,
+        request.cancelledReason ?? null,
+      ])
+    : null;
+
 const getRemainingSeconds = (expiresAt?: string) => {
   if (!expiresAt) return null;
 
@@ -47,12 +60,20 @@ export const RematchRequestSentModal: FC<{
   const [remainingSeconds, setRemainingSeconds] = useState(() =>
     getRemainingSeconds(request?.expiresAt),
   );
-  const [cancelling, setCancelling] = useState(false);
-  const [dismissed, setDismissed] = useState(false);
+  const [cancellingKey, setCancellingKey] = useState<string | null>(null);
+  const [dismissedKey, setDismissedKey] = useState<string | null>(null);
   const wasOpen = useRef(open);
 
   const status = request?.status;
   const isCancelled = status === "cancelled";
+  // Tie both flags to the request data rather than the object identity. Socket
+  // broadcasts create a fresh object for the same request, and a pending
+  // request must keep its disabled Cancel button across those updates. A new
+  // request has a different key, so it starts un-dismissed and cancellable
+  // without resetting state inside an effect.
+  const requestKey = getRequestKey(request);
+  const cancelling = requestKey !== null && cancellingKey === requestKey;
+  const dismissed = requestKey !== null && dismissedKey === requestKey;
 
   useEffect(() => {
     if (open && !wasOpen.current) {
@@ -79,10 +100,32 @@ export const RematchRequestSentModal: FC<{
     };
   }, [status, request?.expiresAt]);
 
-  const handleCancel = () => {
-    if (cancelling) return;
+  useEffect(() => {
+    const handleError = () => setCancellingKey(null);
+    socket.on("error", handleError);
 
-    setCancelling(true);
+    return () => {
+      socket.off("error", handleError);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!cancelling) return;
+
+    // If the server never acknowledges the cancellation (lost event), let the
+    // user retry instead of leaving the button disabled forever.
+    const timeout = setTimeout(
+      () => setCancellingKey(null),
+      CANCEL_ACK_TIMEOUT_MS,
+    );
+
+    return () => clearTimeout(timeout);
+  }, [cancelling]);
+
+  const handleCancel = () => {
+    if (cancelling || requestKey === null) return;
+
+    setCancellingKey(requestKey);
     socket.emit("cancel_rematch");
   };
 
@@ -96,7 +139,7 @@ export const RematchRequestSentModal: FC<{
       bodyClassName={styles.Modal_body}
       className={styles.Modal}
       dialogClassName={styles.Modal_dialog}
-      onClose={isCancelled ? () => setDismissed(true) : undefined}
+      onClose={isCancelled ? () => setDismissedKey(requestKey) : undefined}
       backdrop={isCancelled}
       keyboard={isCancelled}
       footer={
