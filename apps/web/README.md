@@ -156,7 +156,15 @@ Production builds are generated in `apps/web/dist` by `pnpm build`. The producti
 pnpm --filter @repo/web test
 ```
 
-## Storybook worker
+## Storybook 
+
+To run the storybook use following command, it will open it on `localhost:6007`
+
+```sh
+pnpm --filter @repo/web storybook
+```
+
+### worker
 
 Some stories mock HTTP with MSW. That needs a service worker at
 `.storybook/public/mockServiceWorker.js`.
