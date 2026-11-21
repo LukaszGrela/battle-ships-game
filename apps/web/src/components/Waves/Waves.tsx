@@ -29,7 +29,7 @@ export const Waves: FC<WavesProps> = ({
   onDrained,
   style,
 }) => {
-  const timeoutId = useRef(-1);
+  const timeoutId = useRef<ReturnType<typeof setTimeout> | number>(-1);
   const noAnimation = useMediaQuery("(prefers-reduced-motion: reduce)");
 
   useEffect(() => {

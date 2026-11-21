@@ -14,8 +14,6 @@ export const PlayerDetails: FC<{
 }> = ({ self, enemy, phase, className, result }) => {
   const { name, owner, ready, active, botLevel } = self;
 
-  const enemyIsBot = !!botLevel;
-
   return (
     <div
       className={classNames(styles.PlayerDetails, className)}
@@ -23,16 +21,12 @@ export const PlayerDetails: FC<{
       data-enemy-ready={enemy && ready && active ? "" : undefined}
       data-enemy-inactive={!active && ready ? "" : undefined}
     >
-      <div className={styles.Avatar}>
-        <PlayerAvatar player={self} className={styles.Avatar_img}>
-          {enemyIsBot && (
-            <span
-              className={styles.Avatar_botLevel}
-            >{`Bot level: ${botLevel}`}</span>
-          )}
-        </PlayerAvatar>
-      </div>
       <Ribbon className={classNames(styles.Ribbon, owner && styles.owner)}>
+        <AvatarContainer
+          className="avatar-middle"
+          player={self}
+          botLevel={botLevel}
+        />
         <span>{name}</span>
         {result === "win" && (
           <img
@@ -44,15 +38,35 @@ export const PlayerDetails: FC<{
         {result === "win" && (
           <span className={styles.winnerTitle}>Winner!</span>
         )}
-      </Ribbon>
-      {enemy && ready && phase === EGamePhase.Placement && (
-        <span className={styles.playerReady}>Player Ready!</span>
-      )}
-      {enemy &&
-        !active &&
-        (phase === EGamePhase.Playing || phase === EGamePhase.Finished) && (
-          <span className={styles.playerReady}>Player left the game!</span>
+        {enemy && ready && phase === EGamePhase.Placement && (
+          <span className={styles.playerReady}>Player Ready!</span>
         )}
+        {enemy &&
+          !active &&
+          (phase === EGamePhase.Playing || phase === EGamePhase.Finished) && (
+            <span className={styles.playerReady}>Player left the game!</span>
+          )}
+      </Ribbon>
+    </div>
+  );
+};
+
+const AvatarContainer: FC<{
+  className?: string;
+  player: IPlayer;
+  botLevel?: string;
+}> = ({ className, player, botLevel }) => {
+  const enemyIsBot = !!botLevel;
+
+  return (
+    <div className={classNames(styles.Avatar, className)}>
+      <PlayerAvatar player={player} className={styles.Avatar_img} />
+
+      {enemyIsBot && (
+        <span
+          className={styles.Avatar_botLevel}
+        >{`Bot level: ${botLevel}`}</span>
+      )}
     </div>
   );
 };

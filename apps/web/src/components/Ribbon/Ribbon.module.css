@@ -40,32 +40,40 @@
   text-align: center;
   user-select: none;
 
-  --margin-top: max(
-    abs(min(0px, var(--ribbon-right-y-offset, 0px))),
-    abs(min(0px, var(--ribbon-left-y-offset, 0px)))
+  --margin-top: calc(
+    max(
+        abs(min(0px, var(--ribbon-right-y-offset, 0px))),
+        abs(min(0px, var(--ribbon-left-y-offset, 0px)))
+      ) +
+      var(--ribbon-margin-top-offset, 0px)
   );
-  --margin-bottom: max(
-    max(0px, var(--ribbon-right-y-offset, 0px)),
-    max(0px, var(--ribbon-left-y-offset, 0px))
+  --margin-bottom: calc(
+    max(
+        max(0px, var(--ribbon-right-y-offset, 0px)),
+        max(0px, var(--ribbon-left-y-offset, 0px))
+      ) +
+      var(--ribbon-margin-bottom-offset, 0px)
   );
 
   --margin-right: calc(
-    var(--ribbon-fold-right-width, 0px) - var(--ribbon-right-x-offset, 0px)
+    var(--ribbon-fold-right-width, 0px) - var(--ribbon-right-x-offset, 0px) +
+      var(--ribbon-margin-right-offset, 0px)
   );
   --margin-left: calc(
-    var(--ribbon-fold-left-width, 0px) - var(--ribbon-left-x-offset, 0px)
+    var(--ribbon-fold-left-width, 0px) - var(--ribbon-left-x-offset, 0px) +
+      var(--ribbon-margin-left-offset, 0px)
   );
 
   /* Marginesy zapewniające miejsce na "wypustki" */
-  margin: calc(var(--margin-top, 0px) + var(--ribbon-margin-top-offset, 0px))
-    calc(var(--margin-right, 0px) + var(--ribbon-margin-right-offset, 0px))
-    calc(var(--margin-bottom, 0px) + var(--ribbon-margin-bottom-offset, 0px))
-    calc(var(--margin-left, 0px) + var(--ribbon-margin-left-offset, 0px));
+  margin: var(--margin-top, 0px) var(--margin-right, 0px)
+    var(--margin-bottom, 0px) var(--margin-left, 0px);
 }
 
 .ribbon {
   display: flex;
+  flex-direction: column;
   justify-content: center;
+  gap: 0.25rem;
   align-items: center;
 
   top: var(--ribbon-base-y-offset);

@@ -50,6 +50,16 @@
      destroyed-ship states so the modal doesn't jump around. */
   min-height: 256px;
   width: 100%;
+
+  &[data-side="defend"] {
+    flex-direction: row-reverse;
+  }
+}
+
+.cannon {
+  [data-side="defend"] & {
+    transform: scaleX(-1);
+  }
 }
 
 .timeout {

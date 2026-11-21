@@ -57,7 +57,6 @@
   --ribbon-left-notch-size: 0.75rem;
   --ribbon-min-width: min-content;
 
-  --offset: 100%;
   --ribbon-max-width: 100%;
 
   /* @media screen and (max-width: 720px) {

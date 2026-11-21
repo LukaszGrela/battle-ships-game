@@ -7,7 +7,7 @@
 
   /* Szerokość ustawiamy jawnie, bo <dialog> z width: auto shrink-to-fit
      nie daje dziecku żadnej podstawy do policzenia 100%. */
-  width: var(--modal-width, auto);
+  width: var(--modal-width, fit-content);
   max-width: var(--modal-max-width, 90dvw);
   max-height: var(--modal-max-height, 90dvh);
 }
