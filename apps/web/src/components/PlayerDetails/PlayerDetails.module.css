@@ -185,8 +185,20 @@
 }
 
 .Ribbon {
-  text-align: center;
   composes: Ribbon_shape;
+}
+
+/*
+ * `Ribbon` to klasa z dwóch CSS modules: tej reguły (`position: absolute`)
+ * i `Ribbon.module.css` (`position: relative`, dodawana przez sam komponent).
+ * Przy równej specyficzności wygrywa arkusz wstrzyknięty później, a kolejność
+ * zależy od grafu importów — dlatego w aplikacji wstążka była `absolute`
+ * (kontener bez dziecka w przepływie → height 0), a w Storybooku `relative`
+ * (wstążka w przepływie → height 162px). Podwojona klasa daje 0,2,0 i czyni
+ * wynik niezależnym od kolejności arkuszy.
+ */
+.Ribbon.Ribbon {
+  text-align: center;
 
   position: absolute;
   @media screen and (max-width: 720px) {
