@@ -4,7 +4,7 @@
   "version": "0.4.1",
   "scripts": {
     "dev": "vite --host",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b tsconfig.build.json && vite build",
     "lint": "eslint .",
     "test": "vitest run",
     "preview": "vite preview",

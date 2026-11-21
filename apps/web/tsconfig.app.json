@@ -8,7 +8,6 @@
     "noEmit": true
   },
   "include": ["src/**/*"],
-  "exclude": ["src/**/*.test.ts", "src/**/*.test.tsx", "src/**/stories/**/*"],
   "references": [
     { "path": "../../packages/types" },
     { "path": "../../packages/game-logic" }
