@@ -208,8 +208,7 @@ export const GameHeaderSmall: Story = {
     result: "win",
     phase: EGamePhase.Finished,
   },
-  render: (args, context) => {
-    const isDocs = context.viewMode === "docs";
+  render: (args) => {
     return (
       <div
         style={{
