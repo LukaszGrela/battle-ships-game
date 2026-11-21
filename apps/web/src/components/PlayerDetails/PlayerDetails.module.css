@@ -32,9 +32,12 @@
     /* Na wąskim ekranie wstążka wraca do przepływu i sama nadaje wysokość. */
     min-height: 0;
   }
-  &[data-enemy]:not([data-enemy-ready]) {
+
+  &[data-enemy] {
     justify-content: flex-end;
-    opacity: 0.5;
+    &:not([data-enemy-ready]) {
+      opacity: 0.5;
+    }
   }
 }
 
@@ -77,13 +80,19 @@
   font-size: 0.75em;
   width: 100%;
   text-align: center;
-
-  position: relative;
-  top: -10px;
-
+  
+  position: absolute;
+  bottom: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  text-wrap: nowrap;
+  
+  
   @media screen and (max-width: 720px) {
-    top: -24px;
+    width: 150%;
+    bottom: -5px;
   }
+
 }
 
 .playerReady {
