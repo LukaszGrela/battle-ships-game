@@ -225,7 +225,7 @@ export const GameHeaderSmall: Story = {
         <PlayerDetails
           {...args}
           result="lost"
-          self={{ ...enemy, active: false }}
+          self={{ ...enemy, active: false, botLevel: "medium" }}
           enemy
         />
       </div>
