@@ -1,31 +1,63 @@
 .PlayerDetails {
+  --player-details-font-size: var(--font-size-normal);
+  font-size: var(--player-details-font-size);
+
+  display: flex;
+  justify-content: flex-start;
+  background-color: #ff000080;
+
+  --avatar-size: 128px;
+  @media screen and (max-width: 720px) {
+    --player-details-font-size: var(--font-size-small);
+    --avatar-size: 64px;
+  }
+  @media screen and (max-width: 500px) {
+    --player-details-font-size: var(--font-size-small);
+    --avatar-size: 48px;
+  }
+
   position: relative;
   isolation: isolate;
   margin-bottom: 1rem;
   width: var(--player-details-width, 100%);
   &[data-enemy]:not([data-enemy-ready]) {
+    justify-content: flex-end;
     opacity: 0.5;
   }
-
-  @media screen and (max-width: 720px) {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
 }
-.Avatar {
-  --avatar-size: 128px;
-  [data-enemy] & {
-    position: absolute;
-    right: 0;
 
-    @media screen and (max-width: 720px) {
-      position: unset;
+.Avatar {
+  position: absolute;
+  top: calc(-1 * var(--avatar-size) + var(--ribbon-min-height));
+  &:global(.avatar-middle) {
+    left: calc(-1 * var(--avatar-size) + var(--ribbon-left-x-offset));
+  }
+  /* &:global(.avatar-middle) {
+    display: none;
+  }
+  &:global(.avatar-side) {
+    display: block;
+  } */
+
+  [data-enemy] & {
+    right: 0;
+    &:global(.avatar-middle) {
+      left: unset;
+      right: calc(-1 * var(--avatar-size) + var(--ribbon-right-x-offset));
     }
   }
+
   @media screen and (max-width: 720px) {
-    --avatar-size: 64px;
-    margin-bottom: -1rem;
+    bottom: unset;
+    top: calc(-1 * var(--avatar-size));
+    &:global(.avatar-middle) {
+      left: unset;
+    }
+    [data-enemy] & {
+      &:global(.avatar-middle) {
+        right: unset;
+      }
+    }
   }
 }
 
@@ -36,7 +68,7 @@
 .Avatar_botLevel {
   display: block;
   color: var(--pirates-palette-21);
-  font-size: small;
+  font-size: 0.75em;
   width: 100%;
   text-align: center;
 
@@ -49,28 +81,26 @@
 }
 
 .playerReady {
+  position: absolute;
+  bottom: calc(
+    -1 * var(--margin-bottom, 0px) +
+      calc(var(--player-details-font-size) * 0.75) / 2
+  );
+
   color: var(--pirates-accented);
   font-weight: 700;
-  position: absolute;
-  bottom: 4rem;
-  right: 128px;
+  font-size: 0.75em;
 
   @media screen and (max-width: 720px) {
-    position: unset;
     text-align: center;
   }
 }
 
 .winnerTitle {
-  position: absolute;
-  left: 50%;
-  transform: translate(-50%, -3rem);
   color: var(--pirates-palette-3);
-
-  @media screen and (max-width: 720px) {
-    transform: translate(-50%, 2rem);
-  }
+  font-size: 0.75em;
 }
+
 .winnerPin {
   width: 32px;
   position: absolute;
@@ -86,9 +116,11 @@
 
 .Ribbon_shape {
   /* ribbon */
-  --ribbon-left-y-offset: 0.25rem;
+  --ribbon-width: fit-content;
+
+  --ribbon-left-y-offset: -0.25rem;
   --ribbon-fold-left-height: 2.5rem;
-  --ribbon-fold-left-width: 128px;
+  --ribbon-fold-left-width: var(--avatar-size);
   --ribbon-left-notch-size: 0.75rem;
   --ribbon-right-y-offset: 0.25rem;
   --ribbon-fold-right-height: 2.5rem;
@@ -96,38 +128,34 @@
   --ribbon-right-notch-size: 0.75rem;
   --ribbon-min-width: min-content;
 
-  --offset: 100%;
+  --ribbon-max-width: 100%;
 
-  --ribbon-max-width: 100%; /*calc(
-    var(--offset) -
-      (
-        calc(var(--ribbon-fold-right-width) - var(--ribbon-right-x-offset)) +
-          calc(var(--ribbon-fold-left-width) - var(--ribbon-left-x-offset))
-      ) 
-  );*/
+  /* we need to include the avatar size */
+  --marginBottom: max(
+    max(0px, var(--ribbon-right-y-offset, 0px)),
+    max(0px, var(--ribbon-left-y-offset, 0px))
+  );
+  --ribbon-margin-top-offset: calc(
+    var(--avatar-size) - var(--ribbon-min-height) - var(--marginBottom)
+  );
+  /* Enough to fit enemy status message */
+  --ribbon-margin-bottom-offset: 1.5rem;
 
   [data-enemy] & {
-    --ribbon-right-y-offset: 0.25rem;
+    --ribbon-right-y-offset: -0.25rem;
     --ribbon-fold-right-height: 2.5rem;
-    --ribbon-fold-right-width: 128px;
+    --ribbon-fold-right-width: var(--avatar-size);
     --ribbon-right-notch-size: 0.75rem;
     --ribbon-left-y-offset: 0.25rem;
     --ribbon-fold-left-height: 2.5rem;
     --ribbon-fold-left-width: 2rem;
     --ribbon-left-notch-size: 0.75rem;
 
-    --ribbon-max-width: 100%; /*calc(
-      var(--offset) -
-        (
-          calc(var(--ribbon-fold-right-width) - var(--ribbon-right-x-offset)) +
-            calc(var(--ribbon-fold-left-width) - var(--ribbon-left-x-offset))
-        )
-    );*/
+    --ribbon-max-width: 100%;
   }
 
   @media screen and (max-width: 720px) {
-    /* font */
-    font-size: 0.75rem;
+    --ribbon-margin-top-offset: var(--avatar-size);
     /* ribbon */
     --ribbon-fold-left-width: 2rem;
     --ribbon-fold-left-height: 1.5rem;
@@ -167,8 +195,7 @@
   }
 
   --ribbon-box-shadow:
-    var(--shadow-raised),
-    inset 0px 0 2px 0px rgba(0, 0, 0, 0.25);
+    var(--shadow-raised), inset 0px 0 2px 0px rgba(0, 0, 0, 0.25);
 
   font-weight: bold;
   -webkit-text-stroke: 3px var(--pirates-palette-16);
