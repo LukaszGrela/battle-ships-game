@@ -4,7 +4,6 @@
 
   display: flex;
   justify-content: flex-start;
-  background-color: #ff000080;
 
   --avatar-size: 128px;
   @media screen and (max-width: 720px) {
@@ -20,6 +19,19 @@
   isolation: isolate;
   margin-bottom: 1rem;
   width: var(--player-details-width, 100%);
+
+  /*
+   * Powyżej 720px zarówno `.Avatar`, jak i `.Ribbon` są `position: absolute`,
+   * więc kontener nie ma żadnego dziecka w przepływie i jego wysokość
+   * zapada się do 0. Rezerwujemy miejsce na wysokość wstążki razem z jej
+   * marginesem dolnym (`0.25rem` offsetu + `1.5rem` zapasu na podpisy):
+   * awatar (128px) + 28px = 156px.
+   */
+  min-height: calc(var(--avatar-size) + 1.75rem);
+  @media screen and (max-width: 720px) {
+    /* Na wąskim ekranie wstążka wraca do przepływu i sama nadaje wysokość. */
+    min-height: 0;
+  }
   &[data-enemy]:not([data-enemy-ready]) {
     justify-content: flex-end;
     opacity: 0.5;
@@ -32,12 +44,6 @@
   &:global(.avatar-middle) {
     left: calc(-1 * var(--avatar-size) + var(--ribbon-left-x-offset));
   }
-  /* &:global(.avatar-middle) {
-    display: none;
-  }
-  &:global(.avatar-side) {
-    display: block;
-  } */
 
   [data-enemy] & {
     right: 0;
