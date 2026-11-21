@@ -224,8 +224,10 @@ export const GameHeaderSmall: Story = {
         <PlayerDetails {...args} />
         <PlayerDetails
           {...args}
-          result="lost"
-          self={{ ...enemy, active: false, botLevel: "medium" }}
+          result={undefined}
+          phase={EGamePhase.Placement}
+
+          self={{ ...enemy, active: true, ready: true, botLevel: "medium" }}
           enemy
         />
       </div>

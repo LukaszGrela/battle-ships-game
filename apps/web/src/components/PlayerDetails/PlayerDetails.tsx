@@ -21,27 +21,7 @@ export const PlayerDetails: FC<{
       data-enemy-ready={enemy && ready && active ? "" : undefined}
       data-enemy-inactive={!active && ready ? "" : undefined}
     >
-      <Ribbon
-        className={classNames(styles.Ribbon, owner && styles.owner)}
-        // ribbonFoldLeftChildren={
-        //   !enemy && (
-        //     <AvatarContainer
-        //       className="avatar-side"
-        //       player={self}
-        //       botLevel={botLevel}
-        //     />
-        //   )
-        // }
-        // ribbonFoldRightChildren={
-        //   enemy && (
-        //     <AvatarContainer
-        //       className="avatar-side"
-        //       player={self}
-        //       botLevel={botLevel}
-        //     />
-        //   )
-        // }
-      >
+      <Ribbon className={classNames(styles.Ribbon, owner && styles.owner)}>
         <AvatarContainer
           className="avatar-middle"
           player={self}
