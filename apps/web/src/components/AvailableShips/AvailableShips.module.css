@@ -4,6 +4,12 @@
   gap: 1rem;
 }
 
+.Actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
 .Option {
   position: relative;
   overflow: hidden; 

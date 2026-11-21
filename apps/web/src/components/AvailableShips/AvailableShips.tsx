@@ -10,6 +10,7 @@ export const AvailableShips: FC<{
   onSelection: (shipId: number | null) => void;
   onApply: () => void;
   onReset: () => void;
+  onAutoPlace?: () => void;
 
   disabled?: boolean;
 
@@ -20,6 +21,7 @@ export const AvailableShips: FC<{
   selected,
   onApply,
   onReset,
+  onAutoPlace,
   disabled,
   children,
 }) => {
@@ -36,6 +38,7 @@ export const AvailableShips: FC<{
 
   const disableApply = ships.some((needle) => !needle.placed) || disabled;
   const disableReset = !ships.some((needle) => needle.placed) || disabled;
+  const disableAutoPlace =  !onAutoPlace;
 
   return (
     <div className={styles.AvailableShips}>
@@ -61,9 +64,16 @@ export const AvailableShips: FC<{
         })}
       </div>
       {children && <div>{children}</div>}
-      <div>
+      <div className={styles.Actions}>
         <Button type="secondary" onClick={onReset} disabled={disableReset}>
           Reset
+        </Button>
+        <Button
+          type="secondary"
+          onClick={onAutoPlace}
+          disabled={disableAutoPlace}
+        >
+          Auto placement
         </Button>
         <Button onClick={onApply} disabled={disableApply}>
           Ready

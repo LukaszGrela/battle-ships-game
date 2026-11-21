@@ -16,6 +16,7 @@ import {
 import { AvailableShips } from "../components/AvailableShips/AvailableShips";
 import { TInteractivityProps } from "../components/Board";
 import {
+  autoPlaceShips,
   getCell,
   isCellFailure,
   isValidPlacement,
@@ -342,6 +343,48 @@ export const GamePlacement: FC = () => {
     setError(undefined);
   }, [gameState, setAvailableShips, setError, updatePlacementBoard]);
 
+  const handleAutoPlacement = useCallback(() => {
+    let ships = availableShips as (TShip & { type: "pending" })[];
+    const someNotPlaced = ships.some(
+      (needle) => needle.type === "pending" && !needle.placed,
+    );
+    console.log("handleAutoPlacement", availableShips);
+    console.log("handleAutoPlacement", someNotPlaced);
+    let board = placementBoard;
+    if (!someNotPlaced) {
+      // reset first
+      ships =
+        (gameState &&
+          gameState.phase === "placement" &&
+          (gameState.ships as (TShip & { type: "pending" })[])) ||
+        [];
+
+      // reset ships
+      setAvailableShips(ships);
+      // reset board
+      board = gameState?.myBoard ?? [];
+      updatePlacementBoard(board);
+    }
+    const result = autoPlaceShips(board, ships);
+
+    if (!result) {
+      setError("Auto placement failed. Reset the board and try again.");
+      return;
+    }
+
+    updatePlacementBoard(() => result.board);
+    setAvailableShips(() => result.ships);
+    setSelectedShipId(null);
+    setError(undefined);
+  }, [
+    availableShips,
+    gameState,
+    placementBoard,
+    setAvailableShips,
+    setError,
+    updatePlacementBoard,
+  ]);
+
   const handleApplyPlacement = useCallback(() => {
     // deselect all
     setAvailableShips((draftShips) => {
@@ -403,6 +446,7 @@ export const GamePlacement: FC = () => {
 
             onApply={handleApplyPlacement}
             onReset={handleResetPlacement}
+            onAutoPlace={handleAutoPlacement}
 
             disabled={gameState.self.ready}
           >
