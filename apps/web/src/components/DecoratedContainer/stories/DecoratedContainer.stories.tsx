@@ -17,7 +17,7 @@ const meta = {
   decorators: [
     (Decorator) => {
       return (
-        <div style={{minWidth: '640px'}}>
+        <div style={{ minWidth: "640px" }}>
           <Decorator />
         </div>
       );

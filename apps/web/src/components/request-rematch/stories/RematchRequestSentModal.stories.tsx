@@ -47,7 +47,7 @@ export const Pending: Story = {
       return () => {
         clearTimeout(timerId);
       };
-    }, [isOpen]);
+    }, [isOpen, close]);
 
     const request = {
       ...props.request,
@@ -87,7 +87,7 @@ export const CancelledByPlayer: Story = {
       return () => {
         clearTimeout(timerId);
       };
-    }, [isOpen]);
+    }, [isOpen, close]);
 
     // to be able to open each time, make different requests
     const request = {
@@ -130,7 +130,7 @@ export const CancelledByTimeout: Story = {
       return () => {
         clearTimeout(timerId);
       };
-    }, [isOpen]);
+    }, [isOpen, close]);
 
     // to be able to open each time, make different requests
     const request = {

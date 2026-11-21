@@ -1,4 +1,5 @@
 import {
+  CSSProperties,
   useCallback,
   useEffect,
   useMemo,
@@ -18,6 +19,7 @@ import {
   RIBBON_FIELDS,
   RIBBON_GROUPS,
   SWALLOWTAIL_CONFIG,
+  parseRibbonCssVars,
   toCssRule,
   toCssVars,
   toJsxStyle,
@@ -26,6 +28,7 @@ import {
   type RibbonGroup,
 } from "./Ribbon.config";
 import styles from "./RibbonConfigurator.module.css";
+import { PirateAvatar } from "../../PirateAvatar/PirateAvatar";
 
 export interface IRibbonConfiguratorProps {
   /** Początkowa konfiguracja — domyślnie preset „Swallowtail”. */
@@ -86,7 +89,19 @@ export const RibbonConfigurator = ({
   const [format, setFormat] = useState<OutputFormat>("css");
   const [onlyChanged, setOnlyChanged] = useState(true);
   const [showFoldIcons, setShowFoldIcons] = useState(true);
+  const [avatarOnLeft, setAvatarOnLeft] = useState(false);
+  const [avatarOnRight, setAvatarOnRight] = useState(false);
   const [copied, setCopied] = useState(false);
+  /**
+   * Wersja tekstu z pola „Konfiguracja”, gdy użytkownik coś w nim zmieni lub
+   * wklei. `null` = pole pokazuje wynik aktualnej konfiguracji.
+   */
+  const [outputDraft, setOutputDraft] = useState<string | null>(null);
+  /** Potwierdzenie/ostrzeżenie po kliknięciu „Zastosuj wklejone”. */
+  const [importStatus, setImportStatus] = useState<{
+    tone: "ok" | "error";
+    message: string;
+  } | null>(null);
   /** Które zakończenie właśnie skopiowano — do potwierdzenia na przycisku. */
   const [sideCopied, setSideCopied] = useState<"left" | "right" | null>(null);
 
@@ -114,6 +129,8 @@ export const RibbonConfigurator = ({
 
   const applyConfig = (next: RibbonConfig) => {
     setConfig(next);
+    setOutputDraft(null);
+    setImportStatus(null);
     onConfigChange?.(next);
   };
 
@@ -127,14 +144,17 @@ export const RibbonConfigurator = ({
     [config, format, onlyChanged, selector],
   );
 
+  /** To, co widzi użytkownik — wklejony/edytowany tekst albo wynik konfiguracji. */
+  const visibleCode = outputDraft ?? code;
+
   const copy = async () => {
     try {
-      await navigator.clipboard.writeText(code);
+      await navigator.clipboard.writeText(visibleCode);
     } catch {
       // Starsze/przeglądarkowe konteksty bez Clipboard API — awaryjnie przez
       // zaznaczenie treści `<textarea>`.
       const area = document.createElement("textarea");
-      area.value = code;
+      area.value = visibleCode;
       area.setAttribute("readonly", "");
       area.style.position = "fixed";
       area.style.opacity = "0";
@@ -162,6 +182,44 @@ export const RibbonConfigurator = ({
     sideTimeout.current = setTimeout(() => setSideCopied(null), 1600);
   };
 
+  /**
+   * Zapisuje wklejone CSS vars w konfiguracji. Nadpisuje tylko te pola, które
+   * znalazły się w tekście — można więc wkleić sam fragment z poprawkami.
+   */
+  const applyImportedStyle = () => {
+    const parsed = parseRibbonCssVars(visibleCode);
+
+    if (parsed.applied.length === 0) {
+      setImportStatus({
+        tone: "error",
+        message:
+          parsed.rejected.length > 0
+            ? `Nie udało się zapisać: ${parsed.rejected
+                .map((item) => `${item.cssVar} (${item.reason})`)
+                .join(", ")}`
+            : "Brak ribbonowych zmiennych CSS. Wklej np. --ribbon-fold-left-height: 2.4rem;",
+      });
+      return;
+    }
+
+    const next: RibbonConfig = { ...config, ...parsed.config };
+    setConfig(next);
+    onConfigChange?.(next);
+    setOutputDraft(null);
+
+    const details = [
+      `Zastosowano ${parsed.applied.length} ${parsed.applied.length === 1 ? "zmienną" : "zmiennych"}`,
+    ];
+    if (parsed.rejected.length > 0)
+      details.push(
+        `pominięto ${parsed.rejected.length} (nieprzeliczalna wartość)`,
+      );
+    if (parsed.unknown.length > 0)
+      details.push(`${parsed.unknown.length} poza wstążką`);
+
+    setImportStatus({ tone: "ok", message: `${details.join(", ")}.` });
+  };
+
   const changedCount = RIBBON_FIELDS.filter(
     (field) => config[field.key] !== RIBBON_DEFAULTS[field.key],
   ).length;
@@ -179,12 +237,20 @@ export const RibbonConfigurator = ({
                   <div style={{ flex: "0 0 auto" }}>
                     <Swords />
                   </div>
+                ) : avatarOnLeft ? (
+                  <div style={{ "--avatar-size": "96px" } as CSSProperties}>
+                    <PirateAvatar />
+                  </div>
                 ) : undefined
               }
               ribbonFoldRightChildren={
                 showFoldIcons ? (
                   <div style={{ flex: "0 0 auto" }}>
                     <Flag />
+                  </div>
+                ) : avatarOnRight ? (
+                  <div style={{ "--avatar-size": "96px" } as CSSProperties}>
+                    <PirateAvatar avatarIndex={2} />
                   </div>
                 ) : undefined
               }
@@ -202,6 +268,25 @@ export const RibbonConfigurator = ({
           />{" "}
           Ikony w zakończeniach (sprawdza, że treść nie jest przycinana przez
           `clip-path`)
+        </label>
+
+        <label className={styles.hint}>
+          <input
+            type="checkbox"
+            disabled={showFoldIcons}
+            checked={avatarOnLeft}
+            onChange={(event) => setAvatarOnLeft(event.target.checked)}
+          />{" "}
+          Uzyj avatara w lewym zakonczeniu
+        </label>
+        <label className={styles.hint}>
+          <input
+            type="checkbox"
+            disabled={showFoldIcons}
+            checked={avatarOnRight}
+            onChange={(event) => setAvatarOnRight(event.target.checked)}
+          />{" "}
+          Uzyj avatara w prawym zakonczeniu
         </label>
       </div>
 
@@ -351,12 +436,43 @@ export const RibbonConfigurator = ({
 
           <textarea
             className={styles.output}
-            value={code}
-            readOnly
+            value={visibleCode}
             spellCheck={false}
             aria-label="Wygenerowana konfiguracja"
-            onFocus={(event) => event.currentTarget.select()}
+            placeholder={
+              "Wklej tutaj ribbonowe CSS vars, np.\n--ribbon-fold-left-height: 2.4rem;\n--ribbon-background: #c9a227;"
+            }
+            onChange={(event) => {
+              setOutputDraft(event.target.value);
+              setImportStatus(null);
+            }}
           />
+
+          <div className={styles.outputActions}>
+            <button
+              type="button"
+              className={styles.button}
+              disabled={outputDraft === null || outputDraft.trim().length === 0}
+              onClick={applyImportedStyle}
+            >
+              Zastosuj wklejone
+            </button>
+            <span className={styles.hint}>
+              Wklej CSS vars (także całą regułę albo {"style={{ … }}"}) i zapisz
+              je w konfiguracji. Każda zmienna musi być w jednej linijce (np
+              definicja gradientu).
+            </span>
+          </div>
+
+          {importStatus && (
+            <p
+              className={styles.outputStatus}
+              data-tone={importStatus.tone}
+              role="status"
+            >
+              {importStatus.message}
+            </p>
+          )}
         </div>
       </div>
     </div>

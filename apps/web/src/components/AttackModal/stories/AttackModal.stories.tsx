@@ -79,7 +79,7 @@ export const Hit: Story = {
         <AttackModal {...props} open={isOpen} onClose={close}></AttackModal>
       </div>
     );
-  },  
+  },
 };
 
 export const ShipDestroyed: Story = {
@@ -89,7 +89,7 @@ export const ShipDestroyed: Story = {
     result: 1001,
     shipSize: 3,
   },
-    render: (props) => {
+  render: (props) => {
     const { isOpen, open, close } = useDisclosure(false);
     return (
       <div className="controller">
@@ -106,7 +106,8 @@ export const EnemyAttack: Story = {
     onClose: () => {},
     currentAttack: false,
     result: 101,
-  },  render: (props) => {
+  },
+  render: (props) => {
     const { isOpen, open, close } = useDisclosure(false);
     return (
       <div className="controller">

@@ -1,5 +1,4 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { expect } from "storybook/test";
 import { Ribbon } from "../Ribbon";
 import { Flag, Swords } from "../../icons";
 import { RibbonConfigurator } from "./RibbonConfigurator";

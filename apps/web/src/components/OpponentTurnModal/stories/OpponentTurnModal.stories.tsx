@@ -45,7 +45,7 @@ export const Default: Story = {
       return () => {
         clearTimeout(timerId);
       };
-    }, [isOpen]);
+    }, [isOpen, close]);
 
     return (
       <div className="controller">
@@ -93,7 +93,7 @@ export const RotatingMessages: Story = {
       return () => {
         clearTimeout(timerId);
       };
-    }, [isOpen]);
+    }, [isOpen, close]);
 
     return (
       <div className="controller">

@@ -44,7 +44,7 @@ export const Challenge: Story = {
       return () => {
         clearTimeout(timerId);
       };
-    }, [isOpen]);
+    }, [isOpen, close]);
 
     return (
       <div className="controller">
@@ -72,7 +72,7 @@ export const UnknownChallenger: Story = {
       return () => {
         clearTimeout(timerId);
       };
-    }, [isOpen]);
+    }, [isOpen, close]);
 
     return (
       <div className="controller">

@@ -20,20 +20,20 @@ export const Ribbon: FC<IProps> = ({
       <div className={styles.ribbon}>
         {children}
         {/*
-          *
-          * `clip-path` przycina wszystko, co wychodzi poza obrys elementu — również
-          * dzieci — więc treść nie może siedzieć w tym samym pudełku co kształt.
-          * Dlatego każde zakończenie składa się z dwóch warstw:
-          *
-          * 1. **kształt** (`.ribbon-fold-shape`) — puste, pomalowane tło z `clip-path`,
-          *    czyli wycięcie zostaje dokładnie takie jak wcześniej;
-          * 2. **treść** (`.ribbon-fold-content`) — ten sam prostokąt, ale bez tła,
-          *    bez `clip-path` i ponad panelem wstążki, więc `ribbonFold*Children`
-          *    może być dowolnie duże i nic nie zostanie odcięte.
-          *
-          * Obie warstwy dostają klasy `ribbon-fold-left` / `-right`, żeby nie
-          * duplikować wyliczeń pozycji, wysokości i szerokości.        
-          */}
+         *
+         * `clip-path` przycina wszystko, co wychodzi poza obrys elementu — również
+         * dzieci — więc treść nie może siedzieć w tym samym pudełku co kształt.
+         * Dlatego każde zakończenie składa się z dwóch warstw:
+         *
+         * 1. **kształt** (`.ribbon-fold-shape`) — puste, pomalowane tło z `clip-path`,
+         *    czyli wycięcie zostaje dokładnie takie jak wcześniej;
+         * 2. **treść** (`.ribbon-fold-content`) — ten sam prostokąt, ale bez tła,
+         *    bez `clip-path` i ponad panelem wstążki, więc `ribbonFold*Children`
+         *    może być dowolnie duże i nic nie zostanie odcięte.
+         *
+         * Obie warstwy dostają klasy `ribbon-fold-left` / `-right`, żeby nie
+         * duplikować wyliczeń pozycji, wysokości i szerokości.
+         */}
         <div
           aria-hidden="true"
           className={classNames(

@@ -593,3 +593,124 @@ export const toJsxStyle = (config: RibbonConfig): string => {
 
   return `style={{\n${entries}\n}}`;
 };
+
+/* ── Wklejanie gotowego stylu ───────────────────────────────────────────── */
+
+/** Wynik parsowania wklejonych zmiennych CSS wstążki. */
+export interface ParsedRibbonStyle {
+  /** Rozpoznane wartości — nadpisują tylko te pola, które były w tekście. */
+  config: Partial<RibbonConfig>;
+  /** Nazwy zmiennych zapisanych w konfiguracji (kolejność formularza). */
+  applied: string[];
+  /** Zmienne wstążki, których wartości nie da się zapisać w formularzu. */
+  rejected: { cssVar: string; value: string; reason: string }[];
+  /** Pozostałe zmienne CSS (np. z całego arkusza) — pomijane bez błędu. */
+  unknown: string[];
+}
+
+/** `1rem` w przeglądarce przy domyślnym rozmiarze fontu root. */
+const ROOT_FONT_SIZE_PX = 16;
+
+const NUMBER_ONLY = /^[-+]?(?:\d+\.?\d*|\.\d+)$/;
+const NUMBER_WITH_UNIT = /^([-+]?(?:\d+\.?\d*|\.\d+))(rem|px)$/;
+const RESET_KEYWORDS = new Set([
+  "unset",
+  "initial",
+  "inherit",
+  "revert",
+  "revert-layer",
+  "none",
+]);
+
+const FIELD_BY_CSS_VAR = new Map<string, RibbonField>(
+  RIBBON_FIELDS.map((field) => [field.cssVar, field]),
+);
+
+/** Usuwa otaczające cudzysłowy (`"--ribbon-x": "1rem",` → `1rem`). */
+const unquote = (text?: string): string => {
+  let value = text?.trim().replace(/,$/, "").trim() || "";
+  const first = value[0];
+  const last = value[value.length - 1];
+  if (value.length >= 2 && (first === '"' || first === "'") && last === first)
+    value = value.slice(1, -1).trim();
+
+  return value;
+};
+
+/**
+ * `1rem` / `1` / `16px` → liczba w `rem`. `unset` → `0` dla pól z
+ * `unsetAtZero`. Wartości nieprzeliczalnych (`calc(...)`, `%`, `em`) → `null`.
+ */
+const lengthToRem = (value: string): number | null => {
+  const text = value.toLowerCase();
+
+  if (NUMBER_ONLY.test(text)) return Number(text);
+
+  const withUnit = NUMBER_WITH_UNIT.exec(text);
+  if (withUnit) {
+    const amount = Number(withUnit[1]);
+    return withUnit[2] === "px"
+      ? Math.round((amount / ROOT_FONT_SIZE_PX) * 10000) / 10000
+      : amount;
+  }
+
+  return null;
+};
+
+/**
+ * Wklejony styl → konfiguracja.
+ *
+ * Przyjmuje CSS vars w dowolnej otoczce: regułę (`:root { … }`), listę
+ * deklaracji, a także fragment JSX z `style={{ … }}` — czyli dokładnie to, co
+ * pokazuje pole „Konfiguracja”. Pola nieobecne w tekście zostają bez zmian.
+ */
+export const parseRibbonCssVars = (input: string): ParsedRibbonStyle => {
+  const config: Partial<RibbonConfig> = {};
+  const applied: string[] = [];
+  const rejected: ParsedRibbonStyle["rejected"] = [];
+  const unknown = new Set<string>();
+
+  const source = input.replace(/\/\*[\s\S]*?\*\//g, "");
+  const declaration =
+    /(?:"|')?(--[A-Za-z0-9_-]+)(?:"|')?\s*:\s*((?:"[^"]*"|'[^']*'|[^;{}\n])*)/g;
+
+  for (const match of source.matchAll(declaration)) {
+    const cssVar = match[1];
+    const rawValue = unquote(match[2]);
+    const field = FIELD_BY_CSS_VAR.get(cssVar ?? "");
+
+    if (!field) {
+      if (cssVar) unknown.add(cssVar);
+      continue;
+    }
+
+    if (field.control === "range") {
+      const reset = RESET_KEYWORDS.has(rawValue.toLowerCase());
+      const next = reset ? 0 : lengthToRem(rawValue);
+
+      if (next === null) {
+        rejected.push({
+          cssVar: cssVar ?? "<unknown>",
+          value: rawValue,
+          reason: "pole liczbowe przyjmuje tylko rem/px/bez jednostki",
+        });
+        continue;
+      }
+
+      config[field.key] = next as never;
+      if (cssVar) applied.push(cssVar);
+      continue;
+    }
+
+    // Pola tekstowe i kolory: dowolny CSS, także `var(...)`/`calc(...)`.
+    config[field.key] = rawValue as never;
+    if (cssVar) applied.push(cssVar);
+  }
+
+  const order = new Map(
+    RIBBON_FIELDS.map((field, index) => [field.cssVar, index]),
+  );
+  applied.sort((a, b) => (order.get(a) ?? 0) - (order.get(b) ?? 0));
+
+  return { config, applied, rejected, unknown: [...unknown] };
+};

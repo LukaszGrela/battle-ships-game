@@ -365,6 +365,27 @@
   resize: vertical;
 }
 
+.outputActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.outputStatus {
+  margin: 0;
+  font-size: 0.65rem;
+  line-height: 1.35;
+}
+
+.outputStatus[data-tone="ok"] {
+  color: color-mix(in srgb, #185f78 70%, currentColor);
+}
+
+.outputStatus[data-tone="error"] {
+  color: #b83b2d;
+}
+
 .srOnly {
   position: absolute;
   width: 1px;
