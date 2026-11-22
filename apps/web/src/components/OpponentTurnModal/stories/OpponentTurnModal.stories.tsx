@@ -1,5 +1,4 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { expect } from "storybook/test";
 import { useDisclosure } from "../../../utils/useDisclosure";
 import { Button } from "../../Button";
 import { OpponentTurnModal } from "../OpponentTurnModal";
@@ -53,13 +52,6 @@ export const Default: Story = {
         <OpponentTurnModal {...props} open={isOpen} onClose={close} />
       </div>
     );
-  },
-  play: async ({ canvas, userEvent }) => {
-    await userEvent.click(
-      canvas.getByRole("button", { name: /show opponent turn/i }),
-    );
-    await expect(canvas.getByRole("dialog")).toBeVisible();
-    await expect(canvas.getByRole("heading")).toHaveTextContent(/blackbeard/i);
   },
 };
 

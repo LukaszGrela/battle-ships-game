@@ -156,7 +156,7 @@ Production builds are generated in `apps/web/dist` by `pnpm build`. The producti
 pnpm --filter @repo/web test
 ```
 
-## Storybook 
+## Storybook
 
 To run the storybook use following command, it will open it on `localhost:6007`
 
