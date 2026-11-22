@@ -128,12 +128,13 @@ Persistence is opt-in. Any of `STATE_ENABLED`, `STATE_DIR` or `STATE_SAVE_TOKEN`
 | `STATE_DIR` | `~/.battle-ships-game/state` | Directory holding `server-state.json` — keep it **outside the repository** |
 | `STATE_SAVE_TOKEN` | – | Token for `POST /admin/state/save`; without it the endpoint is not mounted at all |
 
-What the snapshot contains: every live room (both boards, ships left, turn, phase, battle index, rematch request), client sessions (including `disconnectedAt`), the claimed room names and the finished-battle statistics.
+What the snapshot contains: every live room (both boards, ships left, turn, phase, battle index, rematch request), client sessions (including `disconnectedAt`), the claimed room names, the finished-battle statistics and every live bot (its PRNG position, placement attempts, last seen phase and the whole brain state).
 
 Restore policy:
 
 - a `Finished` room comes back with the rematch state reset, and its TTL is counted from the moment the battle ended, not from the restart;
-- a room with a bot is closed (`restore-no-bot`) — the bot brain is not serialized in stage 1, so a bot seat cannot be resumed;
+- a room with a bot resumes both the seat and the driver: the bot keeps its PRNG stream, its placement budget and everything its brain had learned, so its next shots are the ones it would have made without the restart (`Stage 2`);
+- a room whose bot has no snapshot record (a snapshot written before stage 2) is closed (`restore-no-bot`), and so is a room whose bot snapshot does not deserialize (`restore-bot-error`) — a bot that cannot be resumed would freeze the battle;
 - a room without human players is closed (`restore-empty`);
 - a room that fails deserialization is skipped (`restore-deserialize-error`);
 - sessions return with their old `disconnectedAt`, and the reconnect window after a restart is **90 s** (`RESTART_RECONNECT_GRACE_MS`), so nobody is forfeited while reloading the page.
@@ -308,7 +309,7 @@ cd apps/server
 pnpm test
 ```
 
-The suite covers reconnect restoration, room lifecycle transitions, disconnect handling, the rematch flow, the bot lifecycle (`src/bots/BotRunner.e2e.test.ts`), the finished-game summary and the statistics store (`src/services/game-stats.service.test.ts`).
+The suite covers reconnect restoration, room lifecycle transitions, disconnect handling, the rematch flow, the bot lifecycle (`src/bots/BotRunner.e2e.test.ts`), bot state serialization and driver re-attachment (`src/bots/serialization.test.ts`), the finished-game summary and the statistics store (`src/services/game-stats.service.test.ts`).
 
 ## Screenshots
 

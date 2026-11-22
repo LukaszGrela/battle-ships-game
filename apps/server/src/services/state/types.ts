@@ -1,4 +1,5 @@
 import type { IClientSession } from "@repo/types";
+import type { IBotPlayerSnapshot } from "../../bots/BotPlayer";
 import type { IFinishedGameRecord } from "../game-stats.service";
 
 /** One room, already serialized by `WarRoom.serialize()`. */
@@ -9,12 +10,26 @@ export interface IRoomSnapshot {
   data: string;
 }
 
+/**
+ * Live bot of a room. The bot's `IPlayer` already travels inside the room
+ * snapshot – this record only restores the driver (brain + scheduler).
+ */
+export interface IBotStateRecord {
+  roomId: string;
+  bot: IBotPlayerSnapshot;
+}
+
 /** The mutable part of the server that a restart has to bring back. */
 export interface IStateSnapshot {
   rooms: IRoomSnapshot[];
   sessions: IClientSession[];
   roomNames: string[];
   gameStats: IFinishedGameRecord[];
+  /**
+   * Optional: snapshots written before stage 2 have no bot data at all, and a
+   * room whose bot cannot be resumed is closed by the restore flow.
+   */
+  bots?: IBotStateRecord[];
 }
 
 /** On-disk wrapper: metadata + checksum + payload. */
@@ -36,6 +51,7 @@ export interface IStateSaveResult {
   rooms: number;
   sessions: number;
   gameStats: number;
+  bots: number;
 }
 
 export interface IRestoredRoomInfo {
@@ -58,6 +74,8 @@ export interface IRestoreReport {
   closedRooms: IClosedRoomInfo[];
   sessions: number;
   gameStats: number;
+  /** Live bot drivers re-attached to restored rooms. */
+  bots: number;
   /** Present when nothing was restored (`no-snapshot`, `corrupt`, ...). */
   reason?: string;
 }

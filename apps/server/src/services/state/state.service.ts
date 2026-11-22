@@ -68,6 +68,7 @@ export class StateService {
         closedRooms: [],
         sessions: 0,
         gameStats: 0,
+        bots: 0,
         reason: "no-snapshot",
       };
     }
@@ -80,6 +81,7 @@ export class StateService {
         closedRooms: [],
         sessions: 0,
         gameStats: 0,
+        bots: 0,
         reason: loaded.quarantinedPath
           ? `${loaded.reason} (moved to ${loaded.quarantinedPath})`
           : loaded.reason,

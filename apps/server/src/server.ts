@@ -154,6 +154,7 @@ export function createGameServer({
         closedRooms: [],
         sessions: 0,
         gameStats: 0,
+        bots: 0,
         reason: "disabled",
       };
     }
@@ -161,7 +162,7 @@ export function createGameServer({
     try {
       const report = await stateService.restore(io);
       console.info(
-        `[state] restore: ${report.rooms.length} room(s), ${report.sessions} session(s), ${report.gameStats} result(s)`,
+        `[state] restore: ${report.rooms.length} room(s), ${report.sessions} session(s), ${report.gameStats} result(s), ${report.bots} bot(s)`,
         report.closedRooms.length
           ? `closed: ${report.closedRooms.map((room) => `${room.name} (${room.reason})`).join(", ")}`
           : "",
@@ -176,6 +177,7 @@ export function createGameServer({
         closedRooms: [],
         sessions: 0,
         gameStats: 0,
+        bots: 0,
         reason: "restore-failed",
       };
     }

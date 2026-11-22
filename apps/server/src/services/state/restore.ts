@@ -12,11 +12,13 @@ import {
   scheduleFinishedRoomCleanup,
 } from "../../utils/roomLifecycle";
 import ActiveGameRegistrySingleton from "../active-game-registry";
+import BotRunnerService from "../bot-runner";
 import ClientSessionServiceSingleton from "../client-session.service";
 import GameStatsServiceSingleton from "../game-stats.service";
 import { warRoomNames } from "../WarRoomName.service";
 import { WarRoom } from "../WarRoom";
 import type {
+  IBotStateRecord,
   IClosedRoomInfo,
   IRestoreReport,
   IRestoredRoomInfo,
@@ -45,11 +47,22 @@ export const restoreStateSnapshot = (
   const registry = ActiveGameRegistrySingleton.getInstance();
   const sessions = ClientSessionServiceSingleton.getInstance();
   const stats = GameStatsServiceSingleton.getInstance();
+  const botRunner = BotRunnerService.getInstance();
+
+  // Grouped up front: a room may only resume with a driver for every bot player
+  // it contains, otherwise the restored battle would freeze.
+  const botRecords = new Map<string, IBotStateRecord[]>();
+  for (const record of snapshot.bots ?? []) {
+    const bucket = botRecords.get(record.roomId);
+    if (bucket) bucket.push(record);
+    else botRecords.set(record.roomId, [record]);
+  }
 
   const now = Date.now();
   const rooms: IRestoredRoomInfo[] = [];
   const closedRooms: IClosedRoomInfo[] = [];
   const restoredIds = new Set<string>();
+  let restoredBots = 0;
 
   for (const record of snapshot.rooms) {
     let room: WarRoom;
@@ -72,11 +85,17 @@ export const restoreStateSnapshot = (
 
     const players = room.getPlayers();
     const humans = players.filter((player) => !isBot(player));
+    const botPlayers = players.filter(isBot);
 
-    // Stage 1 does not persist bot brains, so a room with a bot cannot be
-    // resumed: the bot would lose its RNG position, brain memory and
-    // placement attempts and start making inconsistent moves.
-    if (players.some(isBot)) {
+    // A bot needs its saved brain, PRNG position and placement budget. Without
+    // a matching record (`stage 1` snapshots, or a record for another player)
+    // the room is closed instead of resuming a bot that cannot play its game.
+    const roomBotRecords = botRecords.get(room.id) ?? [];
+    const hasBotDriver = botPlayers.every((player) =>
+      roomBotRecords.some((record) => record.bot.id === player.id),
+    );
+
+    if (botPlayers.length > 0 && !hasBotDriver) {
       closedRooms.push({
         id: room.id,
         name: room.name,
@@ -105,7 +124,35 @@ export const restoreStateSnapshot = (
       phase === EGamePhase.Finished ? room.resetRematchState() : false;
 
     registry.addRoom(room.id, room);
+
+    try {
+      for (const player of botPlayers) {
+        const record = roomBotRecords.find(
+          (candidate) => candidate.bot.id === player.id,
+        )!;
+        const restoredBot = botRunner.restoreBot(room.id, record.bot);
+        if (!restoredBot) {
+          throw new Error(`bot ${player.id} could not be re-attached`);
+        }
+      }
+    } catch (error) {
+      console.warn(
+        "[state] could not restore bot driver, closing room",
+        room.id,
+        (error as Error).message,
+      );
+      // Releases the name, the bot(s) and the registry entry in one place.
+      closeGameRoom(io, room.id, "restore-bot-error");
+      closedRooms.push({
+        id: room.id,
+        name: room.name,
+        reason: "restore-bot-error",
+      });
+      continue;
+    }
+
     restoredIds.add(room.id);
+    restoredBots += botPlayers.length;
     rooms.push({ id: room.id, name: room.name, phase, rematchReset });
   }
 
@@ -169,5 +216,6 @@ export const restoreStateSnapshot = (
     closedRooms,
     sessions: restoredSessions,
     gameStats,
+    bots: restoredBots,
   };
 };

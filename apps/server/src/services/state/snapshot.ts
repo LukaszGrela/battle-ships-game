@@ -1,4 +1,5 @@
 import ActiveGameRegistrySingleton from "../active-game-registry";
+import BotRunnerService from "../bot-runner";
 import ClientSessionServiceSingleton from "../client-session.service";
 import GameStatsServiceSingleton from "../game-stats.service";
 import { warRoomNames } from "../WarRoomName.service";
@@ -35,5 +36,8 @@ export const collectStateSnapshot = (): IStateSnapshot => {
     sessions: sessions.listSessions(),
     roomNames: warRoomNames.listClaimed(),
     gameStats: [...stats.allGames()],
+    // Only rooms that really host a live bot are written, so a snapshot never
+    // claims a driver it cannot restore.
+    bots: BotRunnerService.getInstance().serializeBots(),
   };
 };

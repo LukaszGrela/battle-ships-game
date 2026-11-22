@@ -68,6 +68,7 @@ export class FileStateStore {
       rooms: state.rooms.length,
       sessions: state.sessions.length,
       gameStats: state.gameStats.length,
+      bots: (state.bots ?? []).length,
     };
   }
 
@@ -122,6 +123,12 @@ export class FileStateStore {
       !Array.isArray(state.gameStats)
     ) {
       return this.#quarantine("malformed state");
+    }
+
+    // Optional on purpose: snapshots written before bots were persisted are
+    // still valid, and the restore flow closes rooms whose bot has no record.
+    if (state.bots !== undefined && !Array.isArray(state.bots)) {
+      return this.#quarantine("malformed state (bots)");
     }
 
     return {

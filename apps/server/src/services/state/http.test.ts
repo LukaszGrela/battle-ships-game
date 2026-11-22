@@ -54,6 +54,7 @@ describe("services/state/http", () => {
       rooms: 1,
       sessions: 2,
       gameStats: 3,
+      bots: 0,
     }));
 
     const handler = createStateHttpHandler({
