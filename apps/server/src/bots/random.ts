@@ -16,7 +16,10 @@ export interface IPRNGState {
 }
 
 const isUint32 = (value: unknown): value is number =>
-  typeof value === "number" && Number.isInteger(value) && value >= 0 && value <= 0xffffffff;
+  typeof value === "number" &&
+  Number.isInteger(value) &&
+  value >= 0 &&
+  value <= 0xffffffff;
 
 export class Mulberry32 {
   #seed: number;

@@ -119,7 +119,10 @@ export class ProbabilityBrain implements IBotBrain {
       );
     }
 
-    const grid = Buffer.from(readString(state.grid, "brain.state.grid"), "base64");
+    const grid = Buffer.from(
+      readString(state.grid, "brain.state.grid"),
+      "base64",
+    );
     if (grid.length !== size * size) {
       throw new BotStateError(
         `brain.state.grid: expected ${size * size} cells, received ${grid.length}`,
@@ -156,16 +159,20 @@ export class ProbabilityBrain implements IBotBrain {
       (entry, path) => {
         const record = readRecord(entry, path);
         const shipId = readInt(record.shipId, `${path}.shipId`, 0, 1000);
-        const cells = readArray(record.cells, `${path}.cells`, (cell, cellPath) => {
-          const coords = readArray(cell, cellPath, (value, valuePath) =>
-            readInt(value, valuePath, 0, size - 1),
-          );
-          if (coords.length !== 2) {
-            throw new BotStateError(`${cellPath}: expected [x, y]`);
-          }
+        const cells = readArray(
+          record.cells,
+          `${path}.cells`,
+          (cell, cellPath) => {
+            const coords = readArray(cell, cellPath, (value, valuePath) =>
+              readInt(value, valuePath, 0, size - 1),
+            );
+            if (coords.length !== 2) {
+              throw new BotStateError(`${cellPath}: expected [x, y]`);
+            }
 
-          return { x: coords[0] as number, y: coords[1] as number };
-        });
+            return { x: coords[0] as number, y: coords[1] as number };
+          },
+        );
 
         return { shipId, cells };
       },
@@ -181,7 +188,9 @@ export class ProbabilityBrain implements IBotBrain {
     );
 
     this.grid = new Uint8Array(grid);
-    this.aliveShips = new Map(aliveShips.map(({ shipId, shipSize }) => [shipId, shipSize]));
+    this.aliveShips = new Map(
+      aliveShips.map(({ shipId, shipSize }) => [shipId, shipSize]),
+    );
     this.hitsByShip = new Map(
       hitsByShip.map(({ shipId, cells }) => [shipId, cells]),
     );
@@ -300,7 +309,8 @@ export class ProbabilityBrain implements IBotBrain {
       if (this.grid[i] === UNKNOWN) candidates.push(i);
     }
     if (candidates.length === 0) return undefined;
-    const pick = candidates[Math.floor(this.rng.next() * candidates.length)] ?? 0;
+    const pick =
+      candidates[Math.floor(this.rng.next() * candidates.length)] ?? 0;
     return { x: pick % this.n, y: Math.floor(pick / this.n) };
   }
 

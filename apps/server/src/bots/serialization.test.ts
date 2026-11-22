@@ -1,5 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { IPlayer, TCellStatusShipId, TCoordinate, TShip } from "@repo/types";
+import type {
+  IPlayer,
+  TCellStatusShipId,
+  TCoordinate,
+  TShip,
+} from "@repo/types";
 import { WarRoom } from "../services/WarRoom";
 import { BotPlayer, type IBotPlayerSnapshot } from "./BotPlayer";
 import { BotRunner, DEFAULT_BOTS_CONFIG, BOT_ID_PREFIX } from "./BotRunner";
@@ -85,7 +90,11 @@ describe("Mulberry32 state", () => {
 
 describe("ProbabilityBrain serialization", () => {
   const build = (): ProbabilityBrain => {
-    const brain = new ProbabilityBrain({ size: 10, seed: 99, blunderChance: 0 });
+    const brain = new ProbabilityBrain({
+      size: 10,
+      seed: 99,
+      blunderChance: 0,
+    });
     brain.setFleet(fleetSpecs());
     brain.report({ x: 0, y: 0 }, 101 as TAttackOutcome);
     brain.report({ x: 1, y: 0 }, 0 as TAttackOutcome);
@@ -113,9 +122,7 @@ describe("ProbabilityBrain serialization", () => {
       collect(8, () => restored.nextShot()),
     );
     // the restored blunder rate is the one the bot played with, not the default
-    expect(restored.serialize().state).toEqual(
-      original.serialize().state,
-    );
+    expect(restored.serialize().state).toEqual(original.serialize().state);
   });
 
   it("rejects a snapshot from another brain kind", () => {
@@ -244,10 +251,10 @@ describe("BotRunner.restoreBot", () => {
   it("returns undefined when the room or its bot player is gone", () => {
     vi.useFakeTimers();
     const room = new WarRoom("room-gone", "Gone", createHuman());
-    const runner = new BotRunner(
-      (id) => (id === room.id ? room : undefined),
-      { ...DEFAULT_BOTS_CONFIG, difficulty: "easy" },
-    );
+    const runner = new BotRunner((id) => (id === room.id ? room : undefined), {
+      ...DEFAULT_BOTS_CONFIG,
+      difficulty: "easy",
+    });
     runners.push(runner);
 
     runner.spawnBot(room.id, "easy");

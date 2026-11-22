@@ -40,7 +40,11 @@ export const readInt = (
   min = Number.MIN_SAFE_INTEGER,
   max = Number.MAX_SAFE_INTEGER,
 ): number => {
-  if (!Number.isInteger(value) || (value as number) < min || (value as number) > max) {
+  if (
+    !Number.isInteger(value) ||
+    (value as number) < min ||
+    (value as number) > max
+  ) {
     throw new BotStateError(
       `${path}: expected an integer between ${min} and ${max}`,
     );
@@ -55,8 +59,15 @@ export const readNumber = (
   min: number,
   max: number,
 ): number => {
-  if (typeof value !== "number" || !Number.isFinite(value) || value < min || value > max) {
-    throw new BotStateError(`${path}: expected a number between ${min} and ${max}`);
+  if (
+    typeof value !== "number" ||
+    !Number.isFinite(value) ||
+    value < min ||
+    value > max
+  ) {
+    throw new BotStateError(
+      `${path}: expected a number between ${min} and ${max}`,
+    );
   }
 
   return value;

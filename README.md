@@ -122,11 +122,11 @@ A restart (deploy, `systemctl restart`, reboot) no longer wipes battles in progr
 
 Persistence is opt-in. Any of `STATE_ENABLED`, `STATE_DIR` or `STATE_SAVE_TOKEN` turns it on, `STATE_ENABLED=false` forces it off, and when it is off nothing is read or written — local development and the test suite stay file-free.
 
-| Variable | Default | Meaning |
-| --- | --- | --- |
-| `STATE_ENABLED` | auto | `1` / `true` / `on` forces persistence on, `0` / `false` / `off` forces it off |
-| `STATE_DIR` | `~/.battle-ships-game/state` | Directory holding `server-state.json` — keep it **outside the repository** |
-| `STATE_SAVE_TOKEN` | – | Token for `POST /admin/state/save`; without it the endpoint is not mounted at all |
+| Variable           | Default                      | Meaning                                                                           |
+| ------------------ | ---------------------------- | --------------------------------------------------------------------------------- |
+| `STATE_ENABLED`    | auto                         | `1` / `true` / `on` forces persistence on, `0` / `false` / `off` forces it off    |
+| `STATE_DIR`        | `~/.battle-ships-game/state` | Directory holding `server-state.json` — keep it **outside the repository**        |
+| `STATE_SAVE_TOKEN` | –                            | Token for `POST /admin/state/save`; without it the endpoint is not mounted at all |
 
 What the snapshot contains: every live room (both boards, ships left, turn, phase, battle index, rematch request), client sessions (including `disconnectedAt`), the claimed room names, the finished-battle statistics and every live bot (its PRNG position, placement attempts, last seen phase and the whole brain state).
 
@@ -149,10 +149,10 @@ Write triggers:
 
 ### HTTP endpoints
 
-| Endpoint | Auth | Response |
-| --- | --- | --- |
-| `GET /health` | none | `{ status, uptime, timestamp, clientsCount, version }` |
-| `POST /admin/state/save` | `x-state-token: <token>` or `Authorization: Bearer <token>` | `{ ok: true, savedAt, rooms, sessions, gameStats }` |
+| Endpoint                 | Auth                                                        | Response                                               |
+| ------------------------ | ----------------------------------------------------------- | ------------------------------------------------------ |
+| `GET /health`            | none                                                        | `{ status, uptime, timestamp, clientsCount, version }` |
+| `POST /admin/state/save` | `x-state-token: <token>` or `Authorization: Bearer <token>` | `{ ok: true, savedAt, rooms, sessions, gameStats }`    |
 
 A missing token, a wrong token, a wrong method and an unknown path all return a bare `404` with an empty body, so the endpoint cannot be discovered by probing. A genuine save failure with a valid token returns `500`, which only the authenticated caller can see.
 

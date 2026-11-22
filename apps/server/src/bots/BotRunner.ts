@@ -145,7 +145,10 @@ export class BotRunner {
    * Returns the bot's player, `undefined` when the room or its player is gone,
    * and throws `BotStateError` when the snapshot itself is invalid.
    */
-  restoreBot(roomId: string, snapshot: IBotPlayerSnapshot): IPlayer | undefined {
+  restoreBot(
+    roomId: string,
+    snapshot: IBotPlayerSnapshot,
+  ): IPlayer | undefined {
     const room = this.getRoom(roomId);
     if (!room) return undefined;
 

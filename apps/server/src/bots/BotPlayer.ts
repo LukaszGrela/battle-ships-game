@@ -139,17 +139,31 @@ export class BotPlayer {
 
     const id = readString(snapshot.id, "bot.id");
     if (id !== this.id) {
-      throw new BotStateError(`bot.id: expected "${this.id}", received "${id}"`);
+      throw new BotStateError(
+        `bot.id: expected "${this.id}", received "${id}"`,
+      );
     }
 
     const seed = readInt(snapshot.seed, "bot.seed", 0, 0xffffffff);
     if (seed !== this.seed) {
-      throw new BotStateError(`bot.seed: expected ${this.seed}, received ${seed}`);
+      throw new BotStateError(
+        `bot.seed: expected ${this.seed}, received ${seed}`,
+      );
     }
 
     const options = readRecord(snapshot.options, "bot.options");
-    const minDelayMs = readNumber(options.minDelayMs, "bot.options.minDelayMs", 0, 60_000);
-    const maxDelayMs = readNumber(options.maxDelayMs, "bot.options.maxDelayMs", 0, 60_000);
+    const minDelayMs = readNumber(
+      options.minDelayMs,
+      "bot.options.minDelayMs",
+      0,
+      60_000,
+    );
+    const maxDelayMs = readNumber(
+      options.maxDelayMs,
+      "bot.options.maxDelayMs",
+      0,
+      60_000,
+    );
     if (maxDelayMs < minDelayMs) {
       throw new BotStateError("bot.options: maxDelayMs must be >= minDelayMs");
     }
