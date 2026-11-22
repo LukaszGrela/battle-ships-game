@@ -348,8 +348,7 @@ export const GamePlacement: FC = () => {
     const someNotPlaced = ships.some(
       (needle) => needle.type === "pending" && !needle.placed,
     );
-    console.log("handleAutoPlacement", availableShips);
-    console.log("handleAutoPlacement", someNotPlaced);
+
     let board = placementBoard;
     if (!someNotPlaced) {
       // reset first
