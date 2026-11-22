@@ -78,6 +78,7 @@ export const GameHeader: FC<{
             phase={gameState.phase}
             className={styles.home}
             result={gameState.result[gameState.self.id]}
+            battleResults={gameState.battleResults?.[gameState.self.id]}
           />
         )}
         {gameState && (
@@ -87,6 +88,7 @@ export const GameHeader: FC<{
             enemy
             phase={gameState.phase}
             result={gameState.result[gameState.enemy.id]}
+            battleResults={gameState.battleResults?.[gameState.enemy.id]}
           />
         )}
       </div>

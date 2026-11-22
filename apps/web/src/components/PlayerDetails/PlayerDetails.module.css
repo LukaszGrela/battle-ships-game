@@ -80,19 +80,17 @@
   font-size: 0.75em;
   width: 100%;
   text-align: center;
-  
+
   position: absolute;
   bottom: -10px;
   left: 50%;
   transform: translateX(-50%);
   text-wrap: nowrap;
-  
-  
+
   @media screen and (max-width: 720px) {
     width: 150%;
     bottom: -5px;
   }
-
 }
 
 .playerReady {
@@ -126,6 +124,43 @@
     rotate: 45deg;
     right: unset;
     left: -10px;
+  }
+}
+.battleResults {
+  display: flex;
+  align-items: end;
+  position: absolute;
+  top: -28px;
+  left: 4px;
+
+  font-size: 0.75em;
+
+  & ul {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    /* @media screen and (max-width: 720px) {
+      width: 32px;
+      flex-wrap: wrap;
+    } */
+  }
+
+  [data-enemy] & {
+    left: unset;
+    right: 4px;
+  }
+
+  /* & :global(.BattleResults_tail) {
+
+  } */
+
+  & img {
+    height: auto;
+    width: 24px;
+
+    @media screen and (max-width: 720px) {
+      width: 16px;
+    }
   }
 }
 

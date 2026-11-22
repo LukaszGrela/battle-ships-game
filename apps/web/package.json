@@ -1,7 +1,7 @@
 {
   "name": "@repo/web",
   "private": true,
-  "version": "0.5.1",
+  "version": "0.6.1",
   "scripts": {
     "dev": "vite --host",
     "build": "tsc -b tsconfig.build.json && vite build",
