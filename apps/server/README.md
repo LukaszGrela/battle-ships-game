@@ -80,6 +80,7 @@ If a player disconnects while playing, the server keeps the room alive for a rec
 When a game ends, the losing player may request a rematch. The winner can accept or reject it:
 
 - `request_rematch`
+- `cancel_rematch`
 - `accept_rematch`
 - `reject_rematch`
 

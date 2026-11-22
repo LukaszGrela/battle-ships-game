@@ -5,9 +5,13 @@ import type {
   IServerToClientEvents,
   TBotDifficulty,
 } from "@repo/types";
-import { BotRunner, DEFAULT_BOTS_CONFIG } from "../bots";
+import { BotRunner, DEFAULT_BOTS_CONFIG, type TBotAction } from "../bots";
 import ActiveGameRegistrySingleton from "./active-game-registry";
 import ClientSessionServiceSingleton from "./client-session.service";
+import {
+  notifyRematchAccepted,
+  notifyRematchRequested,
+} from "../utils/rematchEvents";
 
 type TGameServer = Server<IClientToServerEvents, IServerToClientEvents>;
 
@@ -46,8 +50,9 @@ export class BotRunnerService {
       (roomId) => ActiveGameRegistrySingleton.getInstance().getRoom(roomId),
       DEFAULT_BOTS_CONFIG,
       {
-        // The bot changed the room state -> push it to the human players.
-        onBotAction: (roomId) => this.broadcastRoomState(roomId),
+        // The bot changed the room state -> announce rematch events and push
+        // the new state to the human players.
+        onBotAction: (roomId, action) => this.handleBotAction(roomId, action),
       },
     );
   }
@@ -99,6 +104,24 @@ export class BotRunnerService {
 
   getBotPlayer(roomId: string): IPlayer | undefined {
     return this.runner.getBotPlayer(roomId);
+  }
+
+  /**
+   * The bot has no socket, so rematch events it triggers are emitted here,
+   * through the same helpers the socket handlers use.
+   */
+  private handleBotAction(roomId: string, action: TBotAction): void {
+    const io = this.ioByRoom.get(roomId) ?? this.ioProvider?.();
+    if (!io) return;
+
+    if (action === "rematch_accepted") {
+      notifyRematchAccepted(io, roomId);
+    } else if (action === "rematch_requested") {
+      const bot = this.runner.getBotPlayer(roomId);
+      if (bot) notifyRematchRequested(io, roomId, bot.id);
+    }
+
+    this.broadcastRoomState(roomId);
   }
 
   /** Choke point – call after every room state broadcast. */

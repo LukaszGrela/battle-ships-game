@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { EGamePhase, IPlayer, TCellStatusShipId, TShip } from "@repo/types";
 import ActiveGameRegistrySingleton from "../../../services/active-game-registry";
+import BotRunnerService from "../../../services/bot-runner";
 import ClientSessionServiceSingleton from "../../../services/client-session.service";
 import { WarRoom } from "../../../services/WarRoom";
 import { createIo, createSocket } from "./__tests/utils";
@@ -45,6 +46,17 @@ const createFinishedWarRoom = (roomId: string) => {
   room.addPlayer(createPlayer("opponent"));
   expect(room.placeShips("owner", createFleet())).toBe(true);
   expect(room.placeShips("opponent", createFleet())).toBe(true);
+  expect(room.forfeit("owner")).toBe(true);
+  expect(room.getPhase()).toBe(EGamePhase.Finished);
+  activeGames.addRoom(room.id, room);
+  return room;
+};
+
+const createFinishedWarRoomWithBot = (roomId: string) => {
+  const room = new WarRoom(roomId, `${roomId}-name`, createPlayer("owner", true));
+  room.addPlayer({ ...createPlayer("bot-1"), botLevel: "hard" as const });
+  expect(room.placeShips("owner", createFleet())).toBe(true);
+  expect(room.placeShips("bot-1", createFleet())).toBe(true);
   expect(room.forfeit("owner")).toBe(true);
   expect(room.getPhase()).toBe(EGamePhase.Finished);
   activeGames.addRoom(room.id, room);
@@ -102,6 +114,31 @@ describe("rematch handlers", () => {
       seed: 80,
       expiresAt: expect.any(String),
     });
+  });
+
+  it("wakes the bot for a rematch request even without a client session", () => {
+    const room = createFinishedWarRoomWithBot("rematch-bot-room");
+    sessionService.createSession("owner", 1, "owner-socket");
+
+    const wakeBot = vi.spyOn(
+      BotRunnerService.getInstance(),
+      "onRoomStateChanged",
+    );
+    const io = createIo();
+    factoryRequestRematchHandler(io, createSocket("owner"))();
+
+    expect(room.getGameState("owner")?.rematchRequest).toMatchObject({
+      requestorId: "owner",
+      status: "pending",
+    });
+    // Regression: the bot has no ClientSession, so the old session-gated branch
+    // never broadcast the room state and the parked bot never answered.
+    expect(wakeBot).toHaveBeenCalledWith(room.id);
+    expect(io._toSpy).not.toHaveBeenCalledWith(
+      "rematch_requested",
+      expect.anything(),
+    );
+    wakeBot.mockRestore();
   });
 
   it("accepts a rematch, resets the game, updates sessions, and emits state", () => {
