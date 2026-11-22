@@ -72,6 +72,8 @@ export interface IGameStatsService {
   playedGames(): number;
   playedGamesByForfeit(): number;
   recentGames(limit?: number): readonly IFinishedGameRecord[];
+  /** Every stored record, insertion order. Used by the state snapshot. */
+  allGames(): readonly IFinishedGameRecord[];
   getGame(id: string): IFinishedGameRecord | undefined;
   playerStats(playerId: string): IPlayerGameStats | undefined;
   allPlayerStats(): IPlayerGameStats[];
@@ -122,6 +124,10 @@ export class GameStatsService implements IGameStatsService {
     return Array.from(this.#games.values())
       .sort((a, b) => b.finishedAt.localeCompare(a.finishedAt))
       .slice(0, Math.max(0, limit));
+  }
+
+  allGames(): readonly IFinishedGameRecord[] {
+    return Array.from(this.#games.values());
   }
 
   getGame(id: string): IFinishedGameRecord | undefined {

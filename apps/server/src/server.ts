@@ -2,7 +2,10 @@ import { createServer } from "node:http";
 import { Server } from "socket.io";
 import { IClientToServerEvents, IServerToClientEvents } from "@repo/types";
 import { factoryConnectHandler } from "./socket";
-import { expireDisconnectedPlayers } from "./utils/reconnectGrace";
+import {
+  expireDisconnectedPlayers,
+  disposeRestartGrace,
+} from "./utils/reconnectGrace";
 import {
   createSocketSecurity,
   type ISocketSecurityLogger,
@@ -17,6 +20,17 @@ import { isProd } from "./utils/isProd";
 import { BotRunnerService as BotRunnerServiceSingleton } from "./bots";
 import { disposeRoomLifecycle } from "./utils/roomLifecycle";
 import { disposeRematchTimeouts } from "./utils/rematchTimeout";
+import {
+  StateService,
+  createStateHttpHandler,
+  type IRestoreReport,
+} from "./services/state";
+import {
+  AUTOSAVE_INTERVAL_MS,
+  getStateDir,
+  getStateSaveToken,
+  isStatePersistenceEnabled,
+} from "./config/state";
 
 export interface IGameServerOptions {
   instrumentAdminUi?: boolean;
@@ -37,6 +51,14 @@ export interface IGameServerOptions {
   /** Enable only behind a proxy you control (nginx / Cloudflare / ALB). */
   trustProxy?: boolean;
   logger?: ISocketSecurityLogger;
+  /**
+   * Snapshot directory. Defaults to `STATE_DIR` / `~/.battle-ships-game/state`,
+   * deliberately outside the repository. Pass `false` to disable persistence for
+   * this server instance (the test suite does).
+   */
+  stateDir?: string | false;
+  /** Overrides `STATE_SAVE_TOKEN`; without a token the admin route is not mounted. */
+  saveStateToken?: string;
 }
 
 const DEV_ORIGINS = ["http://localhost:3100", "http://localhost:3102"];
@@ -54,8 +76,17 @@ export function createGameServer({
   ipLimit,
   trustProxy,
   logger,
+  stateDir,
+  saveStateToken,
 }: IGameServerOptions = {}) {
   let APP_VERSION: string = "";
+
+  const readVersion = async (): Promise<string> => {
+    if (!APP_VERSION) {
+      APP_VERSION = await getVersion();
+    }
+    return APP_VERSION;
+  };
 
   if (!sessionSecret) {
     throw new Error("SESSION_SECRET is required by createGameServer()");
@@ -102,7 +133,98 @@ export function createGameServer({
   // Installed first, so auth + rate limiting precede every game handler.
   security.install(io);
 
+  const stateEnabled =
+    stateDir !== false &&
+    (stateDir !== undefined || isStatePersistenceEnabled());
+  const stateService = stateEnabled
+    ? new StateService({
+        dir: typeof stateDir === "string" ? stateDir : getStateDir(),
+      })
+    : undefined;
+  const stateSaveToken = saveStateToken ?? getStateSaveToken();
+
+  // Restoring happens before the first connection is handled: a client that
+  // reconnects immediately must find its room, its session and its gameId
+  // already in place, otherwise `welcome` would drop it into a fresh lobby.
+  const ready: Promise<IRestoreReport> = (async () => {
+    if (!stateService) {
+      return {
+        restored: false,
+        rooms: [],
+        closedRooms: [],
+        sessions: 0,
+        gameStats: 0,
+        reason: "disabled",
+      };
+    }
+
+    try {
+      const report = await stateService.restore(io);
+      console.info(
+        `[state] restore: ${report.rooms.length} room(s), ${report.sessions} session(s), ${report.gameStats} result(s)`,
+        report.closedRooms.length
+          ? `closed: ${report.closedRooms.map((room) => `${room.name} (${room.reason})`).join(", ")}`
+          : "",
+        report.reason ?? "",
+      );
+      return report;
+    } catch (error) {
+      console.error("[state] restore failed:", error);
+      return {
+        restored: false,
+        rooms: [],
+        closedRooms: [],
+        sessions: 0,
+        gameStats: 0,
+        reason: "restore-failed",
+      };
+    }
+  })();
+
+  // Holding the handshake until the snapshot is applied keeps the restore
+  // atomic from the client's point of view.
+  io.use((_socket, next) => {
+    ready.then(
+      () => next(),
+      () => next(),
+    );
+  });
+
   io.on("connection", factoryConnectHandler(io));
+
+  const handleHttpRequest = createStateHttpHandler({
+    enabled: Boolean(stateService),
+    saveToken: stateSaveToken,
+    getVersion: readVersion,
+    getSocketCount: () => io.engine?.clientsCount ?? 0,
+    save: async () => {
+      if (!stateService) {
+        throw new Error("state persistence is disabled");
+      }
+      return stateService.save();
+    },
+  });
+
+  httpServer.on("request", (req, res) => {
+    void handleHttpRequest(req, res);
+  });
+
+  // Crash recovery: the periodic snapshot bounds what an unexpected exit can
+  // cost. It starts only after the restore finished, so a slow restore cannot
+  // be overwritten by an empty in-memory state. `StateService.save()`
+  // serializes the writes, and a failed save must not stop the interval.
+  let autosave: NodeJS.Timeout | undefined;
+  if (stateService) {
+    const autosaveService = stateService;
+    void ready.then(() => {
+      autosave = setInterval(() => {
+        autosaveService.save().catch((error) => {
+          console.error("[state] autosave failed:", error);
+        });
+      }, AUTOSAVE_INTERVAL_MS);
+      autosave.unref();
+    });
+  }
 
   // Bots resolve their `io` lazily through this provider, so a closed server is
   // never emitted to and parallel test servers do not cross-talk.
@@ -133,8 +255,20 @@ export function createGameServer({
   return {
     httpServer,
     io,
+    /** Resolves once the previous snapshot has been applied (or skipped). */
+    ready,
+    /** Snapshot location, `undefined` when persistence is off. */
+    stateFilePath: stateService?.filePath,
+    /** Writes a snapshot now. Used by the shutdown hook and the admin route. */
+    saveState: async () => {
+      if (!stateService) {
+        throw new Error("state persistence is disabled");
+      }
+      return stateService.save();
+    },
     close: async () => {
       clearInterval(reconnectSweep);
+      if (autosave) clearInterval(autosave);
       security.dispose();
 
       // Bots hold timers (unref'd, but they still mutate room state).
@@ -143,16 +277,12 @@ export function createGameServer({
       // closed io.
       disposeRoomLifecycle();
       disposeRematchTimeouts();
+      disposeRestartGrace();
       detachBotRunner();
       liveIo = undefined as unknown as typeof io;
 
       await new Promise<void>((resolve) => io.close(() => resolve()));
     },
-    getVersion: async () => {
-      if (!APP_VERSION) {
-        APP_VERSION = await getVersion();
-      }
-      return APP_VERSION;
-    },
+    getVersion: readVersion,
   };
 }

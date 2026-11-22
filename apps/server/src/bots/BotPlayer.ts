@@ -16,10 +16,7 @@ const POLL_INTERVAL_MS = 300;
 
 /** App layer notification kinds emitted after a bot action. */
 export type TBotAction =
-  | "placed"
-  | "shot"
-  | "rematch_requested"
-  | "rematch_accepted";
+  "placed" | "shot" | "rematch_requested" | "rematch_accepted";
 
 export interface IBotOptions {
   minDelayMs: number;

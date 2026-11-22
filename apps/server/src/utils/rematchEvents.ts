@@ -4,10 +4,7 @@ import type { Server } from "socket.io";
 import ActiveGameRegistrySingleton from "../services/active-game-registry";
 import ClientSessionServiceSingleton from "../services/client-session.service";
 import type { WarRoom } from "../services/WarRoom";
-import {
-  cancelRematchTimeout,
-  ensureRematchTimeout,
-} from "./rematchTimeout";
+import { cancelRematchTimeout, ensureRematchTimeout } from "./rematchTimeout";
 
 /**
  * Rematch notifications shared by both entry points:
