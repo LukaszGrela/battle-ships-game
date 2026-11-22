@@ -8,21 +8,11 @@ export const AvailableShips: FC<{
 
   selected: number | null;
   onSelection: (shipId: number | null) => void;
-  onApply: () => void;
-  onReset: () => void;
 
   disabled?: boolean;
 
   children?: ReactNode;
-}> = ({
-  ships,
-  onSelection,
-  selected,
-  onApply,
-  onReset,
-  disabled,
-  children,
-}) => {
+}> = ({ ships, onSelection, selected, disabled, children }) => {
   const handleClick = useCallback(
     (ship: TShip) => () => {
       if (ship.id === selected) {
@@ -33,9 +23,6 @@ export const AvailableShips: FC<{
     },
     [onSelection, selected],
   );
-
-  const disableApply = ships.some((needle) => !needle.placed) || disabled;
-  const disableReset = !ships.some((needle) => needle.placed) || disabled;
 
   return (
     <div className={styles.AvailableShips}>
@@ -60,15 +47,7 @@ export const AvailableShips: FC<{
           );
         })}
       </div>
-      {children && <div>{children}</div>}
-      <div>
-        <Button type="secondary" onClick={onReset} disabled={disableReset}>
-          Reset
-        </Button>
-        <Button onClick={onApply} disabled={disableApply}>
-          Ready
-        </Button>
-      </div>
+      {children}
     </div>
   );
 };

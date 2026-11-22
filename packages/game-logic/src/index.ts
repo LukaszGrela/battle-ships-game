@@ -3,6 +3,7 @@ export * from "./board/createEmptyBoard";
 export * from "./board/isSunk";
 export * from "./board/isValidPlacement";
 export * from "./board/placeShip";
+export * from "./board/autoPlaceShips";
 export * from "./board/Board";
 export * from "./board/BattleShipsBoard";
 export * from "./game/BattleShips";

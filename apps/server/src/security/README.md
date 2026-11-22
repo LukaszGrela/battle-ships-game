@@ -351,9 +351,9 @@ These block a correct deployment:
       and the token never reaches the browser.
 
       ```ts
-              // IServerToClientEvents
-              session_token: (token: string) => void;
-              ```
+                  // IServerToClientEvents
+                  session_token: (token: string) => void;
+                  ```
 
 - [ ] **Run `vitest` and `tsc`.** Neither has been executed against this code.
 
@@ -372,23 +372,23 @@ Ordered by how much damage the gap causes.
       (the limiter stays permissive and only the map cap protects you).
 
       ```ts
-              const CLIENT_EVENTS = [
-                "game:move",
-                // ...every event in IClientToServerEvents
-              ] as const satisfies readonly (keyof IClientToServerEvents)[];
+                  const CLIENT_EVENTS = [
+                    "game:move",
+                    // ...every event in IClientToServerEvents
+                  ] as const satisfies readonly (keyof IClientToServerEvents)[];
 
-              createSocketSecurity({ sessionSecret, knownEvents: CLIENT_EVENTS });
-              ```
+                  createSocketSecurity({ sessionSecret, knownEvents: CLIENT_EVENTS });
+                  ```
 
-              Keep it in sync with `IClientToServerEvents` — a stale list silently
-              drops legitimate events.
+                  Keep it in sync with `IClientToServerEvents` — a stale list silently
+                  drops legitimate events.
 
 ### Authorization and payloads
 
 - [ ] Never trust `playerId` from an event payload — only from
       `socket.data.session`.
 - [ ] Re-check authorization per event (`is it this player's turn? do they own
-  that ship? is the phase right?`). Rate limiting is not authorization:
+that ship? is the phase right?`). Rate limiting is not authorization:
       3 legitimate-looking but forged moves per second still break the game.
 - [ ] Validate every payload (`zod` / `valibot`) before it reaches game logic.
 - [ ] Validate against your own state, not just the shape: turn order, room

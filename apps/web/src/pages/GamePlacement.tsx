@@ -16,6 +16,7 @@ import {
 import { AvailableShips } from "../components/AvailableShips/AvailableShips";
 import { TInteractivityProps } from "../components/Board";
 import {
+  autoPlaceShips,
   getCell,
   isCellFailure,
   isValidPlacement,
@@ -342,6 +343,47 @@ export const GamePlacement: FC = () => {
     setError(undefined);
   }, [gameState, setAvailableShips, setError, updatePlacementBoard]);
 
+  const handleAutoPlacement = useCallback(() => {
+    let ships = availableShips as (TShip & { type: "pending" })[];
+    const someNotPlaced = ships.some(
+      (needle) => needle.type === "pending" && !needle.placed,
+    );
+
+    let board = placementBoard;
+    if (!someNotPlaced) {
+      // reset first
+      ships =
+        (gameState &&
+          gameState.phase === "placement" &&
+          (gameState.ships as (TShip & { type: "pending" })[])) ||
+        [];
+
+      // reset ships
+      setAvailableShips(ships);
+      // reset board
+      board = gameState?.myBoard ?? [];
+      updatePlacementBoard(board);
+    }
+    const result = autoPlaceShips(board, ships);
+
+    if (!result) {
+      setError("Auto placement failed. Reset the board and try again.");
+      return;
+    }
+
+    updatePlacementBoard(() => result.board);
+    setAvailableShips(() => result.ships);
+    setSelectedShipId(null);
+    setError(undefined);
+  }, [
+    availableShips,
+    gameState,
+    placementBoard,
+    setAvailableShips,
+    setError,
+    updatePlacementBoard,
+  ]);
+
   const handleApplyPlacement = useCallback(() => {
     // deselect all
     setAvailableShips((draftShips) => {
@@ -365,6 +407,15 @@ export const GamePlacement: FC = () => {
     setOrientationChange(newState);
     changeShipOrientation(newState);
   }, [changeShipOrientation, orientation]);
+
+  const disableApply =
+    availableShips.some(
+      (needle) => needle.type === "pending" && !needle.placed,
+    ) || !!gameState?.self.ready;
+  const disableReset =
+    !availableShips.some(
+      (needle) => needle.type === "pending" && needle.placed,
+    ) || !!gameState?.self.ready;
 
   return (
     <AppLayout
@@ -401,9 +452,6 @@ export const GamePlacement: FC = () => {
 
             ships={availableShips as (TShip & { type: "pending" })[]}
 
-            onApply={handleApplyPlacement}
-            onReset={handleResetPlacement}
-
             disabled={gameState.self.ready}
           >
             <Button
@@ -413,6 +461,25 @@ export const GamePlacement: FC = () => {
             >
               Orientation: {orientation}
             </Button>
+            <div className={styles.Actions}>
+              <Button
+                type="secondary"
+                onClick={handleResetPlacement}
+                disabled={disableReset}
+              >
+                Reset
+              </Button>
+              <Button
+                type="secondary"
+                onClick={handleAutoPlacement}
+                disabled={gameState.self.ready}
+              >
+                Auto placement
+              </Button>
+              <Button onClick={handleApplyPlacement} disabled={disableApply}>
+                Ready
+              </Button>
+            </div>
           </AvailableShips>
         )}
         <GrelaDesign className={gameStyles.footerLogo} />

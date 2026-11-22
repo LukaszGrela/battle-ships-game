@@ -6,7 +6,7 @@
 
 .Option {
   position: relative;
-  overflow: hidden; 
+  overflow: hidden;
 
   background-color: var(--pirates-palette-24);
 
@@ -26,8 +26,7 @@
   }
   &[data-placed] {
     &::after {
-      content: "✔";
-
+      content: "\2713";
       position: absolute;
       right: 8px;
       top: 50%;
@@ -92,7 +91,6 @@
     background-position: calc(-1 * var(--ship-width-offset) / 2) 0;
     transform-origin: 0px 0px;
     transform: rotate(-90deg) translate(calc(-1 * var(--ship-width)), 0);
-    
   }
   &[data-size="2"] {
     --ship-size: 2;
