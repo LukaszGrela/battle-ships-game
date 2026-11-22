@@ -409,6 +409,15 @@ export const GamePlacement: FC = () => {
     changeShipOrientation(newState);
   }, [changeShipOrientation, orientation]);
 
+  const disableApply =
+    availableShips.some(
+      (needle) => needle.type === "pending" && !needle.placed,
+    ) || !!gameState?.self.ready;
+  const disableReset =
+    !availableShips.some(
+      (needle) => needle.type === "pending" && needle.placed,
+    ) || !!gameState?.self.ready;
+
   return (
     <AppLayout
       headerClassName={styles.Header}
@@ -444,10 +453,6 @@ export const GamePlacement: FC = () => {
 
             ships={availableShips as (TShip & { type: "pending" })[]}
 
-            onApply={handleApplyPlacement}
-            onReset={handleResetPlacement}
-            onAutoPlace={handleAutoPlacement}
-
             disabled={gameState.self.ready}
           >
             <Button
@@ -457,6 +462,25 @@ export const GamePlacement: FC = () => {
             >
               Orientation: {orientation}
             </Button>
+            <div className={styles.Actions}>
+              <Button
+                type="secondary"
+                onClick={handleResetPlacement}
+                disabled={disableReset}
+              >
+                Reset
+              </Button>
+              <Button
+                type="secondary"
+                onClick={handleAutoPlacement}
+                disabled={gameState.self.ready}
+              >
+                Auto placement
+              </Button>
+              <Button onClick={handleApplyPlacement} disabled={disableApply}>
+                Ready
+              </Button>
+            </div>
           </AvailableShips>
         )}
         <GrelaDesign className={gameStyles.footerLogo} />
