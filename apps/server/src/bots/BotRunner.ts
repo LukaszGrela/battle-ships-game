@@ -1,6 +1,6 @@
 import type { IPlayer, TBotDifficulty } from "@repo/types";
 import { getShortPirateName } from "../utils/getPirateyName";
-import { BotPlayer, type IBotOptions } from "./BotPlayer";
+import { BotPlayer, type IBotOptions, type TBotAction } from "./BotPlayer";
 import { ProbabilityBrain } from "./ProbabilityBrain";
 import { WarRoom } from "../services/WarRoom";
 import { createId } from "../utils/createId";
@@ -55,10 +55,11 @@ export const isBotPlayerId = (playerId: string): boolean =>
 export interface IBotRunnerHooks {
   /**
    * Called after the bot performed a state changing action
-   * (placed ships / fired a shot / accepted a rematch).
-   * The app layer uses it to broadcast the new room state.
+   * (placed ships / fired a shot / requested or accepted a rematch).
+   * The app layer uses it to broadcast the new room state and to announce
+   * rematch events the bot cannot emit itself (it has no socket).
    */
-  onBotAction?: (roomId: string) => void;
+  onBotAction?: (roomId: string, action: TBotAction) => void;
 }
 
 /**
@@ -119,7 +120,7 @@ export class BotRunner {
         minDelayMs: delays.minDelayMs,
         maxDelayMs: delays.maxDelayMs,
         autoAcceptRematch: this.config.autoAcceptRematch,
-        onAction: () => this.hooks.onBotAction?.(roomId),
+        onAction: (action) => this.hooks.onBotAction?.(roomId, action),
       },
       seed,
     );

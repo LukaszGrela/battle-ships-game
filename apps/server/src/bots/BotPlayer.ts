@@ -14,13 +14,20 @@ const MAX_PLACEMENT_ATTEMPTS = 5;
 /** Fallback poll – the bot must not depend on a single broadcast to progress. */
 const POLL_INTERVAL_MS = 300;
 
+/** App layer notification kinds emitted after a bot action. */
+export type TBotAction =
+  | "placed"
+  | "shot"
+  | "rematch_requested"
+  | "rematch_accepted";
+
 export interface IBotOptions {
   minDelayMs: number;
   maxDelayMs: number;
   /** Automatically accept a pending rematch requested by the loser. */
   autoAcceptRematch: boolean;
   /** Called after every state changing action the bot performs. */
-  onAction?: () => void;
+  onAction?: (action: TBotAction) => void;
 }
 
 /**
@@ -161,13 +168,13 @@ export class BotPlayer {
       // acceptRematch re-creates BattleShips and re-adds both players;
       // the next state broadcast puts the bot back into Placement.
       this.room.acceptRematch(this.id);
-      this.options.onAction?.();
+      this.options.onAction?.("rematch_accepted");
       return;
     }
 
     if (!request && result === "lost") {
       this.room.requestRematch(this.id);
-      this.options.onAction?.();
+      this.options.onAction?.("rematch_requested");
     }
   }
 
@@ -208,7 +215,7 @@ export class BotPlayer {
         `[BotPlayer] placeFleet() for ${this.id} in room ${this.room.id}, success=${success}`,
       );
       if (success) {
-        this.options.onAction?.();
+        this.options.onAction?.("placed");
         return;
       }
     }
@@ -226,7 +233,7 @@ export class BotPlayer {
       return;
     }
     this.brain.report(shot, result as TAttackOutcome);
-    this.options.onAction?.();
+    this.options.onAction?.("shot");
   }
 }
 

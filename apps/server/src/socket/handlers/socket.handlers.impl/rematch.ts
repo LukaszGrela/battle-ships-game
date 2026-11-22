@@ -8,8 +8,11 @@ import { getSession } from "../../../security/auth";
 import {
   cancelRematchTimeout,
   notifyRematchCancelled,
-  scheduleRematchTimeout,
 } from "../../../utils/rematchTimeout";
+import {
+  notifyRematchAccepted,
+  notifyRematchRequested,
+} from "../../../utils/rematchEvents";
 
 type TRequestRematchHandler = IClientToServerEvents["request_rematch"];
 type TAcceptRematchHandler = IClientToServerEvents["accept_rematch"];
@@ -85,27 +88,16 @@ export const factoryRequestRematchHandler = (
         );
         // failure
         socket.emit("error", "Rematch request rejected");
-      } else {
-        // success
+      } else if (createdRequest) {
+        // Success. Answer the requestor directly (the UI switches to the
+        // "waiting for the opponent" modal from this payload), then notify the
+        // opponent and start the deadline exactly once. When the opponent is a
+        // bot it has no session, so the room-state broadcast below is what
+        // wakes it, and it accepts via BotRunner.
         socket.emit("game_updated", warRoom.getGameState(clientId));
-        scheduleRematchTimeout(io, warRoom.id, clientId);
-      }
-
-      const requestor = warRoom.getPlayer(clientId);
-      const otherPlayer = warRoom.getOpponent(clientId);
-      if (otherPlayer) {
-        const sessionService = ClientSessionServiceSingleton.getInstance();
-        const otherPlayerSession = sessionService.readSession(otherPlayer.id);
-        if (otherPlayerSession && createdRequest) {
-          io.to(otherPlayerSession.socketId).emit("rematch_requested", {
-            requestId: createdRequest.requestId,
-            requestorId: clientId,
-            status: "pending",
-            name: requestor?.name ?? "",
-            seed: requestor?.seed ?? 0,
-            expiresAt: createdRequest.expiresAt,
-          });
-        }
+        notifyRematchRequested(io, warRoom.id, clientId);
+        // Skip the requestor: it already received the state above.
+        emitRoomStateToPlayers(io, clientId, warRoom.id, clientId);
       }
     }
   };
@@ -133,27 +125,7 @@ export const factoryAcceptRematchHandler = (
         return;
       }
 
-      const session = ClientSessionServiceSingleton.getInstance();
-      const acceptor = warRoom.getPlayer(clientId);
-      const requestor = warRoom.getOpponent(clientId);
-
-      function updateSession(playerId: string | undefined, warRoomId: string) {
-        const clientSession = playerId && session.readSession(playerId);
-        if (playerId && clientSession) {
-          clientSession.gameId = warRoomId;
-          session.updateSession(playerId, clientSession);
-        }
-      }
-      updateSession(acceptor?.id, warRoom.id);
-      updateSession(requestor?.id, warRoom.id);
-
-      cancelRematchTimeout(warRoom.id);
-
-      io.to(warRoom.id).emit("rematch_accepted", {
-        roomId: warRoom.id,
-        status: "accepted",
-      });
-
+      notifyRematchAccepted(io, warRoom.id);
       emitRoomStateToPlayers(io, clientId, warRoom.id);
     }
   };
