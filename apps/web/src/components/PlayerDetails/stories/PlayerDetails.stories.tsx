@@ -169,6 +169,38 @@ export const Winner: Story = {
   ],
 };
 
+export const WinnerOfManyBattles: Story = {
+  args: {
+    result: "win",
+    phase: EGamePhase.Finished,
+  },
+  render: (args, context) => {
+    const isDocs = context.viewMode === "docs";
+
+    return (
+      <div
+        style={{
+          display: "flex",
+          gap: "1rem",
+          background: "var(--pirates-background)",
+          width: isDocs ? "100%" : "calc(100vw - 4rem)",
+          padding: isDocs ? "0.5rem" : "0rem",
+          boxSizing: "border-box",
+        }}
+      >
+        <PlayerDetails {...args} battleResults={21} />
+        <PlayerDetails
+          {...args}
+          result="lost"
+          self={{ ...enemy, active: false }}
+          battleResults={15}
+          enemy
+        />
+      </div>
+    );
+  },
+};
+
 export const GameHeader: Story = {
   args: {
     result: "win",

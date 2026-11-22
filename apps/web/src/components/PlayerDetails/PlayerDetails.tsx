@@ -4,6 +4,7 @@ import { FC } from "react";
 import { Ribbon } from "../Ribbon/Ribbon";
 import { PlayerAvatar } from "../PirateAvatar/PirateAvatar";
 import { classNames } from "../../utils/classNames";
+import { useMediaQuery } from "../../utils/screen/useMediaQuery";
 
 export const PlayerDetails: FC<{
   self: IPlayer;
@@ -11,7 +12,8 @@ export const PlayerDetails: FC<{
   phase?: EGamePhase;
   className?: string;
   result?: "win" | "lost";
-}> = ({ self, enemy, phase, className, result }) => {
+  battleResults?: number;
+}> = ({ self, enemy, phase, className, result, battleResults }) => {
   const { name, owner, ready, active, botLevel } = self;
 
   return (
@@ -26,6 +28,11 @@ export const PlayerDetails: FC<{
           className="avatar-middle"
           player={self}
           botLevel={botLevel}
+        />
+        <BattleResults
+          count={battleResults}
+          className={styles.battleResults}
+          current={result === "win"}
         />
         <span>{name}</span>
         {result === "win" && (
@@ -68,5 +75,44 @@ const AvatarContainer: FC<{
         >{`Bot level: ${botLevel}`}</span>
       )}
     </div>
+  );
+};
+
+const BattleResults: FC<{
+  count?: number;
+  className?: string;
+  // if true then current battle is also won, increase label counter by 1 (results + battleResults)
+  current?: boolean;
+}> = ({ className, count, current }) => {
+  const isMobile = useMediaQuery("(max-width: 720px)");
+
+  const maxSize = isMobile ? 1 : 4;
+  const trophies = Math.min(maxSize, count ?? 0);
+
+  const tail = isMobile ? `x${count}` : `+${(count ?? 0) - maxSize}`;
+
+  return (
+    !!count &&
+    count > 0 && (
+      <div
+        className={className}
+        aria-live="polite"
+        aria-label={`${count + (current ? 1 : 0)} battles won.`}
+        role="img"
+      >
+        <ul>
+          {Array.from({ length: trophies }).map((_, index) => {
+            return (
+              <img
+                key={index}
+                alt="Battle won trophy"
+                src="/assets/gold-anchor-64.png"
+              />
+            );
+          })}
+        </ul>
+        {count > maxSize && <span className="BattleResults_tail">{tail}</span>}
+      </div>
+    )
   );
 };
