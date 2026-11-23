@@ -97,7 +97,14 @@ export class Board implements ISerializable {
   }
 
   protected deserialize(data: string): void {
-    const parsed = JSON.parse(data);
+    const parsed = JSON.parse(data, (key, value) => {
+      if (key === "board") {
+        return JSON.parse(atob(value));
+      }
+
+      return value;
+    });
+
     if (parsed.version !== this.version) {
       throw new Error(`Unsupported version: ${parsed.version}`);
     }
@@ -108,7 +115,11 @@ export class Board implements ISerializable {
 
   serialize(): string {
     // Implementation for serializing the board
-    return JSON.stringify(this);
+    return JSON.stringify({
+      version: this.version,
+      board: btoa(JSON.stringify(this.board)),
+      size: this.size,
+    });
   }
 
   static deserialize: (serialized: string) => Board = (
