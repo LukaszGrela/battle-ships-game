@@ -22,6 +22,7 @@ import { AttackModal } from "../components/AttackModal/AttackModal";
 import { TurnIndicator } from "../components/TurnIndicator/TurnIndicator";
 import { isDestroyedShipStatus } from "@repo/game-logic";
 import { GrelaDesign } from "../components/GrelaDesign/GrelaDesign";
+import { useConnectionStatus } from "../store/useConnectionStatus";
 
 const isInitAttackHistory = (
   test: THistoryEntry | null | undefined,
@@ -36,32 +37,41 @@ export const Game: FC = () => {
 
   const myTurn = gameState?.turn === selfId;
 
-  const [attackResult, setAttackResult] = useState<TAttackResult | null>(null);
-  const handleAttack = useCallback(async (coords: TCoordinate) => {
-    try {
-      const result = await socket.emitWithAck("attack_coordinate", coords);
-      if (!result.ok) throw result;
+  // While the server is restarting (or the socket is flapping) the board is
+  // read-only: a shot sent into a closing socket is lost for good.
+  const connectionPhase = useConnectionStatus((state) => state.phase);
+  const canPlay = connectionPhase === "connected";
 
-      setAttackResult(result);
-    } catch (error) {
-      console.error(error);
-      setAttackResult(null);
-    }
-  }, []);
+  const [attackResult, setAttackResult] = useState<TAttackResult | null>(null);
+  const handleAttack = useCallback(
+    async (coords: TCoordinate) => {
+      if (connectionPhase !== "connected") return;
+      try {
+        const result = await socket.emitWithAck("attack_coordinate", coords);
+        if (!result.ok) throw result;
+
+        setAttackResult(result);
+      } catch (error) {
+        console.error(error);
+        setAttackResult(null);
+      }
+    },
+    [connectionPhase],
+  );
 
   const attackInteractivity: TInteractivityProps & { disabled?: boolean } =
     useMemo(() => {
-      if (gameState?.phase === "playing") {
+      if (gameState?.phase === "playing" && canPlay) {
         return {
-          isInteractive: true,
+          isInteractive: canPlay,
           onClick: handleAttack,
-          disabled: !myTurn,
+          disabled: !myTurn || !canPlay,
         };
       }
       return {
         isInteractive: false,
       };
-    }, [gameState?.phase, myTurn, handleAttack]);
+    }, [gameState?.phase, myTurn, handleAttack, canPlay]);
 
   return (
     <AppLayout
