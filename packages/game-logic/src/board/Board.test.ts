@@ -54,14 +54,14 @@ describe("Board", () => {
         JSON.stringify({
           version: 1,
           size: 2,
-          board: btoa(JSON.stringify([[1], null])),
+          board: [[1], null],
         }),
       );
       const boardWithMissingCell = Board.deserialize(
         JSON.stringify({
           version: 1,
           size: 2,
-          board: btoa(JSON.stringify([[1], [2, 3]])),
+          board: [[1], [2, 3]],
         }),
       );
 
@@ -91,14 +91,14 @@ describe("Board", () => {
     it("returns failures for missing rows and cells without updating", () => {
       const boardWithMissingRow = Board.deserialize(
         JSON.stringify({
-          version: 1,
+          version: 2,
           size: 2,
           board: btoa(JSON.stringify([[1], null])),
         }),
       );
       const boardWithMissingCell = Board.deserialize(
         JSON.stringify({
-          version: 1,
+          version: 2,
           size: 2,
           board: btoa(JSON.stringify([[1], [2, 3]])),
         }),
@@ -174,8 +174,8 @@ describe("Board", () => {
     });
 
     it("rejects unsupported serialized versions", () => {
-      expect(() => Board.deserialize('{"version":2}')).toThrow(
-        "Unsupported version: 2",
+      expect(() => Board.deserialize('{"version":3}')).toThrow(
+        "Unsupported version: 3",
       );
     });
   });

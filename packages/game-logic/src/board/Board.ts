@@ -11,7 +11,7 @@ import { isCellFailure } from "./isValidPlacement";
 const deserializeToken = Symbol("Board");
 
 export class Board implements ISerializable {
-  private version: number = 1;
+  private version: number = 2;
   private board: TBoard<TCellStatus> = [];
   private size: number = 10;
 
@@ -97,6 +97,27 @@ export class Board implements ISerializable {
   }
 
   protected deserialize(data: string): void {
+    // get version
+    const parsedVersion = JSON.parse(data).version;
+
+    if (![1, this.version].includes(parsedVersion)) {
+      throw new Error(`Unsupported version: ${parsedVersion}`);
+    }
+
+    if (parsedVersion === 1) {
+      this.deserialize_v1(data);
+      return;
+    }
+
+    if (parsedVersion === 2) {
+      this.deserialize_v2(data);
+      return;
+    }
+
+    throw new Error(`Unsupported version: ${parsedVersion}`);
+  }
+
+  protected deserialize_v2(data: string): void {
     const parsed = JSON.parse(data, (key, value) => {
       if (key === "board") {
         return JSON.parse(atob(value));
@@ -105,7 +126,18 @@ export class Board implements ISerializable {
       return value;
     });
 
-    if (parsed.version !== this.version) {
+    if (parsed.version !== 2) {
+      throw new Error(`Unsupported version: ${parsed.version}`);
+    }
+
+    this.board = parsed.board;
+    this.size = parsed.size;
+  }
+
+  protected deserialize_v1(data_v1: string): void {
+    const parsed = JSON.parse(data_v1);
+
+    if (parsed.version !== 1) {
       throw new Error(`Unsupported version: ${parsed.version}`);
     }
 
@@ -115,6 +147,8 @@ export class Board implements ISerializable {
 
   serialize(): string {
     // Implementation for serializing the board
+    // version 1 was simple JSON.stringify(this)
+    // version 2 serialization
     return JSON.stringify({
       version: this.version,
       board: btoa(JSON.stringify(this.board)),
