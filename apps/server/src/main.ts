@@ -2,6 +2,10 @@ import { createGameServer } from "./server.js";
 import { isDev } from "./utils/isDev.js";
 import { getReconnectTimeoutMs } from "./utils/reconnectGrace.js";
 import { SHUTDOWN_SAVE_TIMEOUT_MS } from "./config/state.js";
+import {
+  announceServerRestart,
+  buildRestartNotice,
+} from "./services/state/notice.js";
 
 const REQUIRED = ["NODE_ENV", "SESSION_SECRET"];
 const missing = REQUIRED.filter((k) => !process.env[k]);
@@ -32,7 +36,7 @@ const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS ?? "")
     }
   });
 
-const { httpServer, ready, stateFilePath, saveState, getVersion } =
+const { httpServer, io, ready, stateFilePath, saveState, getVersion } =
   createGameServer({
     instrumentAdminUi: isDev(),
     logger: isDev() ? { warn: console.warn } : undefined,
@@ -73,12 +77,17 @@ httpServer.listen(PORT, "0.0.0.0", async () => {
 });
 
 /**
- * Planned restart: write the snapshot first, then close.
+ * Planned restart: warn the players, write the snapshot, then close.
  *
  * `systemctl restart`, `docker stop` and Ctrl-C all arrive here, so a restart
  * triggered by a deploy loses nothing as long as the process gets these few
  * seconds. A hard kill (`SIGKILL`, power loss) is handled by the periodic
  * autosave instead.
+ *
+ * The `server_restarting` notice goes out **before** the snapshot on purpose:
+ * it is only useful while the transport is still open, and the socket has to
+ * survive the save. The broadcast is flushed before we return from
+ * `announceServerRestart`, so the notice lands even if the save fails.
  */
 let shuttingDown = false;
 
@@ -86,7 +95,7 @@ const shutdown = async (signal: NodeJS.Signals): Promise<void> => {
   if (shuttingDown) return;
   shuttingDown = true;
 
-  console.log(`[shutdown] ${signal} received, saving state`);
+  console.log(`[shutdown] ${signal} received, notice + save`);
 
   // Never let a stuck disk or socket keep the container from exiting.
   const forced = setTimeout(() => {
@@ -94,6 +103,17 @@ const shutdown = async (signal: NodeJS.Signals): Promise<void> => {
     process.exit(1);
   }, SHUTDOWN_SAVE_TIMEOUT_MS + 5_000);
   forced.unref();
+
+  // Clients must hear about the restart while their sockets are still open.
+  try {
+    const notice = buildRestartNotice(signal);
+    await announceServerRestart(io, notice);
+    console.log(
+      `[shutdown] restart notice sent (${notice.reason}, ${notice.graceMs} ms)`,
+    );
+  } catch (error) {
+    console.error("[shutdown] restart notice failed:", error);
+  }
 
   try {
     console.log("[shutdown] state saved:", await saveState());

@@ -14,6 +14,27 @@ export const STATE_FILE_NAME = "server-state.json";
  */
 export const RESTART_RECONNECT_GRACE_MS = 90_000;
 
+/**
+ * Time the `server_restarting` notice gets to leave the box before the sockets
+ * are closed. A Socket.IO broadcast is written to the transport immediately,
+ * but the OS still has to flush it; 250 ms is plenty on a LAN and short enough
+ * that a restart stays snappy.
+ */
+export const SHUTDOWN_NOTICE_FLUSH_MS = 250;
+
+/**
+ * Countdown shown to the players for a *planned restart* (`SIGTERM`, deploy,
+ * `systemctl restart`). Nobody can know the real duration, so this is an
+ * expectation, not a deadline: when it runs out the UI keeps retrying.
+ */
+export const RESTART_RECONNECT_NOTICE_MS = 10_000;
+
+/**
+ * Countdown for a manual stop (`SIGINT`, Ctrl-C). Shorter, because the process
+ * is usually only restarted from a terminal a few seconds later.
+ */
+export const SHUTDOWN_RECONNECT_NOTICE_MS = 3_000;
+
 /** Upper bound for a save during shutdown; we do not want to hang `kill`. */
 export const SHUTDOWN_SAVE_TIMEOUT_MS = 10_000;
 

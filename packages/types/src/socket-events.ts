@@ -79,6 +79,24 @@ export interface IClientToServerEvents {
   ) => void;
 }
 
+/**
+ * Why the server went away. `restart` means the process is coming back
+ * (deploy, `systemctl restart`); `shutdown` means somebody stopped it by hand
+ * and nobody promised to bring it back.
+ */
+export type TServerRestartReason = "restart" | "shutdown";
+
+/**
+ * Payload of the `server_restarting` event. Sent while the socket is still
+ * alive, a moment before the process closes it, so the players see a proper
+ * message instead of a silent disconnect.
+ */
+export interface IServerRestartNotice {
+  reason: TServerRestartReason;
+  /** How long the UI should count down before it starts retrying. */
+  graceMs: number;
+}
+
 export interface IServerToClientEvents {
   game_updated: (state: TGameState | null) => void;
   error: (msg: string) => void;
@@ -150,4 +168,15 @@ export interface IServerToClientEvents {
    */
   session_created: (newSession: IClientSession) => void;
   session_token: (token: string) => void;
+
+  /**
+   * Emitted once, right before a planned shutdown of the process. The game
+   * state has not been written yet when it arrives, but it always is written
+   * before the socket goes down.
+   *
+   * Clients answer with the "server is going into the port" screen, stop
+   * sending moves and wait for the reconnect instead of showing a plain
+   * disconnect.
+   */
+  server_restarting: (notice: IServerRestartNotice) => void;
 }
