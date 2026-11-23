@@ -1,6 +1,11 @@
 import { createGameServer } from "./server.js";
 import { isDev } from "./utils/isDev.js";
 import { getReconnectTimeoutMs } from "./utils/reconnectGrace.js";
+import { SHUTDOWN_SAVE_TIMEOUT_MS } from "./config/state.js";
+import {
+  announceServerRestart,
+  buildRestartNotice,
+} from "./services/state/notice.js";
 
 const REQUIRED = ["NODE_ENV", "SESSION_SECRET"];
 const missing = REQUIRED.filter((k) => !process.env[k]);
@@ -31,10 +36,24 @@ const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS ?? "")
     }
   });
 
-const { httpServer, io, getVersion } = createGameServer({
-  instrumentAdminUi: isDev(),
-  logger: isDev() ? { warn: console.warn } : undefined,
-  allowedOrigins: ALLOWED_ORIGINS.length > 0 ? ALLOWED_ORIGINS : undefined,
+const { httpServer, io, ready, stateFilePath, saveState, getVersion } =
+  createGameServer({
+    instrumentAdminUi: isDev(),
+    logger: isDev() ? { warn: console.warn } : undefined,
+    allowedOrigins: ALLOWED_ORIGINS.length > 0 ? ALLOWED_ORIGINS : undefined,
+  });
+
+void ready.then((report) => {
+  if (report.restored) {
+    console.log(
+      `State restored from ${stateFilePath} (saved ${report.savedAt}):`,
+      `${report.rooms.length} room(s),`,
+      `${report.sessions} session(s),`,
+      `${report.gameStats} result(s)`,
+    );
+  } else {
+    console.log(`No state restored (${report.reason})`);
+  }
 });
 
 // io.listen(PORT);
@@ -48,23 +67,72 @@ httpServer.listen(PORT, "0.0.0.0", async () => {
     "version:",
     await getVersion(),
   );
+  if (stateFilePath) {
+    console.log("State persistence:", stateFilePath);
+  }
   if (!isDev()) {
     console.log("process.env.ALLOWED_ORIGINS:", process.env.ALLOWED_ORIGINS);
     console.log("Allowed origins:", ALLOWED_ORIGINS);
   }
-
-  httpServer.on("request", async (req, res) => {
-    if (req.url === "/health") {
-      res.writeHead(200, { "Content-Type": "application/json" });
-      const version = await getVersion();
-      return res.end(
-        JSON.stringify({
-          status: "ok",
-          sockets: io.engine.clientsCount,
-          version,
-        }),
-      );
-    }
-    res.writeHead(404).end();
-  });
 });
+
+/**
+ * Planned restart: warn the players, write the snapshot, then close.
+ *
+ * `systemctl restart`, `docker stop` and Ctrl-C all arrive here, so a restart
+ * triggered by a deploy loses nothing as long as the process gets these few
+ * seconds. A hard kill (`SIGKILL`, power loss) is handled by the periodic
+ * autosave instead.
+ *
+ * The `server_restarting` notice goes out **before** the snapshot on purpose:
+ * it is only useful while the transport is still open, and the socket has to
+ * survive the save. The broadcast is flushed before we return from
+ * `announceServerRestart`, so the notice lands even if the save fails.
+ */
+let shuttingDown = false;
+
+const shutdown = async (signal: NodeJS.Signals): Promise<void> => {
+  if (shuttingDown) return;
+  shuttingDown = true;
+
+  console.log(`[shutdown] ${signal} received, notice + save`);
+
+  // Never let a stuck disk or socket keep the container from exiting.
+  const forced = setTimeout(() => {
+    console.error("[shutdown] timed out, exiting without a clean close");
+    process.exit(1);
+  }, SHUTDOWN_SAVE_TIMEOUT_MS + 5_000);
+  forced.unref();
+
+  // Clients must hear about the restart while their sockets are still open.
+  try {
+    const notice = buildRestartNotice(signal);
+    await announceServerRestart(io, notice);
+    console.log(
+      `[shutdown] restart notice sent (${notice.reason}, ${notice.graceMs} ms)`,
+    );
+  } catch (error) {
+    console.error("[shutdown] restart notice failed:", error);
+  }
+
+  try {
+    console.log("[shutdown] state saved:", await saveState());
+  } catch (error) {
+    console.error("[shutdown] state save failed:", error);
+  }
+
+  try {
+    await httpServer.close();
+  } catch (error) {
+    console.error("[shutdown] server close failed:", error);
+  }
+
+  clearTimeout(forced);
+  process.exit(0);
+};
+
+for (const signal of ["SIGTERM", "SIGINT"] as const) {
+  process.on(signal, () => {
+    void shutdown(signal);
+  });
+}

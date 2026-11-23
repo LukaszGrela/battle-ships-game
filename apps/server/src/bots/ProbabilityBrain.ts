@@ -4,8 +4,19 @@ import {
   TCellStatusShipHitOffset,
   type TCoordinate,
 } from "@repo/types";
-import { mulberry32 } from "./random";
-import type { IBotBrain, TAttackOutcome } from "./types";
+import { Mulberry32 } from "./random";
+import {
+  BotStateError,
+  readArray,
+  readInt,
+  readNumber,
+  readPRNGState,
+  readRecord,
+  readString,
+} from "./serialization";
+import type { IBotBrain, IBotBrainSnapshot, TAttackOutcome } from "./types";
+
+const SNAPSHOT_VERSION = 1;
 
 const UNKNOWN = 0;
 const MISS = 1;
@@ -39,9 +50,12 @@ export interface IProbabilityBrainOptions {
  * of its own shots via `report()`.
  */
 export class ProbabilityBrain implements IBotBrain {
+  readonly kind = "probability";
+
   private readonly n: number;
-  private readonly rng: () => number;
-  private readonly blunderChance: number;
+  private readonly rng: Mulberry32;
+  /** Mutable: a restored brain keeps the blunder rate it had before the restart. */
+  private blunderChance: number;
   private grid: Uint8Array;
 
   /** shipId -> size, for ships not yet sunk. */
@@ -56,8 +70,130 @@ export class ProbabilityBrain implements IBotBrain {
   }: IProbabilityBrainOptions = {}) {
     this.n = size;
     this.grid = new Uint8Array(size * size);
-    this.rng = mulberry32(seed);
+    this.rng = new Mulberry32(seed);
     this.blunderChance = blunderChance;
+  }
+
+  /**
+   * Everything the brain learned so far plus its PRNG position, so a restored
+   * bot keeps hunting the same ships and produces the same future shots.
+   */
+  serialize(): IBotBrainSnapshot {
+    return {
+      kind: this.kind,
+      version: SNAPSHOT_VERSION,
+      state: {
+        size: this.n,
+        blunderChance: this.blunderChance,
+        rng: this.rng.state,
+        // 0/1/2/3 per cell – base64 keeps a 10x10 board at 136 characters
+        grid: Buffer.from(this.grid).toString("base64"),
+        aliveShips: [...this.aliveShips.entries()],
+        hitsByShip: [...this.hitsByShip.entries()].map(([shipId, cells]) => ({
+          shipId,
+          // [x, y] pairs – same shape as `aliveShips`, compact in JSON
+          cells: cells.map(({ x, y }) => [x, y]),
+        })),
+      },
+    };
+  }
+
+  deserialize(snapshot: IBotBrainSnapshot): void {
+    const root = readRecord(snapshot, "brain");
+    const kind = readString(root.kind, "brain.kind");
+    if (kind !== this.kind) {
+      throw new BotStateError(
+        `brain.kind: expected "${this.kind}", received "${kind}"`,
+      );
+    }
+    const version = readInt(root.version, "brain.version", 1);
+    if (version !== SNAPSHOT_VERSION) {
+      throw new BotStateError(`brain.version: unsupported version ${version}`);
+    }
+
+    const state = readRecord(root.state, "brain.state");
+    const size = readInt(state.size, "brain.state.size", 2, 100);
+    if (size !== this.n) {
+      throw new BotStateError(
+        `brain.state.size: expected ${this.n}, received ${size}`,
+      );
+    }
+
+    const grid = Buffer.from(
+      readString(state.grid, "brain.state.grid"),
+      "base64",
+    );
+    if (grid.length !== size * size) {
+      throw new BotStateError(
+        `brain.state.grid: expected ${size * size} cells, received ${grid.length}`,
+      );
+    }
+    for (const cell of grid) {
+      if (cell > SUNK) {
+        throw new BotStateError(`brain.state.grid: unknown cell value ${cell}`);
+      }
+    }
+
+    const aliveShips = readArray(
+      state.aliveShips,
+      "brain.state.aliveShips",
+      (entry, path) => {
+        const pair = readArray(entry, path, (value, callPath) =>
+          readInt(value, callPath, 0, 1000),
+        );
+        if (pair.length !== 2) {
+          throw new BotStateError(`${path}: expected [shipId, size]`);
+        }
+        const [shipId, shipSize] = pair as [number, number];
+        if (shipSize < 1) {
+          throw new BotStateError(`${path}: ship size must be at least 1`);
+        }
+
+        return { shipId, shipSize };
+      },
+    );
+
+    const hitsByShip = readArray(
+      state.hitsByShip,
+      "brain.state.hitsByShip",
+      (entry, path) => {
+        const record = readRecord(entry, path);
+        const shipId = readInt(record.shipId, `${path}.shipId`, 0, 1000);
+        const cells = readArray(
+          record.cells,
+          `${path}.cells`,
+          (cell, cellPath) => {
+            const coords = readArray(cell, cellPath, (value, valuePath) =>
+              readInt(value, valuePath, 0, size - 1),
+            );
+            if (coords.length !== 2) {
+              throw new BotStateError(`${cellPath}: expected [x, y]`);
+            }
+
+            return { x: coords[0] as number, y: coords[1] as number };
+          },
+        );
+
+        return { shipId, cells };
+      },
+    );
+
+    this.rng.restore(readPRNGState(state.rng, "brain.state.rng"));
+
+    this.blunderChance = readNumber(
+      state.blunderChance,
+      "brain.state.blunderChance",
+      0,
+      1,
+    );
+
+    this.grid = new Uint8Array(grid);
+    this.aliveShips = new Map(
+      aliveShips.map(({ shipId, shipSize }) => [shipId, shipSize]),
+    );
+    this.hitsByShip = new Map(
+      hitsByShip.map(({ shipId, cells }) => [shipId, cells]),
+    );
   }
 
   /**
@@ -109,7 +245,7 @@ export class ProbabilityBrain implements IBotBrain {
     const pendingHits = this.hasPendingHits();
 
     // Difficulty handicap: an occasional "human" random shot while hunting.
-    if (!pendingHits && this.rng() < this.blunderChance) {
+    if (!pendingHits && this.rng.next() < this.blunderChance) {
       const cell = this.pickRandomUnknown();
       if (cell) return cell;
     }
@@ -132,7 +268,7 @@ export class ProbabilityBrain implements IBotBrain {
           continue;
         }
         // jitter breaks ties deterministically for a given seed
-        const score = (density[i] ?? 0) + this.rng() * 1e-3;
+        const score = (density[i] ?? 0) + this.rng.next() * 1e-3;
         if (score > bestScore) {
           bestScore = score;
           best = i;
@@ -173,7 +309,8 @@ export class ProbabilityBrain implements IBotBrain {
       if (this.grid[i] === UNKNOWN) candidates.push(i);
     }
     if (candidates.length === 0) return undefined;
-    const pick = candidates[Math.floor(this.rng() * candidates.length)] ?? 0;
+    const pick =
+      candidates[Math.floor(this.rng.next() * candidates.length)] ?? 0;
     return { x: pick % this.n, y: Math.floor(pick / this.n) };
   }
 

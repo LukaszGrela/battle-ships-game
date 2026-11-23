@@ -366,6 +366,25 @@ export class WarRoom implements ISerializable {
     return -1;
   }
 
+  /**
+   * Drops any rematch negotiation, regardless of its status.
+   *
+   * Used when a finished room comes back from a snapshot: the pending deadline
+   * belongs to a process that no longer exists and a restored `accepted` state
+   * would start a battle whose players are not connected yet. After the reset
+   * either player can simply request a rematch again.
+   *
+   * @returns `true` when there was something to clear.
+   */
+  resetRematchState(): boolean {
+    if (!this.#rematchRequest) return false;
+
+    this.#rematchRequest = undefined;
+    this.currentGame?.setRematchRequest(undefined);
+
+    return true;
+  }
+
   get battlesPlayed() {
     return this.battles.length;
   }

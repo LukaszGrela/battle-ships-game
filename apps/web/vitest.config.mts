@@ -12,6 +12,10 @@ const dirname =
 // More info at: https://storybook.js.org/docs/next/writing-tests/integrations/vitest-addon
 export default defineConfig({
   plugins: [react()],
+  define: {
+    __APP_VERSION__: JSON.stringify("test"),
+    __APP_COMMIT__: JSON.stringify("test-commit"),
+  },
   test: {
     projects: [
       {

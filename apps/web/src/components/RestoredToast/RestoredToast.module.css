@@ -1,0 +1,40 @@
+.RestoredToast {
+  position: fixed;
+  left: 50%;
+  bottom: 1.5rem;
+  transform: translateX(-50%);
+  z-index: 90;
+
+  max-width: min(32rem, 88vw);
+  padding: 0.65rem 1.1rem;
+
+  font-size: 0.95rem;
+  line-height: 1.35;
+  text-align: center;
+  color: var(--pirates-palette-20);
+
+  background: color-mix(in srgb, var(--pirates-palette-15) 88%, transparent);
+  border: 1px solid color-mix(in srgb, var(--pirates-palette-4) 45%, transparent);
+  border-radius: 0.4rem;
+  box-shadow: 0 0.75rem 1.5rem rgb(0 0 0 / 40%);
+
+  animation: restored-toast-in 200ms ease-out;
+}
+
+@keyframes restored-toast-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 0.5rem);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .RestoredToast {
+    animation: none;
+  }
+}

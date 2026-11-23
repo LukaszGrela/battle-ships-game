@@ -5,9 +5,15 @@ import type {
   IServerToClientEvents,
   TBotDifficulty,
 } from "@repo/types";
-import { BotRunner, DEFAULT_BOTS_CONFIG, type TBotAction } from "../bots";
+import {
+  BotRunner,
+  DEFAULT_BOTS_CONFIG,
+  type IBotPlayerSnapshot,
+  type TBotAction,
+} from "../bots";
 import ActiveGameRegistrySingleton from "./active-game-registry";
 import ClientSessionServiceSingleton from "./client-session.service";
+import type { IBotStateRecord } from "./state/types";
 import {
   notifyRematchAccepted,
   notifyRematchRequested,
@@ -96,6 +102,28 @@ export class BotRunnerService {
   removeBot(roomId: string): void {
     this.runner.disposeBot(roomId);
     this.ioByRoom.delete(roomId);
+  }
+
+  /**
+   * Re-attaches the bot driver of a room that `restoreStateSnapshot()` has
+   * already rebuilt. The bot's player is *not* re-added – it came back with the
+   * room snapshot itself.
+   */
+  restoreBot(
+    roomId: string,
+    snapshot: IBotPlayerSnapshot,
+    io?: TGameServer,
+  ): IPlayer | undefined {
+    const bot = this.runner.restoreBot(roomId, snapshot);
+    if (!bot) return undefined;
+
+    if (io) this.ioByRoom.set(roomId, io);
+    return bot;
+  }
+
+  /** Serializable bots of every room that currently hosts one. */
+  serializeBots(): IBotStateRecord[] {
+    return this.runner.serializeBots();
   }
 
   hasBot(roomId: string): boolean {

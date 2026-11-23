@@ -53,7 +53,11 @@ const createFinishedWarRoom = (roomId: string) => {
 };
 
 const createFinishedWarRoomWithBot = (roomId: string) => {
-  const room = new WarRoom(roomId, `${roomId}-name`, createPlayer("owner", true));
+  const room = new WarRoom(
+    roomId,
+    `${roomId}-name`,
+    createPlayer("owner", true),
+  );
   room.addPlayer({ ...createPlayer("bot-1"), botLevel: "hard" as const });
   expect(room.placeShips("owner", createFleet())).toBe(true);
   expect(room.placeShips("bot-1", createFleet())).toBe(true);

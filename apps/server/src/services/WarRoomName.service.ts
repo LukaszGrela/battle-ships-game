@@ -31,6 +31,16 @@ export class WarRoomNameService {
   public releaseRoom(name: string): void {
     this.activeRooms.delete(name);
   }
+
+  /** Names currently taken, in snapshot order. Used by the state layer. */
+  public listClaimed(): string[] {
+    return Array.from(this.activeRooms);
+  }
+
+  /** Restores the whole claim set (server restart). */
+  public restoreClaimed(names: readonly string[]): void {
+    this.activeRooms = new Set(names);
+  }
 }
 
 export const warRoomNames = new WarRoomNameService();

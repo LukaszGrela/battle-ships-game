@@ -1,6 +1,11 @@
 import type { IPlayer, TBotDifficulty } from "@repo/types";
 import { getShortPirateName } from "../utils/getPirateyName";
-import { BotPlayer, type IBotOptions, type TBotAction } from "./BotPlayer";
+import {
+  BotPlayer,
+  type IBotOptions,
+  type IBotPlayerSnapshot,
+  type TBotAction,
+} from "./BotPlayer";
 import { ProbabilityBrain } from "./ProbabilityBrain";
 import { WarRoom } from "../services/WarRoom";
 import { createId } from "../utils/createId";
@@ -128,6 +133,71 @@ export class BotRunner {
     bot.schedule();
 
     return player;
+  }
+
+  /**
+   * Re-attaches a bot that the state restore already put back into a room.
+   *
+   * Unlike `spawnBot()` this never adds a player: the room snapshot already
+   * contains the bot's `IPlayer`, so the only missing piece is the live driver
+   * (brain + scheduler) and the knowledge it had learned before the restart.
+   *
+   * Returns the bot's player, `undefined` when the room or its player is gone,
+   * and throws `BotStateError` when the snapshot itself is invalid.
+   */
+  restoreBot(
+    roomId: string,
+    snapshot: IBotPlayerSnapshot,
+  ): IPlayer | undefined {
+    const room = this.getRoom(roomId);
+    if (!room) return undefined;
+
+    const existing = this.bots.get(roomId);
+    if (existing) {
+      return room.getPlayer(existing.id);
+    }
+
+    const player = room.getPlayer(snapshot.id);
+    if (!player || !isBotPlayerId(player.id)) return undefined;
+
+    const difficulty = normalizeBotDifficulty(player.botLevel);
+    const brain = new ProbabilityBrain({
+      size: 10,
+      seed: snapshot.seed,
+      blunderChance: BLUNDER_CHANCE[difficulty],
+    });
+    const bot = new BotPlayer(
+      room,
+      player.id,
+      brain,
+      {
+        minDelayMs: snapshot.options.minDelayMs,
+        maxDelayMs: snapshot.options.maxDelayMs,
+        autoAcceptRematch: snapshot.options.autoAcceptRematch,
+        onAction: (action) => this.hooks.onBotAction?.(roomId, action),
+      },
+      snapshot.seed,
+    );
+
+    try {
+      bot.deserialize(snapshot);
+    } catch (error) {
+      // never leak a half-restored driver (it already started its poll)
+      bot.dispose();
+      throw error;
+    }
+
+    this.bots.set(roomId, bot);
+
+    return player;
+  }
+
+  /** Serializable state of every live bot – collected by the state snapshot. */
+  serializeBots(): { roomId: string; bot: IBotPlayerSnapshot }[] {
+    return Array.from(this.bots.entries()).map(([roomId, bot]) => ({
+      roomId,
+      bot: bot.serialize(),
+    }));
   }
 
   /** Id of the bot seated in the room (or `undefined` when there is none). */

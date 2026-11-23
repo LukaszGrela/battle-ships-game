@@ -114,7 +114,196 @@ Every battle is stored at most once under the key `<roomId>#<battleIndex>`, so a
 
 A record keeps the room identity and name, the battle index, the finish timestamp, a `byForfeit` flag, the result for every participant (`win` / `lost`) and a free-form `meta` bag for future game data (rounds, duration, sunk ships, …). Per-player aggregates (played / wins / losses, including forfeits) are derived from those records; bots are stored in the record but skipped in per-player aggregation, because their ids only exist inside one room.
 
-The store lives in server memory, so the lifetime counter resets when the server restarts. Replacing it with a database means implementing `IGameStatsService` and keeping the existing singleton.
+The store lives in server memory. With state persistence enabled (see below) the records are part of the snapshot and survive a restart; without it the lifetime counter resets together with the rooms. Replacing it with a database means implementing `IGameStatsService` and keeping the existing singleton.
+
+## Server state persistence
+
+A restart (deploy, `systemctl restart`, reboot) no longer wipes battles in progress: the server writes a snapshot of its runtime state to disk and restores it during startup, before the first socket handshake is handled.
+
+Persistence is opt-in. Any of `STATE_ENABLED`, `STATE_DIR` or `STATE_SAVE_TOKEN` turns it on, `STATE_ENABLED=false` forces it off, and when it is off nothing is read or written — local development and the test suite stay file-free.
+
+| Variable           | Default                      | Meaning                                                                                                           |
+| ------------------ | ---------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `STATE_ENABLED`    | auto                         | `1` / `true` / `on` forces persistence on, `0` / `false` / `off` forces it off                                    |
+| `STATE_DIR`        | `~/.battle-ships-game/state` | Directory holding `server-state.json` — keep it **outside the repository**                                        |
+| `STATE_SAVE_TOKEN` | –                            | Token for `POST /admin/state/save` and `POST /admin/state/restart`; without it neither endpoint is mounted at all |
+
+What the snapshot contains: every live room (both boards, ships left, turn, phase, battle index, rematch request), client sessions (including `disconnectedAt`), the claimed room names, the finished-battle statistics and every live bot (its PRNG position, placement attempts, last seen phase and the whole brain state).
+
+Restore policy:
+
+- a `Finished` room comes back with the rematch state reset, and its TTL is counted from the moment the battle ended, not from the restart;
+- a room with a bot resumes both the seat and the driver: the bot keeps its PRNG stream, its placement budget and everything its brain had learned, so its next shots are the ones it would have made without the restart (`Stage 2`);
+- a room whose bot has no snapshot record (a snapshot written before stage 2) is closed (`restore-no-bot`), and so is a room whose bot snapshot does not deserialize (`restore-bot-error`) — a bot that cannot be resumed would freeze the battle;
+- a room without human players is closed (`restore-empty`);
+- a room that fails deserialization is skipped (`restore-deserialize-error`);
+- sessions return with their old `disconnectedAt`, and the reconnect window after a restart is **90 s** (`RESTART_RECONNECT_GRACE_MS`), so nobody is forfeited while reloading the page.
+
+Snapshot file: `server-state.json` with the envelope `{ version, savedAt, checksum, state }`, where `checksum` is a SHA-256 of the payload. Writes are atomic (`.tmp` + `rename`). A corrupt or tampered file is **moved aside** to `server-state.json.corrupt-<stamp>` and reported as `corrupt`, so the next start sees `missing` instead of quarantining the same file forever. An unknown envelope version is rejected rather than guessed.
+
+Write triggers:
+
+- `POST /admin/state/save` — planned save before a restart;
+- `SIGTERM` / `SIGINT` — save, then `httpServer.close()`, then exit; bounded by `SHUTDOWN_SAVE_TIMEOUT_MS` (10 s) and a hard exit 5 s later;
+- autosave every `AUTOSAVE_INTERVAL_MS` (15 s), started only after the restore, so an empty snapshot can never overwrite a restored one. This is the crash-recovery path: an unplanned kill loses at most a few moves.
+
+### HTTP endpoints
+
+| Endpoint                    | Auth                                                        | Response                                                       |
+| --------------------------- | ----------------------------------------------------------- | -------------------------------------------------------------- |
+| `GET /health`               | none                                                        | `{ status, uptime, timestamp, clientsCount, version }`         |
+| `POST /admin/state/save`    | `x-state-token: <token>` or `Authorization: Bearer <token>` | `{ ok: true, savedAt, rooms, sessions, gameStats }`            |
+| `POST /admin/state/restart` | `x-state-token: <token>` or `Authorization: Bearer <token>` | `{ ok: true, announced, savedAt, rooms, sessions, gameStats }` |
+
+A missing token, a wrong token, a wrong method and an unknown path all return a bare `404` with an empty body, so the endpoint cannot be discovered by probing. A genuine save failure with a valid token returns `500`, which only the authenticated caller can see.
+
+## Deployment on a server (controlled restart)
+
+The server is a plain Node process. The deploy has two independent halves: **build while the old process keeps serving**, then **restart once** and let the shutdown hook save the snapshot.
+
+### 1. Runtime environment
+
+Keep the state settings in the service environment, not in the `.env` that a deploy script regenerates next to the build:
+
+```sh
+sudo install -d -m 0750 -o battleship -g battleship /var/lib/battle-ships
+sudo install -m 0600 -o root -g root /dev/null /etc/battle-ships.env
+sudo tee /etc/battle-ships.env >/dev/null <<'EOF'
+STATE_ENABLED=1
+STATE_DIR=/var/lib/battle-ships
+STATE_SAVE_TOKEN=<openssl rand -hex 32>
+EOF
+```
+
+`STATE_DIR` outside the checkout is not cosmetic: `git clean`, a dependency reinstall or a rebuild of `apps/server/dist` must never be able to delete the saved games. `StateDirectory=` in the unit creates the directory with the right owner on boot.
+
+### 2. systemd unit
+
+```ini
+[Unit]
+Description=Battle-Ships game server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+# Type=exec makes systemd track the process after the exec, so a wrapper or
+# shim in ExecStart cannot swallow the stop signal.
+Type=exec
+User=battleship
+WorkingDirectory=/home/battleship/battle-ships/apps/server/dist
+ExecStart=/usr/bin/node index.js
+EnvironmentFile=/etc/battle-ships.env
+Environment=PORT=3101
+Environment=HOST=0.0.0.0
+StateDirectory=battle-ships
+StateDirectoryMode=0750
+
+# Planned stop, step 1: tell the players over HTTP and save. Runs *before*
+# SIGTERM, so the notice lands even if the signal never reaches node.
+ExecStop=/home/battleship/battle-ships/scripts/notify-restart.sh restart
+
+# Planned stop, step 2: SIGTERM -> save snapshot -> exit
+KillSignal=SIGTERM
+KillMode=mixed
+TimeoutStopSec=30
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
+```
+
+`ExecStop` is the safety net, not a duplicate: it calls `POST /admin/state/restart`, which broadcasts `server_restarting`, flushes it for 250 ms and then writes the snapshot. A second announcement from the in-process `SIGTERM` handler is harmless — the notice carries the same `reason` and the UI just restarts its countdown.
+
+`TimeoutStopSec=30` leaves the 10 s save budget plus the hard-exit margin untouched. `Restart=always` with `RestartSec=0` would restart inside the 90 s reconnect window and drop the players anyway — do not use it.
+
+### 3. Deploy script
+
+```bash
+#!/usr/bin/env bash
+# pull -> build -> pre-save -> restart -> verify
+set -euo pipefail
+
+APP_DIR="$HOME/homelab/nodeapps/battle-ships"
+SERVER_DIST="$APP_DIR/apps/server/dist"
+STATE_FILE="/var/lib/battle-ships/server-state.json"
+PORT="${PORT:-3101}"
+SERVICE="battleship-server"
+BASE="http://127.0.0.1:$PORT"
+
+# read the token from the unit environment, never from argv (`ps` is world-readable)
+TOKEN="$(sudo sed -n 's/^STATE_SAVE_TOKEN=//p' /etc/battle-ships.env)"
+BRANCH="${1:-$(git -C "$APP_DIR" rev-parse --abbrev-ref HEAD)}"
+
+# 1. source + build, no downtime yet
+git -C "$APP_DIR" fetch --prune origin
+git -C "$APP_DIR" checkout "$BRANCH"
+git -C "$APP_DIR" pull --ff-only origin "$BRANCH"
+cd "$APP_DIR"
+pnpm install --frozen-lockfile
+pnpm build
+
+[[ -d "$SERVER_DIST" ]] || { echo "ERROR: missing $SERVER_DIST" >&2; exit 1; }
+cat > "$SERVER_DIST/.env" <<'EOF'
+PORT=3101
+HOST=0.0.0.0
+ALLOWED_ORIGINS=http://192.168.1.32:3100,http://192.168.1.41:3100
+EOF
+
+# 2. pre-save: abort before touching a running server if the snapshot fails
+code="$(curl -s -o /tmp/state-save.json -w '%{http_code}' \
+  -X POST "$BASE/admin/state/save" -H "x-state-token: $TOKEN" || true)"
+if [[ "$code" != "200" ]]; then
+  echo "ERROR: pre-save returned $code (want 200), aborting before restart" >&2
+  cat /tmp/state-save.json >&2 || true
+  exit 1
+fi
+
+# 3. keep the previous snapshot in case the new build misreads it
+sudo cp -a "$STATE_FILE" "$STATE_FILE.bak-$(date +%Y%m%d-%H%M%S)" 2>/dev/null || true
+
+# 4. one restart; SIGTERM triggers a second, in-process save
+sudo systemctl restart "$SERVICE"
+
+# 5. wait for health, then confirm the restore line in the journal
+for i in $(seq 1 30); do
+  curl -fsS "$BASE/health" >/dev/null 2>&1 && break
+  sleep 1
+  [[ "$i" -eq 30 ]] && { echo "ERROR: no /health after 30 s" >&2; exit 1; }
+done
+sudo journalctl -u "$SERVICE" --since "2 min ago" --no-pager \
+  | grep -E "State restored|No state restored|State persistence|\[shutdown\]" || true
+```
+
+A `404` from the pre-save means the token is missing or wrong (the endpoint is deliberately indistinguishable from a missing path), a `500` means the save itself failed. Both abort the deploy while the old process is still serving.
+
+### 4. Verifying a deploy
+
+```sh
+curl -fsS http://127.0.0.1:3101/health
+sudo journalctl -u battleship-server -n 20 --no-pager
+sudo ls -l /var/lib/battle-ships/
+```
+
+The start log must contain either `State restored from … (saved …)` with room/session/result counts, or `No state restored (<reason>)` on the very first run. `server-state.json` must be newer than the previous deploy, owned by the service user.
+
+### 5. Rollback
+
+```sh
+git -C "$APP_DIR" checkout <previous-commit>
+pnpm install --frozen-lockfile && pnpm build
+sudo systemctl restart battleship-server
+```
+
+The snapshot stays on disk. A build without state support simply ignores it; restore the `.bak-*` copy taken before the deploy if the newer build already rewrote it and you want the older games back.
+
+### 6. Rules that keep the snapshot intact
+
+- never `kill -9`, `systemctl kill -s SIGKILL` or `docker stop -t 0` — those skip the shutdown hook and fall back to the 15 s autosave;
+- do not shorten `TimeoutStopSec` below the 10 s save budget;
+- build first, restart second — the outage is the restart, not the compilation;
+- do not put `STATE_DIR` inside the repository or inside `apps/server/dist`;
+- a restart loop inside the 90 s reconnect window forfeits the players anyway, because the second disconnect happens before they can come back.
 
 ## Shared contracts
 
@@ -129,7 +318,7 @@ cd apps/server
 pnpm test
 ```
 
-The suite covers reconnect restoration, room lifecycle transitions, disconnect handling, the rematch flow, the bot lifecycle (`src/bots/BotRunner.e2e.test.ts`), the finished-game summary and the statistics store (`src/services/game-stats.service.test.ts`).
+The suite covers reconnect restoration, room lifecycle transitions, disconnect handling, the rematch flow, the bot lifecycle (`src/bots/BotRunner.e2e.test.ts`), bot state serialization and driver re-attachment (`src/bots/serialization.test.ts`), the finished-game summary and the statistics store (`src/services/game-stats.service.test.ts`).
 
 ## Screenshots
 

@@ -11,14 +11,54 @@ import { closeGameRoom, scheduleFinishedRoomCleanup } from "./roomLifecycle";
 
 export const DEFAULT_RECONNECT_TIMEOUT_MS = 60_000;
 
+/**
+ * Deadline granted to every player right after a restore. `undefined` means the
+ * server did not restart and the regular timeout applies.
+ */
+let restartGraceDeadline: number | undefined;
+let restartGraceTimer: NodeJS.Timeout | undefined;
+
+export function beginRestartGrace(ms: number): void {
+  if (!Number.isFinite(ms) || ms <= 0) return;
+
+  restartGraceDeadline = Date.now() + ms;
+
+  // Only kept as a handle so a test (or a second restore) can clear it; the
+  // deadline itself is a timestamp, not a timer that acts on its own.
+  if (restartGraceTimer) clearTimeout(restartGraceTimer);
+  restartGraceTimer = setTimeout(() => {
+    restartGraceTimer = undefined;
+  }, ms);
+  restartGraceTimer.unref?.();
+}
+
+export function disposeRestartGrace(): void {
+  if (restartGraceTimer) clearTimeout(restartGraceTimer);
+  restartGraceTimer = undefined;
+  restartGraceDeadline = undefined;
+}
+
+export function getRestartGraceDeadline(): number | undefined {
+  return restartGraceDeadline;
+}
+
 export function getReconnectTimeoutMs(): number {
   const configured = Number(process.env.GAME_RECONNECT_TIMEOUT_MS ?? "");
 
-  if (!Number.isFinite(configured) || configured <= 0) {
-    return DEFAULT_RECONNECT_TIMEOUT_MS;
+  const base =
+    !Number.isFinite(configured) || configured <= 0
+      ? DEFAULT_RECONNECT_TIMEOUT_MS
+      : configured;
+
+  if (restartGraceDeadline === undefined) {
+    return base;
   }
 
-  return configured;
+  // After a restart the clock starts when the players could reconnect, not when
+  // the old process wrote the snapshot: the whole window is still ahead.
+  const remaining = restartGraceDeadline - Date.now();
+
+  return remaining > base ? remaining : base;
 }
 
 export function expireDisconnectedPlayers(
