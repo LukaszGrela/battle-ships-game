@@ -1,6 +1,7 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { describe, expect, it, vi } from "vitest";
 import {
+  STATE_RESTART_PATH,
   STATE_SAVE_PATH,
   STATE_TOKEN_HEADER,
   createStateHttpHandler,
@@ -172,5 +173,121 @@ describe("services/state/http", () => {
       headers: { [STATE_TOKEN_HEADER]: "secret-token" },
     });
     expect(authenticated.statusCode).toBe(500);
+  });
+
+  it("announces the restart, then saves", async () => {
+    const order: string[] = [];
+    const announceRestart = vi.fn(async () => {
+      order.push("announce");
+    });
+    const { handler } = createHandler({
+      announceRestart,
+      save: vi.fn(async () => {
+        order.push("save");
+        return {
+          savedAt: "2026-01-01T00:00:00.000Z",
+          bytes: 42,
+          rooms: 1,
+          sessions: 2,
+          gameStats: 3,
+          bots: 0,
+        };
+      }),
+    });
+
+    const res = await call(handler, {
+      url: STATE_RESTART_PATH,
+      headers: { [STATE_TOKEN_HEADER]: "secret-token" },
+    });
+
+    expect(res.statusCode).toBe(200);
+    expect(JSON.parse(res.body)).toMatchObject({
+      ok: true,
+      announced: "restart",
+    });
+    expect(announceRestart).toHaveBeenCalledWith("restart");
+    // The notice is only useful while the sockets are still open.
+    expect(order).toEqual(["announce", "save"]);
+  });
+
+  it("warns about a stop when asked to", async () => {
+    const announceRestart = vi.fn(async () => {});
+    const { handler } = createHandler({ announceRestart });
+
+    const res = await call(handler, {
+      url: `${STATE_RESTART_PATH}?reason=shutdown`,
+      headers: { [STATE_TOKEN_HEADER]: "secret-token" },
+    });
+
+    expect(res.statusCode).toBe(200);
+    expect(JSON.parse(res.body)).toMatchObject({ announced: "shutdown" });
+    expect(announceRestart).toHaveBeenCalledWith("shutdown");
+  });
+
+  it("falls back to a restart for an unknown reason", async () => {
+    const announceRestart = vi.fn(async () => {});
+    const { handler } = createHandler({ announceRestart });
+
+    const res = await call(handler, {
+      url: `${STATE_RESTART_PATH}?reason=destroy-everything`,
+      headers: { [STATE_TOKEN_HEADER]: "secret-token" },
+    });
+
+    expect(JSON.parse(res.body)).toMatchObject({ announced: "restart" });
+  });
+
+  it("hides the restart endpoint without a token", async () => {
+    const announceRestart = vi.fn(async () => {});
+    const { handler, save } = createHandler({ announceRestart });
+
+    const res = await call(handler, { url: STATE_RESTART_PATH });
+
+    expect(res.statusCode).toBe(404);
+    expect(res.body).toBe("");
+    expect(announceRestart).not.toHaveBeenCalled();
+    expect(save).not.toHaveBeenCalled();
+  });
+
+  it("hides the restart endpoint when persistence is off", async () => {
+    const announceRestart = vi.fn(async () => {});
+    const { handler } = createHandler({
+      announceRestart,
+      enabled: false,
+    });
+
+    const res = await call(handler, {
+      url: STATE_RESTART_PATH,
+      headers: { [STATE_TOKEN_HEADER]: "secret-token" },
+    });
+
+    expect(res.statusCode).toBe(404);
+    expect(announceRestart).not.toHaveBeenCalled();
+  });
+
+  it("does not announce on a GET", async () => {
+    const announceRestart = vi.fn(async () => {});
+    const { handler } = createHandler({ announceRestart });
+
+    const res = await call(handler, {
+      method: "GET",
+      url: STATE_RESTART_PATH,
+      headers: { [STATE_TOKEN_HEADER]: "secret-token" },
+    });
+
+    expect(res.statusCode).toBe(404);
+    expect(announceRestart).not.toHaveBeenCalled();
+  });
+
+  it("keeps the save route silent about restarts", async () => {
+    const announceRestart = vi.fn(async () => {});
+    const { handler } = createHandler({ announceRestart });
+
+    const res = await call(handler, {
+      headers: { [STATE_TOKEN_HEADER]: "secret-token" },
+    });
+
+    expect(res.statusCode).toBe(200);
+    expect(JSON.parse(res.body).announced).toBeUndefined();
+    expect(announceRestart).not.toHaveBeenCalled();
   });
 });

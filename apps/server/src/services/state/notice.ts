@@ -3,7 +3,7 @@ import {
   SHUTDOWN_NOTICE_FLUSH_MS,
   SHUTDOWN_RECONNECT_NOTICE_MS,
 } from "../../config/state.js";
-import type { IServerRestartNotice } from "@repo/types";
+import type { IServerRestartNotice, TServerRestartReason } from "@repo/types";
 
 /**
  * The subset of `io` the shutdown hook needs. Keeping it narrow makes the
@@ -18,12 +18,17 @@ export interface IServerRestartEmitter {
  * the process is expected back. `SIGINT` is somebody pressing Ctrl-C: honest
  * wording matters more than a promise we cannot keep.
  */
+export const buildRestartNoticeForReason = (
+  reason: TServerRestartReason,
+): IServerRestartNotice =>
+  reason === "shutdown"
+    ? { reason: "shutdown", graceMs: SHUTDOWN_RECONNECT_NOTICE_MS }
+    : { reason: "restart", graceMs: RESTART_RECONNECT_NOTICE_MS };
+
 export const buildRestartNotice = (
   signal: NodeJS.Signals,
 ): IServerRestartNotice =>
-  signal === "SIGINT"
-    ? { reason: "shutdown", graceMs: SHUTDOWN_RECONNECT_NOTICE_MS }
-    : { reason: "restart", graceMs: RESTART_RECONNECT_NOTICE_MS };
+  buildRestartNoticeForReason(signal === "SIGINT" ? "shutdown" : "restart");
 
 export const wait = (ms: number): Promise<void> =>
   new Promise<void>((resolve) => {

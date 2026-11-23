@@ -5,9 +5,17 @@ import {
   isStatePersistenceEnabled,
 } from "../../config/state";
 import type { IStateSaveResult } from "./types";
+import type { TServerRestartReason } from "@repo/types";
 
 /** Undocumented admin route: only reachable with the shared token. */
 export const STATE_SAVE_PATH = "/admin/state/save";
+/**
+ * Same guard, but it also broadcasts the `server_restarting` notice before the
+ * snapshot is written. `systemd` calls this from `ExecStop`, so a planned
+ * restart still warns the players when the signal itself never lands (a broken
+ * cgroup / an immediate SIGKILL).
+ */
+export const STATE_RESTART_PATH = "/admin/state/restart";
 export const STATE_TOKEN_HEADER = "x-state-token";
 
 export interface IStateHttpContext {
@@ -16,6 +24,8 @@ export interface IStateHttpContext {
   getVersion: () => Promise<string>;
   getSocketCount: () => number;
   save: () => Promise<IStateSaveResult>;
+  /** Emits `server_restarting` and flushes it; used by the restart route. */
+  announceRestart?: (reason: TServerRestartReason) => Promise<void>;
   now?: () => number;
 }
 
@@ -58,6 +68,16 @@ const notFound = (res: ServerResponse): void => {
   res.writeHead(404).end();
 };
 
+/**
+ * Which wording `ExecStop` asks for: a planned restart (default) or a stop that
+ * leaves the port silent for a while.
+ */
+const readReason = (url: string | undefined): TServerRestartReason => {
+  const query = (url ?? "").split("?")[1] ?? "";
+  const value = new URLSearchParams(query).get("reason")?.trim().toLowerCase();
+  return value === "shutdown" ? "shutdown" : "restart";
+};
+
 const sendJson = (res: ServerResponse, status: number, body: unknown): void => {
   const payload = JSON.stringify(body);
   res.writeHead(status, {
@@ -92,12 +112,19 @@ export const createStateHttpHandler = (context: IStateHttpContext) => {
       return;
     }
 
-    if (pathname !== STATE_SAVE_PATH) {
+    const isRestartRoute = pathname === STATE_RESTART_PATH;
+
+    if (!isRestartRoute && pathname !== STATE_SAVE_PATH) {
       notFound(res);
       return;
     }
 
     if (!enabled || !saveToken) {
+      notFound(res);
+      return;
+    }
+
+    if (isRestartRoute && !context.announceRestart) {
       notFound(res);
       return;
     }
@@ -117,9 +144,23 @@ export const createStateHttpHandler = (context: IStateHttpContext) => {
     // left with unread bytes.
     req.resume();
 
+    const reason = readReason(req.url);
+
     try {
+      if (isRestartRoute) {
+        const announceRestart = context.announceRestart;
+        if (announceRestart) {
+          // Notice first: it is only useful while the sockets are still open.
+          await announceRestart(reason);
+        }
+      }
+
       const result = await context.save();
-      sendJson(res, 200, { ok: true, ...result });
+      sendJson(res, 200, {
+        ok: true,
+        ...(isRestartRoute ? { announced: reason } : {}),
+        ...result,
+      });
     } catch (error) {
       console.error("[state] admin save failed:", error);
       sendJson(res, 500, { ok: false, error: "save-failed" });

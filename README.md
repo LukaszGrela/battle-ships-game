@@ -122,11 +122,11 @@ A restart (deploy, `systemctl restart`, reboot) no longer wipes battles in progr
 
 Persistence is opt-in. Any of `STATE_ENABLED`, `STATE_DIR` or `STATE_SAVE_TOKEN` turns it on, `STATE_ENABLED=false` forces it off, and when it is off nothing is read or written — local development and the test suite stay file-free.
 
-| Variable           | Default                      | Meaning                                                                           |
-| ------------------ | ---------------------------- | --------------------------------------------------------------------------------- |
-| `STATE_ENABLED`    | auto                         | `1` / `true` / `on` forces persistence on, `0` / `false` / `off` forces it off    |
-| `STATE_DIR`        | `~/.battle-ships-game/state` | Directory holding `server-state.json` — keep it **outside the repository**        |
-| `STATE_SAVE_TOKEN` | –                            | Token for `POST /admin/state/save`; without it the endpoint is not mounted at all |
+| Variable           | Default                      | Meaning                                                                                                           |
+| ------------------ | ---------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `STATE_ENABLED`    | auto                         | `1` / `true` / `on` forces persistence on, `0` / `false` / `off` forces it off                                    |
+| `STATE_DIR`        | `~/.battle-ships-game/state` | Directory holding `server-state.json` — keep it **outside the repository**                                        |
+| `STATE_SAVE_TOKEN` | –                            | Token for `POST /admin/state/save` and `POST /admin/state/restart`; without it neither endpoint is mounted at all |
 
 What the snapshot contains: every live room (both boards, ships left, turn, phase, battle index, rematch request), client sessions (including `disconnectedAt`), the claimed room names, the finished-battle statistics and every live bot (its PRNG position, placement attempts, last seen phase and the whole brain state).
 
@@ -149,10 +149,11 @@ Write triggers:
 
 ### HTTP endpoints
 
-| Endpoint                 | Auth                                                        | Response                                               |
-| ------------------------ | ----------------------------------------------------------- | ------------------------------------------------------ |
-| `GET /health`            | none                                                        | `{ status, uptime, timestamp, clientsCount, version }` |
-| `POST /admin/state/save` | `x-state-token: <token>` or `Authorization: Bearer <token>` | `{ ok: true, savedAt, rooms, sessions, gameStats }`    |
+| Endpoint                    | Auth                                                        | Response                                                       |
+| --------------------------- | ----------------------------------------------------------- | -------------------------------------------------------------- |
+| `GET /health`               | none                                                        | `{ status, uptime, timestamp, clientsCount, version }`         |
+| `POST /admin/state/save`    | `x-state-token: <token>` or `Authorization: Bearer <token>` | `{ ok: true, savedAt, rooms, sessions, gameStats }`            |
+| `POST /admin/state/restart` | `x-state-token: <token>` or `Authorization: Bearer <token>` | `{ ok: true, announced, savedAt, rooms, sessions, gameStats }` |
 
 A missing token, a wrong token, a wrong method and an unknown path all return a bare `404` with an empty body, so the endpoint cannot be discovered by probing. A genuine save failure with a valid token returns `500`, which only the authenticated caller can see.
 
@@ -185,7 +186,9 @@ After=network-online.target
 Wants=network-online.target
 
 [Service]
-Type=simple
+# Type=exec makes systemd track the process after the exec, so a wrapper or
+# shim in ExecStart cannot swallow the stop signal.
+Type=exec
 User=battleship
 WorkingDirectory=/home/battleship/battle-ships/apps/server/dist
 ExecStart=/usr/bin/node index.js
@@ -195,7 +198,11 @@ Environment=HOST=0.0.0.0
 StateDirectory=battle-ships
 StateDirectoryMode=0750
 
-# controlled stop: SIGTERM -> save snapshot -> exit
+# Planned stop, step 1: tell the players over HTTP and save. Runs *before*
+# SIGTERM, so the notice lands even if the signal never reaches node.
+ExecStop=/home/battleship/battle-ships/scripts/notify-restart.sh restart
+
+# Planned stop, step 2: SIGTERM -> save snapshot -> exit
 KillSignal=SIGTERM
 KillMode=mixed
 TimeoutStopSec=30
@@ -205,6 +212,8 @@ RestartSec=3
 [Install]
 WantedBy=multi-user.target
 ```
+
+`ExecStop` is the safety net, not a duplicate: it calls `POST /admin/state/restart`, which broadcasts `server_restarting`, flushes it for 250 ms and then writes the snapshot. A second announcement from the in-process `SIGTERM` handler is harmless — the notice carries the same `reason` and the UI just restarts its countdown.
 
 `TimeoutStopSec=30` leaves the 10 s save budget plus the hard-exit margin untouched. `Restart=always` with `RestartSec=0` would restart inside the 90 s reconnect window and drop the players anyway — do not use it.
 

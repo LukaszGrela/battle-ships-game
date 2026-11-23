@@ -22,6 +22,8 @@ import { disposeRoomLifecycle } from "./utils/roomLifecycle";
 import { disposeRematchTimeouts } from "./utils/rematchTimeout";
 import {
   StateService,
+  announceServerRestart,
+  buildRestartNoticeForReason,
   createStateHttpHandler,
   type IRestoreReport,
 } from "./services/state";
@@ -204,6 +206,14 @@ export function createGameServer({
         throw new Error("state persistence is disabled");
       }
       return stateService.save();
+    },
+    /**
+     * Reached from `ExecStop` (see `scripts/notify-restart.sh`), so the players
+     * are warned even when the SIGTERM never lands or the supervisor kills the
+     * cgroup outright.
+     */
+    announceRestart: async (reason) => {
+      await announceServerRestart(io, buildRestartNoticeForReason(reason));
     },
   });
 
